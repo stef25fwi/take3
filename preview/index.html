@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aperçu Take30</title>
+    <style>
+      :root {
+        --bg: #f3f7fb;
+        --card: #ffffff;
+        --primary: #2563eb;
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #dbeafe;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: linear-gradient(180deg, #eff6ff 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+
+      .hero {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      h1 {
+        margin: 14px 0 10px;
+        font-size: 40px;
+      }
+
+      .subtitle {
+        max-width: 700px;
+        margin: 0 auto;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .phones {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+        margin-top: 28px;
+      }
+
+      .phone {
+        background: #111827;
+        border-radius: 28px;
+        padding: 10px;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+      }
+
+      .screen {
+        background: var(--bg);
+        border-radius: 20px;
+        min-height: 460px;
+        overflow: hidden;
+      }
+
+      .topbar {
+        background: white;
+        padding: 14px 16px;
+        font-weight: 700;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .hero-card {
+        background: linear-gradient(135deg, #bfdbfe, #dbeafe);
+        border-radius: 16px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      }
+
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 15px;
+      }
+
+      .card p, .muted {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .stat {
+        background: white;
+        border-radius: 14px;
+        padding: 10px;
+        text-align: center;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .section-title {
+        margin: 26px 0 10px;
+        font-size: 22px;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .mini-pill {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .footer-note {
+        margin-top: 22px;
+        text-align: center;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <span class="badge">Aperçu visuel</span>
+        <h1>Take30</h1>
+        <p class="subtitle">
+          Vue rapide du design final de l’application : accueil, exploration,
+          création et profil.
+        </p>
+      </section>
+
+      <h2 class="section-title">Aperçu des écrans</h2>
+
+      <section class="phones">
+        <article class="phone">
+          <div class="screen">
+            <div class="topbar">Accueil</div>
+            <div class="content">
+              <div class="hero-card">
+                <strong>Bonjour 👋</strong>
+                <p class="muted">Actions rapides pour créer et publier.</p>
+              </div>
+              <div class="card"><h3>Défi du jour</h3><p>Tourner en 30 minutes.</p></div>
+              <div class="card"><h3>Battle</h3><p>Comparer ta prise avec la communauté.</p></div>
+              <div class="card"><h3>Progression</h3><p>Suivre badges et statistiques.</p></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="phone">
+          <div class="screen">
+            <div class="topbar">Explorer</div>
+            <div class="content">
+              <div class="card"><h3>Cuisine rapide</h3><p>Lifestyle • 20 min</p></div>
+              <div class="card"><h3>Portrait créatif</h3><p>Portrait • 30 min</p></div>
+              <div class="card"><h3>Mini reportage</h3><p>Storytelling • 35 min</p></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="phone">
+          <div class="screen">
+            <div class="topbar">Créer un Take</div>
+            <div class="content">
+              <div class="card"><h3>Titre</h3><p>Mon nouveau Take30</p></div>
+              <div class="card"><h3>Type</h3><p>Portrait créatif</p></div>
+              <div class="card"><h3>Ambiance</h3><p>Énergique</p></div>
+              <div class="card"><h3>Prévisualisation</h3><p>Prêt à publier</p></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="phone">
+          <div class="screen">
+            <div class="topbar">Profil</div>
+            <div class="content">
+              <div class="stats">
+                <div class="stat"><strong>5</strong><span class="muted">jours</span></div>
+                <div class="stat"><strong>12</strong><span class="muted">takes</span></div>
+                <div class="stat"><strong>87%</strong><span class="muted">score</span></div>
+                <div class="stat"><strong>Inter</strong><span class="muted">niveau</span></div>
+              </div>
+              <div class="card" style="margin-top: 10px;"><h3>Prochain badge</h3><p>Maître du rythme</p></div>
+              <div class="card"><h3>Classement</h3><p>Voir le top communauté.</p></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <h2 class="section-title">Fonctions principales</h2>
+      <section class="feature-grid">
+        <div class="card">
+          <span class="mini-pill">Création</span>
+          <h3>Préparer un Take</h3>
+          <p>Titre, ambiance, durée et aperçu avant publication.</p>
+        </div>
+        <div class="card">
+          <span class="mini-pill">Inspiration</span>
+          <h3>Explorer des scènes</h3>
+          <p>Idées rapides comme portrait créatif, cuisine ou mini reportage.</p>
+        </div>
+        <div class="card">
+          <span class="mini-pill">Communauté</span>
+          <h3>Battle et classement</h3>
+          <p>Suivi du score, des badges et des défis du jour.</p>
+        </div>
+      </section>
+
+      <p class="footer-note">Aperçu local généré pour visualiser rapidement l’application.</p>
+    </main>
+  </body>
+</html>
