@@ -7,9 +7,9 @@ class BattleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PageWrap(
+    return const PageWrap(
       title: 'Battle',
-      children: const [
+      children: [
         SectionCard(title: 'Adversaire', subtitle: 'Créateur aléatoire prêt pour un duel'),
         SectionCard(title: 'Critère', subtitle: 'Originalité, rythme et narration'),
         SectionCard(title: 'Vote', subtitle: 'La communauté départage les deux créations'),

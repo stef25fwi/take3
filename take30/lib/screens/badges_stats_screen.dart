@@ -7,9 +7,9 @@ class BadgesStatsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PageWrap(
+    return const PageWrap(
       title: 'Badges et stats',
-      children: const [
+      children: [
         Row(
           children: [
             Expanded(child: InfoStat(label: 'Badges', value: '3')),

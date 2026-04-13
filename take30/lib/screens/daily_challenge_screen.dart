@@ -7,9 +7,9 @@ class DailyChallengeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PageWrap(
+    return const PageWrap(
       title: 'Défi du jour',
-      children: const [
+      children: [
         SectionCard(
           title: 'Objectif',
           subtitle: 'Raconter une histoire courte en 3 plans maximum.',

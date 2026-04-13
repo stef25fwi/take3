@@ -62,7 +62,7 @@ class _RecordScreenState extends State<RecordScreen> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _sceneType,
+          initialValue: _sceneType,
           decoration: const InputDecoration(labelText: 'Type de scène'),
           items: const [
             DropdownMenuItem(value: 'Portrait créatif', child: Text('Portrait créatif')),
@@ -73,7 +73,7 @@ class _RecordScreenState extends State<RecordScreen> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          value: _mood,
+          initialValue: _mood,
           decoration: const InputDecoration(labelText: 'Ambiance'),
           items: const [
             DropdownMenuItem(value: 'Énergique', child: Text('Énergique')),
