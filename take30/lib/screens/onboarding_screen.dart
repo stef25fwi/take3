@@ -1,67 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../router/router.dart';
-import '../widgets/shared_widgets.dart';
+import '../theme/app_theme.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return TakeScreenScaffold(
-      title: '',
-      showHeader: false,
-      scrollable: false,
-      contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-      child: Column(
+    return Scaffold(
+      backgroundColor: OnboardingTheme.background,
+      body: Column(
         children: [
           Expanded(
             child: Container(
               width: double.infinity,
-              alignment: Alignment.center,
               decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment(0, 0.35),
-                  radius: 0.7,
-                  colors: [Color(0x14FFB800), Colors.transparent],
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0B1427), AppColors.navy],
                 ),
               ),
-              child: const Text('🎬', style: TextStyle(fontSize: 80)),
+              child: const Center(
+                child: Text(
+                  '🎬',
+                  style: TextStyle(fontSize: 84),
+                ),
+              ),
             ),
           ),
-          const Text(
-            'Ton film en 30 min',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Enregistre, monte et publie des scènes créatives en un temps record, depuis ton téléphone.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, height: 1.6, color: Color(0x99FFFFFF)),
-          ),
-          const SizedBox(height: 16),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _OnboardingDot(active: true),
-              SizedBox(width: 6),
-              _OnboardingDot(),
-              SizedBox(width: 6),
-              _OnboardingDot(),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: () => context.go(AppRouter.home),
-              child: const Text('Suivant →'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+            child: Column(
+              children: [
+                Text(
+                  'Ton film en 30 min',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Enregistre, monte et publie des scenes creatives en un temps record, depuis ton telephone.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    height: 1.6,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _Dot(active: true),
+                    const SizedBox(width: 6),
+                    _Dot(active: false),
+                    const SizedBox(width: 6),
+                    _Dot(active: false),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () => context.go(AppRouter.home),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.yellow,
+                      foregroundColor: AppColors.navy,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Suivant →',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -70,20 +97,19 @@ class OnboardingScreen extends StatelessWidget {
   }
 }
 
-class _OnboardingDot extends StatelessWidget {
-  const _OnboardingDot({this.active = false});
+class _Dot extends StatelessWidget {
+  const _Dot({required this.active});
 
   final bool active;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
       width: active ? 24 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFFFFB800) : const Color(0x26FFFFFF),
-        borderRadius: BorderRadius.circular(4),
+        color: active ? AppColors.yellow : Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(active ? 4 : 999),
       ),
     );
   }

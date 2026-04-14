@@ -6,4 +6,6 @@ class NotificationService {
   factory NotificationService() => _instance;
 
   Future<void> initialize() async {}
+
+  Future<void> showPublishSuccessNotification({required String sceneTitle}) async {}
 }

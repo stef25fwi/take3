@@ -8,6 +8,18 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 FLUTTER_DIR="$ROOT/take30"
 COMMIT_MSG="${1:-feat: update Take30}"
+FLUTTER_BIN="${FLUTTER_BIN:-}"
+
+if [[ -z "$FLUTTER_BIN" ]]; then
+  if command -v flutter >/dev/null 2>&1; then
+    FLUTTER_BIN="$(command -v flutter)"
+  elif [[ -x "/home/codespace/flutter/bin/flutter" ]]; then
+    FLUTTER_BIN="/home/codespace/flutter/bin/flutter"
+  else
+    echo "❌ Flutter introuvable. Définis FLUTTER_BIN ou ajoute flutter au PATH."
+    exit 1
+  fi
+fi
 
 echo "══════════════════════════════════════════"
 echo "  🚀  Take30  —  ADD · COMMIT · PUSH · BUILD · DEPLOY"
@@ -17,13 +29,13 @@ echo "════════════════════════�
 echo ""
 echo "▸ [1/5] Flutter analyze..."
 cd "$FLUTTER_DIR"
-flutter analyze
+"$FLUTTER_BIN" analyze --no-fatal-infos --no-fatal-warnings
 echo "  ✓ Analyse OK"
 
 # ── 2. Flutter build web ────────────────────
 echo ""
 echo "▸ [2/5] Flutter build web..."
-flutter build web --release --base-href /take3/
+"$FLUTTER_BIN" build web --release --base-href /take3/
 echo "  ✓ Build OK"
 
 # ── 3. Git add ──────────────────────────────

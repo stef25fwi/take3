@@ -1,103 +1,265 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
-import '../router/router.dart';
-import '../widgets/shared_widgets.dart';
+import '../theme/app_theme.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({super.key});
+  const AuthScreen({super.key, this.initialTab = 'login'});
+
+  final String initialTab;
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen> {
-  final _emailController = TextEditingController(text: 'demo@take30.app');
-  final _passwordController = TextEditingController(text: 'demo123');
+class _AuthScreenState extends ConsumerState<AuthScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabs;
+  final _emailCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTab == 'register' ? 1 : 0,
+    );
+    _tabs.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _tabs.dispose();
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _usernameCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _loginWithEmail() async {
-    final auth = ref.read(authServiceProvider);
-    final result = await auth.loginWithEmail(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-    if (!mounted) {
-      return;
+  Future<void> _submit() async {
+    final auth = ref.read(authProvider.notifier);
+    if (_tabs.index == 0) {
+      await auth.login(
+        _emailCtrl.text.isEmpty ? 'demo@take30.app' : _emailCtrl.text,
+        _passwordCtrl.text,
+      );
+    } else {
+      await auth.register(
+        _usernameCtrl.text.isEmpty ? 'LunaAct' : _usernameCtrl.text,
+        _emailCtrl.text,
+        _passwordCtrl.text,
+      );
     }
-    if (result.success) {
-      context.go(AppRouter.home);
-      return;
+    if (mounted) {
+      final state = ref.read(authProvider);
+      if (state.isAuthenticated) {
+        context.go('/home');
+      }
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.error ?? 'Erreur de connexion')),
-    );
-  }
-
-  Future<void> _registerDemo() async {
-    final auth = ref.read(authServiceProvider);
-    final result = await auth.registerWithEmail(
-      username: 'take30_demo',
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (result.success) {
-      context.go(AppRouter.home);
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result.error ?? 'Erreur de création de compte')),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authServiceProvider);
+    final authState = ref.watch(authProvider);
 
-    return PageWrap(
-      title: 'Connexion',
-      children: [
-        TextField(
-          controller: _emailController,
-          decoration: const InputDecoration(labelText: 'Email'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _passwordController,
-          decoration: InputDecoration(labelText: 'Mot de passe'),
-          obscureText: true,
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: auth.isLoading ? null : _loginWithEmail,
-          child: Text(auth.isLoading ? 'Connexion...' : 'Entrer'),
-        ),
-        OutlinedButton(
-          onPressed: auth.isLoading ? null : _registerDemo,
-          child: const Text('Créer un compte démo'),
-        ),
-        TextButton(
-          onPressed: auth.isLoading
-              ? null
-              : () async {
-                  final result = await ref.read(authServiceProvider).loginWithGoogle();
-                  if (!mounted || !result.success) {
-                    return;
-                  }
-                  context.go(AppRouter.home);
+    return Scaffold(
+      backgroundColor: AppColors.navy,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              const SizedBox(height: 36),
+              Text(
+                'Take30',
+                style: GoogleFonts.dmSans(
+                  fontSize: 38,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.white,
+                  letterSpacing: -1.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Prouve ton talent en 30 secondes',
+                style: GoogleFonts.dmSans(fontSize: 13, color: AppColors.grey),
+              ),
+              const SizedBox(height: 36),
+              Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TabBar(
+                  controller: _tabs,
+                  indicator: BoxDecoration(
+                    color: AppColors.yellow,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  labelColor: AppColors.navy,
+                  unselectedLabelColor: AppColors.grey,
+                  labelStyle: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                  dividerColor: Colors.transparent,
+                  tabs: const [
+                    Tab(text: 'Connexion'),
+                    Tab(text: 'Inscription'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              if (_tabs.index == 1) ...[
+                _field(
+                  ctrl: _usernameCtrl,
+                  label: 'Nom d\'utilisateur',
+                  hint: '@monpseudo',
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: 14),
+              ],
+              _field(
+                ctrl: _emailCtrl,
+                label: 'Email',
+                hint: 'ton@email.com',
+                icon: Icons.email_outlined,
+                type: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 14),
+              _field(
+                ctrl: _passwordCtrl,
+                label: 'Mot de passe',
+                hint: '••••••••',
+                icon: Icons.lock_outline,
+                isPassword: true,
+              ),
+              if (authState.error != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.red.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    authState.error!,
+                    style: const TextStyle(color: AppColors.red, fontSize: 13),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: authState.isLoading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.yellow,
+                    foregroundColor: AppColors.navy,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: authState.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.navy,
+                          ),
+                        )
+                      : Text(
+                          _tabs.index == 0 ? 'Se connecter' : 'Créer un compte',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navy,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextButton(
+                onPressed: () {
+                  _emailCtrl.text = 'demo@take30.app';
+                  _passwordCtrl.text = 'demo';
+                  _submit();
                 },
-          child: const Text('Continuer avec Google'),
+                child: Text(
+                  'Accès démo →',
+                  style: GoogleFonts.dmSans(
+                    color: AppColors.cyan,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.go('/onboarding'),
+                child: Text(
+                  '← Retour',
+                  style: GoogleFonts.dmSans(color: AppColors.grey, fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _field({
+    required TextEditingController ctrl,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+    TextInputType? type,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.greyLight,
+          ),
+        ),
+        const SizedBox(height: 7),
+        TextField(
+          controller: ctrl,
+          obscureText: isPassword && _obscure,
+          keyboardType: type,
+          style: const TextStyle(color: AppColors.white),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: AppColors.grey, size: 20),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      _obscure ? Icons.visibility_off : Icons.visibility,
+                      color: AppColors.grey,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  )
+                : null,
+          ),
         ),
       ],
     );

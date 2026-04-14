@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
+import '../services/mock_data.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
 import '../screens/battle_screen.dart';
@@ -22,7 +23,6 @@ class AppRouter {
   static const splash = '/splash';
   static const onboarding = '/onboarding';
   static const auth = '/auth';
-  static const shell = '/shell';
   static const home = '/home';
   static const explore = '/explore';
   static const record = '/record';
@@ -33,7 +33,10 @@ class AppRouter {
   static const badges = '/badges';
   static const leaderboard = '/leaderboard';
   static const preview = '/preview';
-  static const sceneDetail = '/scene-detail';
+  static const sceneDetail = '/scene';
+
+  static String profilePath(String userId) => '$profile/$userId';
+  static String scenePath(String sceneId) => '$sceneDetail/$sceneId';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -54,27 +57,41 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.auth,
-        builder: (_, __) => const AuthScreen(),
+        builder: (_, state) {
+          final tab = state.uri.queryParameters['tab'] ?? 'login';
+          return AuthScreen(initialTab: tab);
+        },
       ),
-      GoRoute(
-        path: AppRouter.shell,
-        builder: (_, __) => const MainShell(),
-      ),
-      GoRoute(
-        path: AppRouter.home,
-        builder: (_, __) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: AppRouter.explore,
-        builder: (_, __) => const ExploreScreen(),
-      ),
-      GoRoute(
-        path: AppRouter.record,
-        builder: (_, __) => const RecordScreen(),
-      ),
-      GoRoute(
-        path: AppRouter.profile,
-        builder: (_, __) => const ProfileScreen(),
+      ShellRoute(
+        builder: (_, __, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: AppRouter.home,
+            builder: (_, __) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.explore,
+            builder: (_, __) => const ExploreScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.record,
+            builder: (_, state) {
+              final scene = state.extra is SceneModel ? state.extra as SceneModel : null;
+              return RecordScreen(scene: scene);
+            },
+          ),
+          GoRoute(
+            path: AppRouter.battle,
+            builder: (_, __) => const BattleScreen(),
+          ),
+          GoRoute(
+            path: '${AppRouter.profile}/:userId',
+            builder: (_, state) {
+              final userId = state.pathParameters['userId']!;
+              return ProfileScreen(userId: userId);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRouter.notifications,
@@ -83,10 +100,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRouter.challenge,
         builder: (_, __) => const DailyChallengeScreen(),
-      ),
-      GoRoute(
-        path: AppRouter.battle,
-        builder: (_, __) => const BattleScreen(),
       ),
       GoRoute(
         path: AppRouter.badges,
@@ -99,27 +112,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRouter.preview,
         builder: (_, state) {
-          final draft = state.extra is TakeDraft
-              ? state.extra as TakeDraft
-              : const TakeDraft(
-                  title: 'Take démo',
-                  description: 'Prévisualisation rapide de la scène.',
-                  sceneType: 'Portrait créatif',
-                  duration: 30,
-                  mood: 'Énergique',
-                );
-          return PreviewPublishScreen(draft: draft);
+          final data = state.extra is Map<String, dynamic>
+              ? state.extra as Map<String, dynamic>
+              : null;
+          return PreviewPublishScreen(
+            videoPath: data?['videoPath'] as String?,
+            scene: data?['scene'] as SceneModel?,
+          );
         },
       ),
       GoRoute(
-        path: AppRouter.sceneDetail,
+        path: '${AppRouter.sceneDetail}/:sceneId',
         builder: (_, state) {
-          final extra = state.extra;
-          if (extra is SceneModel) {
-            return SceneDetailScreen(title: extra.title, scene: extra);
+          final sceneId = state.pathParameters['sceneId']!;
+          SceneModel? scene;
+          try {
+            scene = MockData.scenes.firstWhere((item) => item.id == sceneId);
+          } catch (_) {
+            scene = null;
           }
-          final title = extra as String? ?? 'Détail';
-          return SceneDetailScreen(title: title);
+          return SceneDetailScreen(
+            title: scene?.title ?? 'Détail',
+            scene: scene,
+          );
         },
       ),
     ],

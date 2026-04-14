@@ -14,31 +14,6 @@ class ApiService {
   bool get isAuthenticated => _isAuthenticated;
   UserModel? get currentUser => _currentUser;
 
-  Future<List<FeatureItem>> fetchDashboard() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return dashboardItems;
-  }
-
-  Future<List<NotificationItem>> fetchNotifications() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return notifications;
-  }
-
-  Future<List<SceneIdea>> fetchScenes() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return sceneIdeas;
-  }
-
-  Future<UserStats> fetchProfileStats() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return profileStats;
-  }
-
-  Future<List<LeaderboardScoreEntry>> fetchLeaderboard() async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-    return leaderboard;
-  }
-
   Future<UserModel> login(String email, String password) async {
     await Future<void>.delayed(const Duration(milliseconds: 800));
     _isAuthenticated = true;

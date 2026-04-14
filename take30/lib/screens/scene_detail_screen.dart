@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
 import '../router/router.dart';
-import '../widgets/shared_widgets.dart';
+import '../services/mock_data.dart';
+import '../theme/app_theme.dart';
 
-class SceneDetailScreen extends StatelessWidget {
+class SceneDetailScreen extends StatefulWidget {
   const SceneDetailScreen({
     super.key,
     required this.title,
@@ -16,91 +18,269 @@ class SceneDetailScreen extends StatelessWidget {
   final SceneModel? scene;
 
   @override
-  Widget build(BuildContext context) {
-    final currentScene = scene;
-    final sceneTitle = currentScene?.title ?? title;
-    final author = currentScene?.author.displayName ?? 'Marie L.';
-    final category = currentScene?.category ?? 'Lifestyle';
-    final duration = currentScene?.durationFormatted ?? '25 min';
-    final tags = currentScene?.tags.isNotEmpty == true
-        ? currentScene!.tags
-      : const ['Cinématique', 'Intérieur', 'Tendance'];
-    final likes = currentScene?.likesCount ?? 56;
-    final comments = currentScene?.commentsCount ?? 34;
-    final views = currentScene?.viewsCount ?? 128;
+  State<SceneDetailScreen> createState() => _SceneDetailScreenState();
+}
 
-    return PageWrap(
-      title: 'Détail scène',
-      leading: TakeHeaderButton(
-        icon: Icons.arrow_back_rounded,
-        onPressed: () => context.go(AppRouter.explore),
+class _SceneDetailScreenState extends State<SceneDetailScreen> {
+  late SceneModel _scene;
+  bool _liked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scene = widget.scene ?? MockData.scenes.first;
+    _liked = _scene.isLiked;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.navy,
+      appBar: AppBar(
+        backgroundColor: AppColors.navy,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white, size: 20),
+          onPressed: () => context.go(AppRouter.explore),
+        ),
+        title: Text(
+          'Détail scène',
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.white,
+          ),
+        ),
+        centerTitle: true,
       ),
-      children: [
-        const TakeVideoPlaceholder(emoji: '🎬'),
-        const SizedBox(height: 12),
-        Text(sceneTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text(
-          'par $author • $category • $duration',
-          style: const TextStyle(color: Color(0x99FFFFFF)),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var index = 0; index < tags.length && index < 3; index++)
-              TakePill(
-                label: tags[index],
-                tone: index == 0
-                    ? TakePillTone.yellow
-                    : index == 1
-                        ? TakePillTone.cyan
-                        : TakePillTone.purple,
-              ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(child: InfoStat(label: 'note', value: '4.8⭐')),
-            const SizedBox(width: 8),
-            Expanded(child: InfoStat(label: 'vues', value: '${views}👁️')),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(child: InfoStat(label: 'commentaires', value: '${comments}💬')),
-            const SizedBox(width: 8),
-            Expanded(child: InfoStat(label: 'likes', value: '${likes}❤️')),
-          ],
-        ),
-        const SizedBox(height: 10),
-        SectionCard(
-          title: 'Description',
-          subtitle: currentScene == null
-              ? 'Une exploration chaleureuse des textures, du rythme et des petits gestes qui font vivre une cuisine de nuit.'
-              : 'Une exploration chaleureuse des textures, du rythme et des petits gestes qui font vivre cette scène.',
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () {},
-                child: const Text('Liker'),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 220,
+                    child: Image.network(
+                      _scene.thumbnailUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Positioned.fill(
+                    child: Center(
+                      child: Icon(Icons.play_circle_fill, color: AppColors.white, size: 62),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {},
-                child: const Text('Commenter'),
+            const SizedBox(height: 16),
+            Text(
+              _scene.title,
+              style: GoogleFonts.dmSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.white,
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'par ${_scene.author.displayName} • ${_scene.category} • ${_scene.durationFormatted}',
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                _TagChip(label: 'Cinématique', color: AppColors.yellow),
+                _TagChip(label: 'Intérieur', color: AppColors.cyan),
+                _TagChip(label: 'Tendance', color: AppColors.purple),
+              ],
+            ),
+            const SizedBox(height: 12),
+            GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1.55,
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              children: [
+                _StatBox(value: '4.8⭐', label: 'note'),
+                _StatBox(value: '${_scene.viewsCount}👁️', label: 'vues'),
+                _StatBox(value: '${_scene.commentsCount}💬', label: 'commentaires'),
+                _StatBox(value: '${_scene.likesCount}❤️', label: 'likes'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Description',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Une exploration chaleureuse des textures, du rythme et des petits gestes qui font vivre cette scene.',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => setState(() => _liked = !_liked),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: _liked ? AppColors.red : AppColors.borderSubtle,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      'Liker',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: _liked ? AppColors.red : AppColors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.cyan,
+                      foregroundColor: AppColors.navy,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      'Commenter',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  const _TagChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.dmSans(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox({required this.value, required this.label});
+
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.dmSans(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
