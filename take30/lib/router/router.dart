@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
 import '../screens/auth_screen.dart';
@@ -18,7 +19,7 @@ import '../screens/scene_detail_screen.dart';
 import '../screens/splash_screen.dart';
 
 class AppRouter {
-  static const splash = '/';
+  static const splash = '/splash';
   static const onboarding = '/onboarding';
   static const auth = '/auth';
   static const shell = '/shell';
@@ -33,50 +34,94 @@ class AppRouter {
   static const leaderboard = '/leaderboard';
   static const preview = '/preview';
   static const sceneDetail = '/scene-detail';
-
-  static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case onboarding:
-        return MaterialPageRoute(builder: (_) => const OnboardingScreen());
-      case auth:
-        return MaterialPageRoute(builder: (_) => const AuthScreen());
-      case shell:
-        return MaterialPageRoute(builder: (_) => const MainShell());
-      case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
-      case explore:
-        return MaterialPageRoute(builder: (_) => const ExploreScreen());
-      case record:
-        return MaterialPageRoute(builder: (_) => const RecordScreen());
-      case profile:
-        return MaterialPageRoute(builder: (_) => const ProfileScreen());
-      case notifications:
-        return MaterialPageRoute(builder: (_) => const NotificationsScreen());
-      case challenge:
-        return MaterialPageRoute(builder: (_) => const DailyChallengeScreen());
-      case battle:
-        return MaterialPageRoute(builder: (_) => const BattleScreen());
-      case badges:
-        return MaterialPageRoute(builder: (_) => const BadgesStatsScreen());
-      case leaderboard:
-        return MaterialPageRoute(builder: (_) => const LeaderboardScreen());
-      case preview:
-        final draft = settings.arguments is TakeDraft
-            ? settings.arguments as TakeDraft
-            : const TakeDraft(
-                title: 'Take démo',
-                description: 'Prévisualisation rapide de la scène.',
-                sceneType: 'Portrait créatif',
-                duration: 30,
-                mood: 'Énergique',
-              );
-        return MaterialPageRoute(builder: (_) => PreviewPublishScreen(draft: draft));
-      case sceneDetail:
-        final title = settings.arguments as String? ?? 'Détail';
-        return MaterialPageRoute(builder: (_) => SceneDetailScreen(title: title));
-      case splash:
-      default:
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
-    }
-  }
 }
+
+final routerProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: AppRouter.splash,
+    routes: [
+      GoRoute(
+        path: '/',
+        redirect: (_, __) => AppRouter.splash,
+      ),
+      GoRoute(
+        path: AppRouter.splash,
+        builder: (_, __) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.onboarding,
+        builder: (_, __) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.auth,
+        builder: (_, __) => const AuthScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.shell,
+        builder: (_, __) => const MainShell(),
+      ),
+      GoRoute(
+        path: AppRouter.home,
+        builder: (_, __) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.explore,
+        builder: (_, __) => const ExploreScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.record,
+        builder: (_, __) => const RecordScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.profile,
+        builder: (_, __) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.notifications,
+        builder: (_, __) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.challenge,
+        builder: (_, __) => const DailyChallengeScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.battle,
+        builder: (_, __) => const BattleScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.badges,
+        builder: (_, __) => const BadgesStatsScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.leaderboard,
+        builder: (_, __) => const LeaderboardScreen(),
+      ),
+      GoRoute(
+        path: AppRouter.preview,
+        builder: (_, state) {
+          final draft = state.extra is TakeDraft
+              ? state.extra as TakeDraft
+              : const TakeDraft(
+                  title: 'Take démo',
+                  description: 'Prévisualisation rapide de la scène.',
+                  sceneType: 'Portrait créatif',
+                  duration: 30,
+                  mood: 'Énergique',
+                );
+          return PreviewPublishScreen(draft: draft);
+        },
+      ),
+      GoRoute(
+        path: AppRouter.sceneDetail,
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is SceneModel) {
+            return SceneDetailScreen(title: extra.title, scene: extra);
+          }
+          final title = extra as String? ?? 'Détail';
+          return SceneDetailScreen(title: title);
+        },
+      ),
+    ],
+  );
+});

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../models/models.dart';
 import '../router/router.dart';
-import '../services/api_service.dart';
 import '../widgets/shared_widgets.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -10,64 +9,65 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<UserStats>(
-      future: ApiService().fetchProfileStats(),
-      builder: (context, snapshot) {
-        final stats = snapshot.data;
-
-        if (snapshot.connectionState == ConnectionState.waiting && stats == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final userStats = stats ?? const UserStats(
-          level: 'Intermédiaire',
-          streakDays: 5,
-          publishedCount: 12,
-          communityScore: 87,
-          nextBadge: 'Maître du rythme',
-        );
-
-        return ListView(
-          padding: const EdgeInsets.all(16),
+    return PageWrap(
+      title: 'Profil',
+      trailing: const TakeHeaderButton(icon: Icons.settings_outlined),
+      showBottomNav: true,
+      activeTab: TakeTab.profile,
+      children: [
+        const SizedBox(height: 6),
+        const Center(child: TakeAvatar(label: 'S', size: 72)),
+        const SizedBox(height: 10),
+        const Center(
+          child: Text(
+            'Stef',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Center(
+          child: Text('@stef25 • Jan 2025', style: TextStyle(color: Color(0x99FFFFFF))),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: const [
+            Expanded(child: InfoStat(label: 'streak', value: '5')),
+            SizedBox(width: 8),
+            Expanded(child: InfoStat(label: 'takes', value: '12')),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: const [
+            Expanded(child: InfoStat(label: 'score', value: '87%')),
+            SizedBox(width: 8),
+            Expanded(child: InfoStat(label: 'niveau', value: 'Inter')),
+          ],
+        ),
+        const SizedBox(height: 10),
+        const SectionCard(
+          title: 'Prochain badge',
+          subtitle: 'Maître du rythme',
+          child: TakeProgressBar(value: 0.7, colors: [Color(0xFF00D4FF), Color(0xFF6C5CE7)]),
+        ),
+        Row(
           children: [
-            const CircleAvatar(radius: 34, child: Icon(Icons.person, size: 36)),
-            const SizedBox(height: 12),
-            const Center(
-              child: Text('Créateur Take30', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => context.push(AppRouter.badges),
+                child: const Text('Badges'),
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: InfoStat(label: 'Niveau', value: userStats.level)),
-                const SizedBox(width: 8),
-                Expanded(child: InfoStat(label: 'Série', value: '${userStats.streakDays} jours')),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: InfoStat(label: 'Takes', value: '${userStats.publishedCount}')),
-                const SizedBox(width: 8),
-                Expanded(child: InfoStat(label: 'Score', value: '${userStats.communityScore}%')),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SectionCard(
-              title: 'Prochain badge',
-              subtitle: userStats.nextBadge,
-              icon: Icons.workspace_premium_outlined,
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, AppRouter.badges),
-              child: const Text('Voir badges et stats'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, AppRouter.leaderboard),
-              child: const Text('Voir le classement'),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => context.push(AppRouter.leaderboard),
+                child: const Text('Classement'),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 }

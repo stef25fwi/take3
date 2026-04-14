@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <radialGradient id="sbg2" cx="50%" cy="20%" r="50%">
+      <stop offset="0%" stop-color="#D4A840"/>
+      <stop offset="30%" stop-color="#1A1000"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="sk_s2" cx="45%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#E8B896"/>
+      <stop offset="100%" stop-color="#B07848"/>
+    </radialGradient>
+    <radialGradient id="lamp2" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#FFB800" stop-opacity="0.8"/>
+      <stop offset="40%" stop-color="#FF8C00" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Total dark background -->
+  <rect width="400" height="300" fill="#000000"/>
+  <!-- Dramatic overhead lamp cone -->
+  <ellipse cx="200" cy="50" rx="60" ry="20" fill="#FFB800" opacity="0.15"/>
+  <path d="M140 50 L80 300 L320 300 L260 50Z" fill="url(#lamp2)" opacity="0.25"/>
+  <!-- Harsh table light -->
+  <ellipse cx="200" cy="290" rx="120" ry="30" fill="#FF8C00" opacity="0.1"/>
+  <!-- Character torso -->
+  <ellipse cx="200" cy="285" rx="75" ry="35" fill="#0D1626"/>
+  <rect x="175" y="215" width="50" height="55" rx="8" fill="url(#sk_s2)"/>
+  <!-- Hair - dark, tense -->
+  <ellipse cx="200" cy="128" rx="48" ry="46" fill="#1A0800"/>
+  <path d="M152 128 Q155 88 200 82 Q245 88 248 128 Q240 108 200 104 Q160 108 152 128Z" fill="#0D0400"/>
+  <!-- Face - harsh side lighting -->
+  <ellipse cx="200" cy="172" rx="46" ry="50" fill="url(#sk_s2)"/>
+  <!-- Shadow side of face -->
+  <path d="M154 155 Q152 175 154 200 Q165 172 175 165Z" fill="#1A0A00" opacity="0.5"/>
+  <!-- Eyes - narrow, suspicious -->
+  <ellipse cx="186" cy="168" rx="8" ry="5" fill="#0A0400"/>
+  <ellipse cx="214" cy="168" rx="8" ry="5" fill="#0A0400"/>
+  <circle cx="186" cy="168" r="4" fill="#1A0A02"/>
+  <circle cx="214" cy="168" r="4" fill="#1A0A02"/>
+  <!-- Intense catch light from lamp -->
+  <circle cx="187" cy="166" r="2" fill="#FFB800" opacity="0.7"/>
+  <circle cx="215" cy="166" r="2" fill="#FFB800" opacity="0.7"/>
+  <!-- Eyebrows - furrowed deeply -->
+  <path d="M177 159 Q186 155 195 158" stroke="#0A0400" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M205 158 Q214 155 223 159" stroke="#0A0400" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- Worry lines on forehead -->
+  <path d="M185 152 Q200 149 215 152" stroke="#C4905A" stroke-width="0.8" fill="none" opacity="0.35"/>
+  <path d="M188 148 Q200 146 212 148" stroke="#C4905A" stroke-width="0.6" fill="none" opacity="0.25"/>
+  <!-- Nose -->
+  <path d="M197 172 Q196 180 200 183 Q204 180 203 172" fill="#A07040" opacity="0.4"/>
+  <!-- Thin pressed lips -->
+  <path d="M190 192 Q200 189 210 192 Q200 197 190 192Z" fill="#8A5030"/>
+  <path d="M190 192 Q200 195 210 192" stroke="#6A3820" stroke-width="1" fill="none"/>
+  <!-- Jaw - clenched -->
+  <path d="M165 195 Q168 215 200 222 Q232 215 235 195" stroke="#B07848" stroke-width="1" fill="none" opacity="0.3"/>
+  <!-- Collar of shirt visible -->
+  <path d="M175 215 L195 222 L215 215" stroke="#1E2D45" stroke-width="2" fill="none"/>
+  <!-- Cinematic bars -->
+  <rect x="0" y="0" width="400" height="35" fill="black" opacity="0.6"/>
+  <rect x="0" y="265" width="400" height="35" fill="black" opacity="0.6"/>
+</svg>

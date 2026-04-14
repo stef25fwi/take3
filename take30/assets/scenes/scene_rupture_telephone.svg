@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <radialGradient id="sbg1" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#3D1A2E"/>
+      <stop offset="100%" stop-color="#0A0410"/>
+    </radialGradient>
+    <radialGradient id="sk_s1" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#C68B59"/>
+      <stop offset="100%" stop-color="#8B5E3C"/>
+    </radialGradient>
+    <filter id="blur1"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="glow1"><feGaussianBlur stdDeviation="3" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
+  </defs>
+  <!-- Background - moody interior -->
+  <rect width="400" height="300" fill="url(#sbg1)"/>
+  <!-- Ambient window light -->
+  <rect x="280" y="0" width="120" height="200" fill="#1A0A30" opacity="0.4"/>
+  <rect x="290" y="10" width="50" height="120" rx="4" fill="#6C3080" opacity="0.12"/>
+  <!-- Bokeh bg lights -->
+  <circle cx="320" cy="50" r="30" fill="#FFB800" opacity="0.06" filter="url(#blur1)"/>
+  <circle cx="50" cy="200" r="40" fill="#6C5CE7" opacity="0.08" filter="url(#blur1)"/>
+  <circle cx="350" cy="220" r="25" fill="#00D4FF" opacity="0.06" filter="url(#blur1)"/>
+  <!-- Character - close up, emotional -->
+  <!-- Neck & shoulders -->
+  <ellipse cx="195" cy="280" rx="80" ry="40" fill="#1A1035"/>
+  <rect x="168" y="215" width="54" height="50" rx="10" fill="url(#sk_s1)"/>
+  <!-- Hair - afro, loose -->
+  <ellipse cx="195" cy="140" rx="68" ry="72" fill="#1A0800"/>
+  <circle cx="130" cy="130" r="28" fill="#120600"/>
+  <circle cx="260" cy="128" r="25" fill="#120600"/>
+  <circle cx="162" cy="100" r="22" fill="#120600"/>
+  <circle cx="228" cy="102" r="22" fill="#120600"/>
+  <circle cx="195" cy="92" r="22" fill="#120600"/>
+  <!-- Face -->
+  <ellipse cx="195" cy="175" rx="50" ry="55" fill="url(#sk_s1)"/>
+  <!-- Emotional expression - crying -->
+  <!-- Tear tracks -->
+  <path d="M175 185 Q172 195 170 210" stroke="#7AA8C8" stroke-width="2" fill="none" opacity="0.7"/>
+  <path d="M178 188 Q175 198 174 212" stroke="#7AA8C8" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <!-- Eyes - wet, looking down -->
+  <ellipse cx="181" cy="175" rx="10" ry="8" fill="#1A0A00"/>
+  <ellipse cx="209" cy="175" rx="10" ry="8" fill="#1A0A00"/>
+  <ellipse cx="181" cy="175" rx="7" ry="6" fill="#3A2010"/>
+  <ellipse cx="209" cy="175" rx="7" ry="6" fill="#3A2010"/>
+  <!-- Tear pools -->
+  <ellipse cx="178" cy="181" rx="5" ry="2.5" fill="#7AA8C8" opacity="0.6"/>
+  <ellipse cx="206" cy="181" rx="5" ry="2.5" fill="#7AA8C8" opacity="0.6"/>
+  <!-- Eye highlights -->
+  <circle cx="183" cy="173" r="2" fill="white" opacity="0.8"/>
+  <circle cx="211" cy="173" r="2" fill="white" opacity="0.8"/>
+  <!-- Eyebrows - furrowed, sad -->
+  <path d="M172 164 Q181 161 190 165" stroke="#1A0A00" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M200 165 Q209 161 218 164" stroke="#1A0A00" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- Nose - red from crying -->
+  <ellipse cx="190" cy="187" rx="6" ry="4" fill="#C08060" opacity="0.5"/>
+  <ellipse cx="200" cy="187" rx="6" ry="4" fill="#C08060" opacity="0.5"/>
+  <!-- Mouth - quivering -->
+  <path d="M183 200 Q195 196 207 200 Q195 208 183 200Z" fill="#A05040"/>
+  <path d="M183 200 Q195 204 207 200" stroke="#803828" stroke-width="1.2" fill="none"/>
+  <!-- Hand holding phone -->
+  <ellipse cx="195" cy="240" rx="18" ry="8" fill="url(#sk_s1)"/>
+  <rect x="182" y="232" width="26" height="44" rx="5" fill="#1A1A2E"/>
+  <rect x="185" y="237" width="20" height="32" rx="3" fill="#2A3A5E"/>
+  <!-- Screen glow -->
+  <rect x="185" y="237" width="20" height="32" rx="3" fill="#6C5CE7" opacity="0.3"/>
+  <!-- Cinematic bottom overlay -->
+  <rect x="0" y="240" width="400" height="60" fill="black" opacity="0.5"/>
+  <rect x="0" y="0" width="400" height="40" fill="black" opacity="0.3"/>
+</svg>

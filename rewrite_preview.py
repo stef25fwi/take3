@@ -1,283 +1,11 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Take30 — Maquette Interactive</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --navy: #081020;
-      --navy-light: #0F1A30;
-      --card: #121A2E;
-      --card-hover: #1A2440;
-      --yellow: #FFB800;
-      --cyan: #00D4FF;
-      --purple: #6C5CE7;
-      --red: #FF4D4F;
-      --green: #00E676;
-      --white: #FFFFFF;
-      --muted: rgba(255,255,255,0.6);
-      --border: rgba(255,255,255,0.08);
-      --glow-yellow: rgba(255,184,0,0.25);
-      --glow-cyan: rgba(0,212,255,0.2);
-    }
+from pathlib import Path
 
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: linear-gradient(180deg, #060A14 0%, var(--navy) 30%, #0A0F1D 100%);
-      color: var(--white);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px 16px 60px;
-    }
+path = Path('/workspaces/take3/preview/index.html')
+current = path.read_text(encoding='utf-8')
+idx = current.index('</head>')
+css_part = current[:idx + len('</head>')]
 
-    .page-header { text-align: center; margin-bottom: 24px; }
-    .page-header .badge {
-      display: inline-block; padding: 6px 14px; border-radius: 999px;
-      background: var(--glow-cyan); color: var(--cyan);
-      font-size: 12px; font-weight: 700; letter-spacing: .5px;
-      text-transform: uppercase; margin-bottom: 10px;
-    }
-    .page-header h1 {
-      font-size: 36px; font-weight: 800;
-      background: linear-gradient(135deg, var(--yellow), var(--cyan));
-      background-clip: text;
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .page-header p { color: var(--muted); font-size: 14px; margin-top: 6px; }
-    .nav-bar {
-      display: flex; flex-wrap: wrap; justify-content: center;
-      gap: 6px; margin-bottom: 28px; max-width: 700px;
-    }
-    .nav-btn {
-      padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border);
-      background: transparent; color: var(--muted);
-      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: all .2s;
-    }
-    .nav-btn:hover { background: var(--card); color: var(--white); }
-    .nav-btn.active {
-      background: var(--yellow); color: var(--navy); border-color: var(--yellow);
-      box-shadow: 0 0 16px var(--glow-yellow);
-    }
-    .phone-wrap { position: relative; width: 375px; max-width: 100%; }
-    .iphone {
-      position: relative; width: 100%; background: #000;
-      border-radius: 44px; padding: 14px;
-      border: 2px solid rgba(255,255,255,0.1);
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 30px 80px rgba(0,0,0,0.6),
-        inset 0 0 0 1px rgba(255,255,255,0.03);
-    }
-    .notch {
-      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
-      width: 130px; height: 30px; background: #000;
-      border-radius: 0 0 18px 18px; z-index: 100;
-    }
-    .notch::after {
-      content: ''; position: absolute; top: 8px; right: 22px;
-      width: 10px; height: 10px; border-radius: 50%;
-      background: radial-gradient(circle, #1a1a2e, #000); border: 1.5px solid #222;
-    }
-    .screen-area {
-      position: relative; width: 100%; min-height: 700px;
-      background: var(--navy); border-radius: 32px; overflow: hidden;
-    }
-    .status-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 24px 6px; font-size: 12px; font-weight: 600;
-      position: relative; z-index: 50;
-    }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    .screen-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 20px 14px;
-    }
-    .screen-header h2 { font-size: 20px; font-weight: 700; }
-    .screen-header .icon-btn {
-      width: 36px; height: 36px; border-radius: 50%;
-      border: 1px solid var(--border); background: rgba(255,255,255,0.04);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 16px;
-    }
-    .screen-body { padding: 0 20px 20px; }
-    .s-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 14px; margin-bottom: 10px;
-    }
-    .s-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-    .s-card p { font-size: 12px; color: var(--muted); line-height: 1.5; }
-    .tab-bar {
-      display: flex; justify-content: space-around; align-items: center;
-      padding: 10px 0 18px; border-top: 1px solid var(--border);
-      background: rgba(8,16,32,0.95); position: absolute;
-      bottom: 0; left: 0; right: 0; backdrop-filter: blur(12px);
-    }
-    .tab-item {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      font-size: 10px; color: var(--muted); cursor: pointer; transition: color .2s;
-      background: none; border: none; font-family: 'DM Sans', sans-serif;
-    }
-    .tab-item .tab-icon { font-size: 20px; }
-    .tab-item.active { color: var(--yellow); }
-    .tab-item:hover { color: var(--white); }
-    .tab-item.rec-btn .tab-icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, var(--red), #FF6B6B);
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      font-size: 18px; color: #fff; margin-top: -18px;
-      box-shadow: 0 4px 20px rgba(255,77,79,0.4);
-    }
-    .pill {
-      display: inline-block; padding: 4px 10px; border-radius: 999px;
-      font-size: 11px; font-weight: 700;
-    }
-    .pill-cyan { background: var(--glow-cyan); color: var(--cyan); }
-    .pill-yellow { background: var(--glow-yellow); color: var(--yellow); }
-    .pill-purple { background: rgba(108,92,231,.2); color: var(--purple); }
-    .pill-red { background: rgba(255,77,79,.2); color: var(--red); }
-    .pill-green { background: rgba(0,230,118,.15); color: var(--green); }
-    .progress-bar {
-      width: 100%; height: 6px; background: rgba(255,255,255,0.08);
-      border-radius: 3px; overflow: hidden; margin: 8px 0;
-    }
-    .progress-bar .fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 12px 20px; border-radius: 14px;
-      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
-      border: none; cursor: pointer; transition: all .2s;
-    }
-    .btn-yellow { background: var(--yellow); color: var(--navy); }
-    .btn-yellow:hover { box-shadow: 0 0 20px var(--glow-yellow); }
-    .btn-cyan { background: var(--cyan); color: var(--navy); }
-    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--white); }
-    .btn-outline:hover { background: var(--card); }
-    .btn-block { width: 100%; }
-    .avatar {
-      width: 42px; height: 42px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--cyan), var(--purple));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 16px; flex-shrink: 0;
-    }
-    .avatar-lg { width: 72px; height: 72px; font-size: 28px; }
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .stat-box {
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 14px; padding: 12px; text-align: center;
-    }
-    .stat-box strong { display: block; font-size: 22px; margin-bottom: 2px; }
-    .stat-box span { font-size: 11px; color: var(--muted); }
-    .feed-item {
-      display: flex; gap: 12px; align-items: flex-start;
-      padding: 12px 0; border-bottom: 1px solid var(--border);
-    }
-    .feed-item:last-child { border-bottom: none; }
-    .feed-meta { flex: 1; }
-    .feed-meta .name { font-weight: 700; font-size: 14px; }
-    .feed-meta .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .feed-meta .time { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .battle-vs { display: flex; gap: 10px; align-items: stretch; }
-    .battle-side {
-      flex: 1; background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 14px; text-align: center;
-      cursor: pointer; transition: all .2s;
-    }
-    .battle-side:hover { border-color: var(--yellow); box-shadow: 0 0 16px var(--glow-yellow); }
-    .battle-side.voted { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
-    .battle-side .score { font-size: 28px; font-weight: 800; margin: 8px 0 4px; }
-    .lb-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
-    .lb-row:last-child { border-bottom: none; }
-    .lb-rank { width: 28px; font-size: 16px; font-weight: 800; text-align: center; }
-    .lb-info { flex: 1; }
-    .lb-info .name { font-weight: 700; font-size: 14px; }
-    .lb-info .pts { font-size: 12px; color: var(--muted); }
-    .lb-score { font-weight: 800; font-size: 16px; color: var(--yellow); }
-    .notif-item {
-      display: flex; gap: 12px; align-items: flex-start;
-      padding: 12px 0; border-bottom: 1px solid var(--border);
-    }
-    .notif-item:last-child { border-bottom: none; }
-    .notif-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--cyan); margin-top: 6px; flex-shrink: 0;
-    }
-    .notif-dot.read { background: transparent; }
-    .notif-content { flex: 1; }
-    .notif-content .title { font-size: 13px; font-weight: 600; }
-    .notif-content .body { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .notif-content .when { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .timer-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 20px 0; }
-    .timer-circle {
-      width: 180px; height: 180px; border-radius: 50%;
-      border: 4px solid var(--border);
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; position: relative;
-    }
-    .timer-circle.recording {
-      border-color: var(--red);
-      box-shadow: 0 0 40px rgba(255,77,79,0.3);
-      animation: pulse 1.5s infinite;
-    }
-    .timer-circle .time { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; }
-    .timer-circle .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    @keyframes pulse {
-      0%,100% { box-shadow: 0 0 20px rgba(255,77,79,0.2); }
-      50% { box-shadow: 0 0 50px rgba(255,77,79,0.45); }
-    }
-    .splash-screen {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 660px; text-align: center;
-      background: radial-gradient(circle at 30% 40%, rgba(0,212,255,0.12) 0%, transparent 50%),
-        radial-gradient(circle at 70% 60%, rgba(108,92,231,0.1) 0%, transparent 50%), var(--navy);
-    }
-    .splash-logo {
-      font-size: 64px; font-weight: 800;
-      background: linear-gradient(135deg, var(--yellow), var(--cyan));
-      background-clip: text;
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
-    }
-    .splash-sub { color: var(--muted); font-size: 16px; }
-    .onboard-visual {
-      height: 280px; display: flex; align-items: center; justify-content: center;
-      font-size: 80px;
-      background: radial-gradient(circle at 50% 60%, rgba(255,184,0,0.08) 0%, transparent 60%), var(--navy);
-    }
-    .onboard-dots { display: flex; gap: 6px; justify-content: center; margin: 16px 0; }
-    .onboard-dots .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); }
-    .onboard-dots .dot.active { width: 24px; border-radius: 4px; background: var(--yellow); }
-    .countdown-grid { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
-    .cd-box {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 10px 14px; text-align: center; min-width: 58px;
-    }
-    .cd-box strong { display: block; font-size: 24px; font-weight: 800; color: var(--yellow); }
-    .cd-box span { font-size: 10px; color: var(--muted); text-transform: uppercase; }
-    .preview-video {
-      width: 100%; height: 200px; border-radius: 16px;
-      background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(108,92,231,0.12));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 48px; margin-bottom: 12px;
-    }
-    .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
-    @media (max-width: 420px) {
-      .phone-wrap { width: 100%; }
-      .iphone { border-radius: 36px; padding: 10px; }
-      .screen-area { border-radius: 28px; min-height: 620px; }
-      .notch { width: 110px; height: 26px; }
-    }
-  </style>
-</head>
-<body>
+body = """<body>
   <div class="page-header">
     <span class="badge">Maquette Interactive</span>
     <h1>Take30</h1>
@@ -314,10 +42,12 @@
 
         <div class="screen" id="onboarding">
           <div class="onboard-visual">🎬</div>
-          <div class="screen-body" style="text-align:center; padding-top:8px;">
+          <div class="screen-body" style="text-align:center; padding-top: 8px;">
             <h2 style="font-size:22px; font-weight:800; margin-bottom:8px;">Ton film en 30 min</h2>
             <p style="color:var(--muted); font-size:14px; line-height:1.6; margin-bottom:10px;">Enregistre, monte et publie des scènes créatives en un temps record, depuis ton téléphone.</p>
-            <div class="onboard-dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="onboard-dots">
+              <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+            </div>
             <button class="btn btn-yellow btn-block" onclick="go('home')">Suivant →</button>
           </div>
         </div>
@@ -729,4 +459,7 @@
     }
   </script>
 </body>
-</html>
+</html>"""
+
+path.write_text(css_part + '\n' + body + '\n', encoding='utf-8')
+print('rewrite complete')

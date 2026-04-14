@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <radialGradient id="sbg3" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#3D1A0A"/>
+      <stop offset="60%" stop-color="#1A0D20"/>
+      <stop offset="100%" stop-color="#080410"/>
+    </radialGradient>
+    <radialGradient id="sk_s3" cx="45%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#C8784A"/>
+      <stop offset="100%" stop-color="#9A5028"/>
+    </radialGradient>
+    <radialGradient id="warm3" cx="60%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#FFB800" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#FF6B00" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softblur"><feGaussianBlur stdDeviation="4"/></filter>
+  </defs>
+  <rect width="400" height="300" fill="url(#sbg3)"/>
+  <!-- Warm light source -->
+  <circle cx="280" cy="80" r="100" fill="url(#warm3)"/>
+  <!-- Bokeh lights - romantic -->
+  <circle cx="50" cy="60" r="20" fill="#FFB800" opacity="0.08" filter="url(#softblur)"/>
+  <circle cx="340" cy="40" r="15" fill="#FF8C00" opacity="0.1" filter="url(#softblur)"/>
+  <circle cx="80" cy="250" r="18" fill="#6C5CE7" opacity="0.07" filter="url(#softblur)"/>
+  <circle cx="360" cy="240" r="22" fill="#FFB800" opacity="0.06" filter="url(#softblur)"/>
+  <!-- Neck -->
+  <rect x="173" y="218" width="44" height="52" rx="9" fill="url(#sk_s3)"/>
+  <!-- Elegant dress - off shoulder -->
+  <ellipse cx="195" cy="285" rx="82" ry="38" fill="#1A1035"/>
+  <path d="M145 250 Q195 235 245 250" stroke="#6C5CE7" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <!-- Hair - long dark -->
+  <ellipse cx="195" cy="125" rx="50" ry="65" fill="#060202"/>
+  <path d="M148 105 Q143 145 148 180" fill="#040101" opacity="0.8"/>
+  <path d="M242 105 Q247 145 242 180" fill="#040101" opacity="0.8"/>
+  <!-- Face tilted slightly - looking up -->
+  <ellipse cx="195" cy="168" rx="46" ry="50" fill="url(#sk_s3)"/>
+  <!-- Bindi -->
+  <circle cx="195" cy="148" r="4" fill="#CC2040"/>
+  <!-- Eyes - warm, tender -->
+  <path d="M177 164 Q186 158 195 162 Q188 169 177 164Z" fill="#060202"/>
+  <path d="M195 162 Q204 158 213 164 Q204 169 195 162Z" fill="#060202"/>
+  <!-- Iris -->
+  <circle cx="184" cy="163" r="4" fill="#1A0808"/>
+  <circle cx="206" cy="163" r="4" fill="#1A0808"/>
+  <circle cx="184" cy="163" r="2" fill="#060202"/>
+  <circle cx="206" cy="163" r="2" fill="#060202"/>
+  <!-- Warm catchlight -->
+  <circle cx="185.5" cy="161.5" r="1.8" fill="white" opacity="0.9"/>
+  <circle cx="207.5" cy="161.5" r="1.8" fill="white" opacity="0.9"/>
+  <!-- Eyebrows - gentle -->
+  <path d="M176 155 Q185 151 194 153" stroke="#060202" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M196 153 Q205 151 214 155" stroke="#060202" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Nose -->
+  <path d="M192 167 Q191 174 195 177 Q199 174 198 167" fill="#904A20" opacity="0.3"/>
+  <!-- Nose pin gold -->
+  <circle cx="199" cy="175" r="2.5" fill="#FFB800"/>
+  <!-- Soft smile - emotional -->
+  <path d="M183 185 Q195 180 207 185 Q195 194 183 185Z" fill="#C04050"/>
+  <path d="M183 185 Q195 189 207 185" stroke="#A03040" stroke-width="1" fill="none"/>
+  <!-- Dimples -->
+  <circle cx="180" cy="186" r="2" fill="#904A20" opacity="0.3"/>
+  <circle cx="210" cy="186" r="2" fill="#904A20" opacity="0.3"/>
+  <!-- Gold jhumka earrings -->
+  <circle cx="149" cy="168" r="6" fill="#FFB800"/>
+  <path d="M145 174 L147 186 M149 174 L149 188 M153 174 L151 186" stroke="#FFB800" stroke-width="1.5"/>
+  <circle cx="241" cy="168" r="6" fill="#FFB800"/>
+  <path d="M237 174 L239 186 M241 174 L241 188 M245 174 L243 186" stroke="#FFB800" stroke-width="1.5"/>
+  <!-- Romantic warm overlay bottom -->
+  <rect x="0" y="220" width="400" height="80" fill="#3D1A0A" opacity="0.3"/>
+</svg>

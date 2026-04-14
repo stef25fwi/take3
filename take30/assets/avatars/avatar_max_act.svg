@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="c2"><circle cx="100" cy="100" r="100"/></clipPath>
+    <radialGradient id="bg2" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#0F1F35"/>
+      <stop offset="100%" stop-color="#050D18"/>
+    </radialGradient>
+    <radialGradient id="sk2" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#E8B896"/>
+      <stop offset="100%" stop-color="#C48B6A"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#c2)">
+    <rect width="200" height="200" fill="url(#bg2)"/>
+    <!-- Cyan light effect top -->
+    <circle cx="100" cy="60" r="80" fill="#00D4FF" opacity="0.06"/>
+    <!-- Neck -->
+    <rect x="82" y="130" width="36" height="30" rx="8" fill="url(#sk2)"/>
+    <!-- Clothing - dark jacket -->
+    <ellipse cx="100" cy="178" rx="62" ry="33" fill="#0D1626"/>
+    <path d="M100 160 L100 185" stroke="#1E3A5F" stroke-width="12"/>
+    <path d="M68 178 Q100 162 132 178" stroke="#243352" stroke-width="1" fill="none"/>
+    <!-- Hair - short dark -->
+    <ellipse cx="100" cy="80" rx="38" ry="36" fill="#2C1A0E"/>
+    <path d="M62 90 Q65 60 100 52 Q135 60 138 90" fill="#1A0E08"/>
+    <!-- Fade sides -->
+    <path d="M62 90 Q58 100 62 115 Q65 95 68 90Z" fill="#1A0E08"/>
+    <path d="M138 90 Q142 100 138 115 Q135 95 132 90Z" fill="#1A0E08"/>
+    <!-- Hair highlight -->
+    <path d="M82 55 Q100 50 118 55" stroke="#3D2510" stroke-width="3" fill="none" opacity="0.5"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="112" rx="37" ry="40" fill="url(#sk2)"/>
+    <!-- Beard shadow -->
+    <ellipse cx="100" cy="138" rx="28" ry="16" fill="#8B5A3A" opacity="0.35"/>
+    <!-- Beard stubble -->
+    <ellipse cx="100" cy="142" rx="24" ry="10" fill="#5C3820" opacity="0.4"/>
+    <!-- Eyes - deep set -->
+    <ellipse cx="86" cy="107" rx="7" ry="5.5" fill="#2C4A6E"/>
+    <ellipse cx="114" cy="107" rx="7" ry="5.5" fill="#2C4A6E"/>
+    <!-- Iris -->
+    <circle cx="86" cy="107" r="4" fill="#1A3050"/>
+    <circle cx="114" cy="107" r="4" fill="#1A3050"/>
+    <!-- Eye whites -->
+    <circle cx="88" cy="106" r="1.5" fill="white"/>
+    <circle cx="116" cy="106" r="1.5" fill="white"/>
+    <!-- Eyebrows - thick -->
+    <path d="M78 99 Q86 96 94 98" stroke="#2C1A0E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M106 98 Q114 96 122 99" stroke="#2C1A0E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Nose - strong -->
+    <path d="M98 112 L97 122 Q100 125 103 122 L102 112" fill="#C48B6A" opacity="0.5"/>
+    <ellipse cx="95" cy="122" rx="4" ry="3" fill="#B07A58" opacity="0.4"/>
+    <ellipse cx="105" cy="122" rx="4" ry="3" fill="#B07A58" opacity="0.4"/>
+    <!-- Lips - thin -->
+    <path d="M91 130 Q100 127 109 130 Q100 136 91 130Z" fill="#C0785A"/>
+    <path d="M91 130 Q100 133 109 130" stroke="#A86048" stroke-width="1" fill="none"/>
+    <!-- Jaw definition -->
+    <path d="M63 125 Q68 148 100 155 Q132 148 137 125" stroke="#B07A58" stroke-width="1" fill="none" opacity="0.3"/>
+  </g>
+</svg>

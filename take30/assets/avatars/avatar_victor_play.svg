@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="c7"><circle cx="100" cy="100" r="100"/></clipPath>
+    <radialGradient id="bg7" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#101A0A"/>
+      <stop offset="100%" stop-color="#060C04"/>
+    </radialGradient>
+    <radialGradient id="sk7" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#C8885A"/>
+      <stop offset="100%" stop-color="#9A6038"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#c7)">
+    <rect width="200" height="200" fill="url(#bg7)"/>
+    <circle cx="100" cy="60" r="80" fill="#FFB800" opacity="0.05"/>
+    <!-- Neck -->
+    <rect x="83" y="130" width="34" height="28" rx="7" fill="url(#sk7)"/>
+    <!-- Casual jacket -->
+    <ellipse cx="100" cy="177" rx="63" ry="33" fill="#141E2E"/>
+    <path d="M75 170 L100 160 L125 170" stroke="#1E2D45" stroke-width="1.5" fill="none"/>
+    <!-- Hair - wavy medium -->
+    <path d="M62 92 Q63 52 100 47 Q137 52 138 92 Q133 72 120 65 Q100 60 80 65 Q67 72 62 92Z" fill="#1A0A05"/>
+    <!-- Wave texture -->
+    <path d="M70 70 Q80 65 90 68 Q100 63 110 68 Q120 65 130 70" stroke="#2A1008" stroke-width="2" fill="none" opacity="0.5"/>
+    <path d="M65 82 Q75 78 85 80 Q100 75 115 80 Q125 78 135 82" stroke="#2A1008" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <!-- Sides -->
+    <path d="M62 92 Q58 110 63 125 Q65 105 68 92Z" fill="#1A0A05"/>
+    <path d="M138 92 Q142 110 137 125 Q135 105 132 92Z" fill="#1A0A05"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="112" rx="37" ry="40" fill="url(#sk7)"/>
+    <!-- 5 o'clock shadow -->
+    <ellipse cx="100" cy="135" rx="30" ry="18" fill="#5A3018" opacity="0.25"/>
+    <!-- Eyes - warm -->
+    <ellipse cx="85" cy="107" rx="7" ry="5.5" fill="#1A0802"/>
+    <ellipse cx="115" cy="107" rx="7" ry="5.5" fill="#1A0802"/>
+    <!-- Iris - dark brown with warmth -->
+    <circle cx="85" cy="107" r="4" fill="#3A1808"/>
+    <circle cx="115" cy="107" r="4" fill="#3A1808"/>
+    <circle cx="85" cy="107" r="2" fill="#0A0402"/>
+    <circle cx="115" cy="107" r="2" fill="#0A0402"/>
+    <circle cx="86.5" cy="105.5" r="1.5" fill="white"/>
+    <circle cx="116.5" cy="105.5" r="1.5" fill="white"/>
+    <!-- Eyebrows -->
+    <path d="M78 99 Q85 95 93 97" stroke="#1A0802" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <path d="M107 97 Q115 95 122 99" stroke="#1A0802" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Nose -->
+    <path d="M98 112 L97 121 Q100 124 103 121 L102 112" fill="#8A5030" opacity="0.4"/>
+    <path d="M94 120 Q100 124 106 120" stroke="#8A5030" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <!-- Lips - friendly smile -->
+    <path d="M90 129 Q100 124 110 129 Q100 137 90 129Z" fill="#B06040"/>
+    <path d="M90 129 Q100 133 110 129" stroke="#8A4A30" stroke-width="1" fill="none"/>
+    <!-- Laugh lines - friendly -->
+    <path d="M85 129 Q82 134 84 140" stroke="#8A5030" stroke-width="1" fill="none" opacity="0.3"/>
+    <path d="M115 129 Q118 134 116 140" stroke="#8A5030" stroke-width="1" fill="none" opacity="0.3"/>
+    <!-- Small ear stud -->
+    <circle cx="63" cy="112" r="2.5" fill="#00D4FF" opacity="0.9"/>
+  </g>
+</svg>

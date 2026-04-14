@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../models/models.dart';
-import '../services/api_service.dart';
+import '../router/router.dart';
 import '../widgets/shared_widgets.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -9,49 +9,80 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<FeatureItem>>(
-      future: ApiService().fetchDashboard(),
-      builder: (context, snapshot) {
-        final items = snapshot.data ?? const <FeatureItem>[];
-
-        if (snapshot.connectionState == ConnectionState.waiting && items.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return ListView(
+    return PageWrap(
+      title: 'Accueil',
+      trailing: TakeHeaderButton(
+        icon: Icons.notifications_none_rounded,
+        onPressed: () => context.push(AppRouter.notifications),
+      ),
+      showBottomNav: true,
+      activeTab: TakeTab.home,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(16),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Bonjour 👋', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 8),
-                  Text('Voici les actions principales pour créer, publier et progresser sur Take30.'),
-                ],
-              ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x1FFFFFFF)),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0x33FFB800), Color(0x2400D4FF)],
             ),
-            const SizedBox(height: 16),
-            const Text('Actions rapides', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            for (final item in items)
-              SectionCard(
-                title: item.title,
-                subtitle: item.subtitle,
-                icon: item.icon,
-                trailing: const Icon(Icons.chevron_right),
-                onTap: item.route == null
-                    ? null
-                    : () => Navigator.pushNamed(context, item.route!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bonjour Stef',
+                style: TextStyle(fontSize: 12, color: Color(0xCCFFFFFF)),
               ),
-          ],
-        );
-      },
+              const SizedBox(height: 6),
+              const Text(
+                'Prêt à créer un nouveau Take ?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 46),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => context.go(AppRouter.record),
+                child: const Text('🎬 Nouveau Take'),
+              ),
+            ],
+          ),
+        ),
+        SectionCard(
+          title: 'Fil d\'activité',
+          subtitle: '',
+          child: Column(
+            children: const [
+              TakeFeedItem(
+                avatar: TakeAvatar(label: 'M'),
+                name: 'Marie L.',
+                description: 'a publié « Cuisine de nuit » dans Lifestyle',
+                time: 'Il y a 8 min',
+              ),
+              Divider(color: Color(0x14FFFFFF), height: 1),
+              TakeFeedItem(
+                avatar: TakeAvatar(label: 'T', colors: [Color(0xFF6C5CE7), Color(0xFF00D4FF)]),
+                name: 'Thomas K.',
+                description: 'a remporté une battle avec 58% des votes',
+                time: 'Il y a 22 min',
+              ),
+              Divider(color: Color(0x14FFFFFF), height: 1),
+              TakeFeedItem(
+                avatar: TakeAvatar(label: 'S', colors: [Color(0xFFFFB800), Color(0xFFFF4D4F)]),
+                name: 'Sara N.',
+                description: 'a relevé le défi du jour « Lumière naturelle »',
+                time: 'Il y a 1 h',
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

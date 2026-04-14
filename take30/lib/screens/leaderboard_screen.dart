@@ -1,35 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/models.dart';
-import '../services/api_service.dart';
+import '../providers/providers.dart';
 import '../widgets/shared_widgets.dart';
 
-class LeaderboardScreen extends StatelessWidget {
+class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<LeaderboardEntry>>(
-      future: ApiService().fetchLeaderboard(),
-      builder: (context, snapshot) {
-        final players = snapshot.data ?? const <LeaderboardEntry>[];
-
-        if (snapshot.connectionState == ConnectionState.waiting && players.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return PageWrap(
-          title: 'Classement',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final period = ref.watch(leaderboardPeriodProvider);
+    return PageWrap(
+      title: 'Classement',
+      trailing: const TakeHeaderButton(icon: Icons.bar_chart_rounded),
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
           children: [
-            for (var i = 0; i < players.length; i++)
-              SectionCard(
-                title: '#${i + 1} ${players[i].name}',
-                subtitle: 'Score communauté : ${players[i].score}',
-                icon: i == 0 ? Icons.emoji_events : Icons.person_outline,
-              ),
+            _PeriodPill(label: 'Semaine', value: 'week', selected: period == 'week', baseTone: TakePillTone.yellow),
+            _PeriodPill(label: 'Mois', value: 'month', selected: period == 'month', baseTone: TakePillTone.cyan),
+            _PeriodPill(label: 'All-time', value: 'global', selected: period == 'global', baseTone: TakePillTone.purple),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 12),
+        SectionCard(
+          title: '',
+          subtitle: '',
+          child: const Column(
+            children: [
+              TakeLeaderboardRow(rank: '🥇', name: 'Marie L.', scoreLabel: '2450pts', score: '2450'),
+              Divider(color: Color(0x14FFFFFF), height: 1),
+              TakeLeaderboardRow(rank: '🥈', name: 'Thomas K.', scoreLabel: '2180pts', score: '2180'),
+              Divider(color: Color(0x14FFFFFF), height: 1),
+              TakeLeaderboardRow(rank: '🥉', name: 'Sara N.', scoreLabel: '1920pts', score: '1920'),
+              TakeLeaderboardRow(rank: '7', name: 'Stef (toi)', scoreLabel: '1340pts', score: '1340', highlight: true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PeriodPill extends ConsumerWidget {
+  const _PeriodPill({
+    required this.label,
+    required this.value,
+    required this.selected,
+    required this.baseTone,
+  });
+
+  final String label;
+  final String value;
+  final bool selected;
+  final TakePillTone baseTone;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TakePillButton(
+      label: label,
+      tone: selected ? TakePillTone.yellow : baseTone,
+      onTap: () => ref.read(leaderboardPeriodProvider.notifier).state = value,
     );
   }
 }

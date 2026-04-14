@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 300" width="375" height="300">
+  <defs>
+    <radialGradient id="obg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#1A1035"/>
+      <stop offset="100%" stop-color="#04020A"/>
+    </radialGradient>
+    <filter id="oblur"><feGaussianBlur stdDeviation="12"/></filter>
+    <filter id="oblur2"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect width="375" height="300" fill="url(#obg)"/>
+  <!-- Atmospheric orbs -->
+  <circle cx="80" cy="80" r="60" fill="#6C5CE7" opacity="0.12" filter="url(#oblur)"/>
+  <circle cx="300" cy="200" r="70" fill="#FFB800" opacity="0.08" filter="url(#oblur)"/>
+  <circle cx="200" cy="150" r="80" fill="#00D4FF" opacity="0.06" filter="url(#oblur)"/>
+
+  <!-- Person 1 - Left - Femme afro -->
+  <ellipse cx="75" cy="290" rx="55" ry="28" fill="#1A0A2E" opacity="0.8"/>
+  <!-- Hair afro -->
+  <circle cx="75" cy="168" r="42" fill="#1A0800"/>
+  <circle cx="42" cy="175" r="18" fill="#100600"/>
+  <circle cx="108" cy="175" r="18" fill="#100600"/>
+  <circle cx="55" cy="148" r="16" fill="#100600"/>
+  <circle cx="95" cy="148" r="16" fill="#100600"/>
+  <!-- Face -->
+  <ellipse cx="75" cy="205" rx="30" ry="33" fill="#8B5E3C"/>
+  <!-- Features simplified -->
+  <ellipse cx="65" cy="200" rx="5" ry="4" fill="#1A0800"/>
+  <ellipse cx="85" cy="200" rx="5" ry="4" fill="#1A0800"/>
+  <circle cx="66" cy="199" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="86" cy="199" r="1.5" fill="white" opacity="0.8"/>
+  <path d="M67 214 Q75 210 83 214 Q75 219 67 214Z" fill="#A05040"/>
+  <!-- Gold light on her -->
+  <path d="M40 140 L40 280" stroke="#FFB800" stroke-width="1" opacity="0.15"/>
+
+  <!-- Person 2 - Center - Homme asiatique -->
+  <ellipse cx="190" cy="290" rx="58" ry="28" fill="#0D1626" opacity="0.9"/>
+  <!-- Hair straight -->
+  <path d="M152 155 Q155 115 190 110 Q225 115 228 155 Q220 138 190 133 Q160 138 152 155Z" fill="#080404"/>
+  <path d="M152 155 Q148 170 152 185 Q155 165 158 155Z" fill="#080404"/>
+  <path d="M228 155 Q232 170 228 185 Q225 165 222 155Z" fill="#080404"/>
+  <!-- Face -->
+  <ellipse cx="190" cy="190" rx="34" ry="36" fill="#D4965A"/>
+  <!-- Eyes - almond -->
+  <path d="M172 185 Q181 180 190 185 Q181 190 172 185Z" fill="#0A0404"/>
+  <path d="M190 185 Q199 180 208 185 Q199 190 190 185Z" fill="#0A0404"/>
+  <circle cx="180" cy="185" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="200" cy="185" r="1.5" fill="white" opacity="0.7"/>
+  <path d="M171 178 L189 177" stroke="#0A0404" stroke-width="2.5" fill="none"/>
+  <path d="M191 177 L209 178" stroke="#0A0404" stroke-width="2.5" fill="none"/>
+  <path d="M181 200 Q190 196 199 200 Q190 206 181 200Z" fill="#C06840"/>
+  <!-- Cyan light -->
+  <path d="M230 120 L250 280" stroke="#00D4FF" stroke-width="1" opacity="0.12"/>
+
+  <!-- Person 3 - Right - Femme européenne -->
+  <ellipse cx="310" cy="290" rx="55" ry="28" fill="#1A1035" opacity="0.8"/>
+  <!-- Long hair -->
+  <ellipse cx="310" cy="200" rx="42" ry="65" fill="#1A0803"/>
+  <path d="M270 165 Q267 205 272 240" fill="#100602" opacity="0.9"/>
+  <path d="M350 165 Q353 205 348 240" fill="#100602" opacity="0.9"/>
+  <!-- Face -->
+  <ellipse cx="310" cy="185" rx="30" ry="34" fill="#E8B896"/>
+  <!-- Features -->
+  <ellipse cx="299" cy="180" rx="5.5" ry="4.5" fill="#1A0A02"/>
+  <ellipse cx="321" cy="180" rx="5.5" ry="4.5" fill="#1A0A02"/>
+  <circle cx="300.5" cy="178.5" r="1.5" fill="white" opacity="0.8"/>
+  <circle cx="322.5" cy="178.5" r="1.5" fill="white" opacity="0.8"/>
+  <path d="M296 172 Q299 168 303 170" stroke="#1A0A02" stroke-width="2" fill="none"/>
+  <path d="M317 170 Q321 168 324 172" stroke="#1A0A02" stroke-width="2" fill="none"/>
+  <path d="M301 195 Q310 191 319 195 Q310 201 301 195Z" fill="#C05860"/>
+  <!-- Purple light -->
+  <path d="M350 100 L370 280" stroke="#6C5CE7" stroke-width="1" opacity="0.15"/>
+
+  <!-- Dramatic bottom gradient -->
+  <rect x="0" y="200" width="375" height="100" fill="url(#obg)" opacity="0.7"/>
+  <!-- Top vignette -->
+  <rect x="0" y="0" width="375" height="60" fill="#04020A" opacity="0.5"/>
+
+  <!-- Take30 watermark subtle -->
+  <text x="188" y="30" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="800" fill="white" opacity="0.1" letter-spacing="-1">Take30</text>
+</svg>

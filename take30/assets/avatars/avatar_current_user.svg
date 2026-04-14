@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="c8"><circle cx="100" cy="100" r="100"/></clipPath>
+    <radialGradient id="bg8" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#0A1828"/>
+      <stop offset="100%" stop-color="#04080E"/>
+    </radialGradient>
+    <radialGradient id="sk8" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#C8784A"/>
+      <stop offset="100%" stop-color="#9A5028"/>
+    </radialGradient>
+    <radialGradient id="glow8">
+      <stop offset="0%" stop-color="#FFB800" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#FFB800" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#c8)">
+    <rect width="200" height="200" fill="url(#bg8)"/>
+    <!-- Yellow glow (current user) -->
+    <circle cx="100" cy="80" r="90" fill="url(#glow8)"/>
+    <!-- Long straight dark hair back -->
+    <ellipse cx="100" cy="130" rx="50" ry="72" fill="#060202"/>
+    <!-- Neck -->
+    <rect x="84" y="128" width="32" height="30" rx="7" fill="url(#sk8)"/>
+    <!-- Top - vibrant clothing -->
+    <ellipse cx="100" cy="178" rx="62" ry="33" fill="#1A1035"/>
+    <path d="M80 168 Q100 160 120 168" stroke="#FFB800" stroke-width="2" fill="none" opacity="0.7"/>
+    <!-- Hair sides -->
+    <path d="M50 90 Q47 125 55 162 Q62 142 65 120 Q60 100 58 90Z" fill="#060202"/>
+    <path d="M150 90 Q153 125 145 162 Q138 142 135 120 Q140 100 142 90Z" fill="#060202"/>
+    <!-- Hair top - parted middle -->
+    <path d="M58 90 Q62 48 100 43 Q138 48 142 90 Q134 68 100 62 Q66 68 58 90Z" fill="#030101"/>
+    <!-- Middle part line -->
+    <path d="M100 43 L100 65" stroke="#0A0404" stroke-width="2" opacity="0.3"/>
+    <!-- Hair sheen -->
+    <path d="M78 46 Q100 42 122 46" stroke="#181010" stroke-width="4" fill="none" opacity="0.5"/>
+    <!-- Bindi -->
+    <circle cx="100" cy="96" r="3.5" fill="#CC2040"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="113" rx="36" ry="40" fill="url(#sk8)"/>
+    <!-- Eyes - almond, expressive -->
+    <path d="M77 108 Q86 102 95 107 Q88 113 77 108Z" fill="#060202"/>
+    <path d="M105 107 Q114 102 123 108 Q112 113 105 107Z" fill="#060202"/>
+    <!-- Iris -->
+    <circle cx="86" cy="107" r="4" fill="#1A0808"/>
+    <circle cx="114" cy="107" r="4" fill="#1A0808"/>
+    <circle cx="86" cy="107" r="2" fill="#060202"/>
+    <circle cx="114" cy="107" r="2" fill="#060202"/>
+    <!-- Eye shine -->
+    <circle cx="87.5" cy="105.5" r="1.5" fill="white"/>
+    <circle cx="115.5" cy="105.5" r="1.5" fill="white"/>
+    <!-- Kajal liner -->
+    <path d="M75 108 Q79 106 81 108" stroke="#060202" stroke-width="1.5" fill="none"/>
+    <path d="M119 108 Q121 106 125 108" stroke="#060202" stroke-width="1.5" fill="none"/>
+    <!-- Eyebrows - defined -->
+    <path d="M78 99 Q86 95 94 97" stroke="#0A0404" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <path d="M106 97 Q114 95 122 99" stroke="#0A0404" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+    <!-- Nose -->
+    <path d="M98 112 Q97 119 100 122 Q103 119 102 112" fill="#8A4020" opacity="0.4"/>
+    <path d="M95 119 Q100 123 105 119" stroke="#8A4020" stroke-width="1.2" fill="none" opacity="0.5"/>
+    <!-- Nose pin -->
+    <circle cx="106" cy="120" r="2" fill="#FFB800"/>
+    <!-- Lips - warm rose -->
+    <path d="M90 127 Q95 123 100 125 Q105 123 110 127 Q100 135 90 127Z" fill="#C04858"/>
+    <path d="M90 127 Q100 131 110 127" stroke="#A03848" stroke-width="1" fill="none"/>
+    <!-- Gold jhumka earrings -->
+    <circle cx="64" cy="113" r="5" fill="#FFB800"/>
+    <path d="M61 118 Q64 126 67 118" stroke="#FFB800" stroke-width="2" fill="none"/>
+    <circle cx="136" cy="113" r="5" fill="#FFB800"/>
+    <path d="M133 118 Q136 126 139 118" stroke="#FFB800" stroke-width="2" fill="none"/>
+    <!-- Active user yellow ring hint -->
+    <circle cx="100" cy="100" r="98" stroke="#FFB800" stroke-width="3" fill="none" opacity="0.15"/>
+  </g>
+</svg>

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="c6"><circle cx="100" cy="100" r="100"/></clipPath>
+    <radialGradient id="bg6" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#200A30"/>
+      <stop offset="100%" stop-color="#0E0418"/>
+    </radialGradient>
+    <radialGradient id="sk6" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#D4956A"/>
+      <stop offset="100%" stop-color="#A86040"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#c6)">
+    <rect width="200" height="200" fill="url(#bg6)"/>
+    <circle cx="100" cy="60" r="85" fill="#6C5CE7" opacity="0.1"/>
+    <!-- Long dark hair back -->
+    <ellipse cx="100" cy="130" rx="52" ry="70" fill="#0A0505"/>
+    <!-- Neck -->
+    <rect x="84" y="128" width="32" height="32" rx="7" fill="url(#sk6)"/>
+    <!-- Elegant dress -->
+    <ellipse cx="100" cy="180" rx="62" ry="32" fill="#1A0A2E"/>
+    <path d="M78 168 Q100 158 122 168" stroke="#6C5CE7" stroke-width="2" fill="none"/>
+    <!-- Gold necklace -->
+    <path d="M82 135 Q100 142 118 135" stroke="#FFB800" stroke-width="1.5" fill="none" opacity="0.8"/>
+    <!-- Hair sides - flowing -->
+    <path d="M48 88 Q45 120 52 158 Q60 140 64 120 Q60 100 58 88Z" fill="#0A0505"/>
+    <path d="M152 88 Q155 120 148 158 Q140 140 136 120 Q140 100 142 88Z" fill="#0A0505"/>
+    <!-- Hair top -->
+    <path d="M58 88 Q62 48 100 43 Q138 48 142 88 Q132 65 100 60 Q68 65 58 88Z" fill="#050202"/>
+    <!-- Hair shine -->
+    <path d="M80 46 Q100 42 120 46" stroke="#251010" stroke-width="3" fill="none" opacity="0.6"/>
+    <!-- Face -->
+    <ellipse cx="100" cy="110" rx="36" ry="40" fill="url(#sk6)"/>
+    <!-- Dramatic eye makeup - upper lid -->
+    <path d="M77 106 Q86 100 95 105 Q90 108 77 106Z" fill="#0A0510"/>
+    <path d="M105 105 Q114 100 123 106 Q110 108 105 105Z" fill="#0A0510"/>
+    <!-- Eyes - almond, dramatic -->
+    <ellipse cx="86" cy="105" rx="7" ry="5" fill="#0A0510"/>
+    <ellipse cx="114" cy="105" rx="7" ry="5" fill="#0A0510"/>
+    <!-- Iris - dark hazel -->
+    <circle cx="86" cy="105" r="3.5" fill="#2A1505"/>
+    <circle cx="114" cy="105" r="3.5" fill="#2A1505"/>
+    <circle cx="86" cy="105" r="2" fill="#0A0510"/>
+    <circle cx="114" cy="105" r="2" fill="#0A0510"/>
+    <!-- Eye sparkle -->
+    <circle cx="87.5" cy="103.5" r="1.2" fill="white"/>
+    <circle cx="115.5" cy="103.5" r="1.2" fill="white"/>
+    <!-- Kohl liner - extending wings -->
+    <path d="M73 106 Q76 104 79 106" stroke="#0A0510" stroke-width="1.5" fill="none"/>
+    <path d="M121 106 Q124 104 127 106" stroke="#0A0510" stroke-width="1.5" fill="none"/>
+    <!-- Eyebrows - bold arch -->
+    <path d="M78 97 Q86 92 94 95" stroke="#0A0510" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M106 95 Q114 92 122 97" stroke="#0A0510" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- Nose - defined -->
+    <path d="M98 110 Q97 118 100 121 Q103 118 102 110" fill="#906040" opacity="0.4"/>
+    <path d="M95 118 Q100 122 105 118" stroke="#906040" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <!-- Lips - bold red -->
+    <path d="M89 125 Q94 121 100 123 Q106 121 111 125 Q100 133 89 125Z" fill="#CC2040"/>
+    <path d="M89 125 Q100 129 111 125" stroke="#AA1030" stroke-width="1" fill="none"/>
+    <!-- Gold earrings - chandelier style -->
+    <circle cx="64" cy="110" r="4" fill="#FFB800"/>
+    <path d="M62 114 L62 124 M64 114 L64 126 M66 114 L66 124" stroke="#FFB800" stroke-width="1.5"/>
+    <circle cx="136" cy="110" r="4" fill="#FFB800"/>
+    <path d="M134 114 L134 124 M136 114 L136 126 M138 114 L138 124" stroke="#FFB800" stroke-width="1.5"/>
+  </g>
+</svg>

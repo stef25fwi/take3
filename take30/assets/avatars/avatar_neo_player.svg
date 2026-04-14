@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="c3"><circle cx="100" cy="100" r="100"/></clipPath>
+    <radialGradient id="bg3" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#1A0A2E"/>
+      <stop offset="100%" stop-color="#080412"/>
+    </radialGradient>
+    <radialGradient id="sk3" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#F2C89A"/>
+      <stop offset="100%" stop-color="#D4965A"/>
+    </radialGradient>
+  </defs>
+  <g clip-path="url(#c3)">
+    <rect width="200" height="200" fill="url(#bg3)"/>
+    <!-- Purple glow -->
+    <circle cx="100" cy="70" r="75" fill="#6C5CE7" opacity="0.08"/>
+    <!-- Neck -->
+    <rect x="83" y="130" width="34" height="28" rx="7" fill="url(#sk3)"/>
+    <!-- Hoodie style clothing -->
+    <ellipse cx="100" cy="176" rx="63" ry="34" fill="#141E2E"/>
+    <path d="M82 165 L100 158 L118 165" stroke="#1E2D45" stroke-width="1.5" fill="none"/>
+    <!-- Hood up detail -->
+    <path d="M55 170 Q70 155 82 165" stroke="#1E2D45" stroke-width="1" fill="none"/>
+    <path d="M145 170 Q130 155 118 165" stroke="#1E2D45" stroke-width="1" fill="none"/>
+    <!-- Hair - straight, modern undercut style -->
+    <path d="M62 92 Q65 52 100 48 Q135 52 138 92 Q135 78 125 72 Q100 65 75 72 Q65 78 62 92Z" fill="#0A0A0A"/>
+    <!-- Side hair -->
+    <path d="M62 92 Q60 105 63 118 Q65 100 68 93Z" fill="#0A0A0A"/>
+    <path d="M138 92 Q140 105 137 118 Q135 100 132 93Z" fill="#0A0A0A"/>
+    <!-- Hair shine -->
+    <path d="M78 52 Q100 47 122 52" stroke="#2A2A2A" stroke-width="3" fill="none" opacity="0.6"/>
+    <path d="M85 49 Q100 46 115 49" stroke="#3A3A3A" stroke-width="2" fill="none" opacity="0.4"/>
+    <!-- Face - slightly narrower -->
+    <ellipse cx="100" cy="112" rx="35" ry="40" fill="url(#sk3)"/>
+    <!-- Eyes - almond shaped -->
+    <path d="M78 106 Q86 101 94 106 Q86 111 78 106Z" fill="#1A1A1A"/>
+    <path d="M106 106 Q114 101 122 106 Q114 111 106 106Z" fill="#1A1A1A"/>
+    <!-- Iris shine -->
+    <circle cx="86" cy="106" r="1.5" fill="white" opacity="0.8"/>
+    <circle cx="114" cy="106" r="1.5" fill="white" opacity="0.8"/>
+    <!-- Eyelid line -->
+    <path d="M78 106 Q86 102 94 106" stroke="#0A0A0A" stroke-width="1.5" fill="none"/>
+    <path d="M106 106 Q114 102 122 106" stroke="#0A0A0A" stroke-width="1.5" fill="none"/>
+    <!-- Eyebrows - straight, defined -->
+    <path d="M78 98 L94 97" stroke="#0A0A0A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M106 97 L122 98" stroke="#0A0A0A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Nose -->
+    <path d="M98 112 Q97 118 100 120 Q103 118 102 112" fill="#C4865A" opacity="0.4"/>
+    <path d="M96 118 Q100 121 104 118" stroke="#C4865A" stroke-width="1.2" fill="none" opacity="0.6"/>
+    <!-- Lips -->
+    <path d="M91 128 Q100 124 109 128 Q100 134 91 128Z" fill="#D4785A"/>
+    <path d="M91 128 Q100 131 109 128" stroke="#B86048" stroke-width="1" fill="none"/>
+    <!-- Small chin detail -->
+    <path d="M85 148 Q100 154 115 148" stroke="#C4865A" stroke-width="1" fill="none" opacity="0.3"/>
+    <!-- Ear stud -->
+    <circle cx="65" cy="115" r="3" fill="#FFB800"/>
+  </g>
+</svg>

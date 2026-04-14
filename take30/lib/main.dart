@@ -1,23 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'providers/providers.dart';
 import 'router/router.dart';
+import 'services/connectivity_service.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 
-void main() {
-  runApp(const Take30App());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+    systemNavigationBarColor: AppColors.dark,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
+
+  await NotificationService().initialize();
+  await ConnectivityService().initialize();
+
+  runApp(const ProviderScope(child: Take30App()));
 }
 
-class Take30App extends StatelessWidget {
+class Take30App extends ConsumerWidget {
   const Take30App({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    final isOnline = ref.watch(connectivityProvider).isOnline;
+
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Take30',
-      theme: AppTheme.lightTheme,
-      initialRoute: AppRouter.splash,
-      onGenerateRoute: AppRouter.generateRoute,
+      theme: AppTheme.darkTheme,
+      routerConfig: router,
+      builder: (context, child) => Column(
+        children: [
+          if (!isOnline) ConnectivityService.offlineBanner(),
+          Expanded(child: child ?? const SizedBox()),
+        ],
+      ),
     );
   }
 }
