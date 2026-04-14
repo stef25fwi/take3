@@ -59,7 +59,7 @@ class UserStats {
 }
 
 class LeaderboardScoreEntry {
-  const LeaderboardEntry({
+  const LeaderboardScoreEntry({
     required this.name,
     required this.score,
   });
