@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBM6Wr064fmsyElN6cZEF5irLqlctcxHqc',
@@ -12,6 +13,7 @@ const firebaseConfig = {
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
+export const firestoreDb = getFirestore(firebaseApp);
 
 let analyticsInstancePromise;
 

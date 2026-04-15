@@ -1,115 +1,104 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import '../router/router.dart';
-import '../theme/app_theme.dart';
+import '../theme/take30_screen_themes.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final features = const [
+      ('🎬', 'Scènes quotidiennes'),
+      ('⚔️', 'Défis & Duels'),
+      ('🏆', 'Classements'),
+      ('🌟', 'Découverte de talents'),
+    ];
+
     return Scaffold(
-      backgroundColor: OnboardingTheme.background,
-      body: Column(
+      backgroundColor: OnboardingScreenTheme.background,
+      body: Stack(
         children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0B1427), AppColors.navy],
-                ),
-              ),
-              child: const Center(
-                child: Text(
-                  '🎬',
-                  style: TextStyle(fontSize: 84),
-                ),
+          Positioned.fill(
+            child: Image.asset(
+              'assets/onboarding/onboarding_bg.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: OnboardingScreenTheme.overlay,
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-            child: Column(
-              children: [
-                Text(
-                  'Ton film en 30 min',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.white,
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Take30', style: T30Text.logo.copyWith(fontSize: 44)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Rejoue des scènes\n& deviens viral',
+                    style: T30Text.h1.copyWith(fontSize: 27),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Enregistre, monte et publie des scenes creatives en un temps record, depuis ton telephone.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    height: 1.6,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _Dot(active: true),
-                    const SizedBox(width: 6),
-                    _Dot(active: false),
-                    const SizedBox(width: 6),
-                    _Dot(active: false),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () => context.go(AppRouter.home),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.yellow,
-                      foregroundColor: AppColors.navy,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  const Spacer(),
+                  ...features.map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: OnboardingScreenTheme.featureBox,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(e.$1),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(e.$2, style: T30Text.bodyMedium),
+                        ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: T30Buttons.primary(),
+                      onPressed: () {},
+                      child: Text('Commencer', style: T30Text.buttonPrimary),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: T30Buttons.outline(),
+                      onPressed: () {},
+                      child:
+                          Text('Se connecter', style: T30Text.buttonSecondary),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
                     child: Text(
-                      'Suivant →',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                      'Créer un compte',
+                      style: T30Text.caption.copyWith(
+                        color: OnboardingScreenTheme.link,
+                        decoration: TextDecoration.underline,
+                        decorationColor: OnboardingScreenTheme.link,
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Dot extends StatelessWidget {
-  const _Dot({required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: active ? 24 : 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: active ? AppColors.yellow : Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(active ? 4 : 999),
       ),
     );
   }

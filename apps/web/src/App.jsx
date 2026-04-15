@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react';
 import { fetchJson } from './lib/api';
+import { loadFeatures } from './lib/features';
 
 export default function App() {
   const [status, setStatus] = useState('Chargement...');
   const [features, setFeatures] = useState([]);
+  const [featureSource, setFeatureSource] = useState('Chargement Firestore...');
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [health, featuresData] = await Promise.all([
-          fetchJson('/health'),
-          fetchJson('/api/features')
+        const [health, featureResult] = await Promise.all([
+          fetchJson('/health').catch(() => null),
+          loadFeatures()
         ]);
 
-        setStatus(health.message);
-        setFeatures(featuresData.features);
+        setStatus(health?.message ?? 'API indisponible pour le moment.');
+        setFeatures(featureResult.features);
+        setFeatureSource(featureResult.source);
       } catch {
         setStatus('API indisponible pour le moment.');
+        setFeatures([]);
+        setFeatureSource('Aucune donnee disponible');
       }
     }
 
@@ -68,7 +73,7 @@ export default function App() {
             <section className="take30-stack-12">
               <div className="take30-row-between">
                 <h2 className="take30-h2">Fonctionnalités prévues</h2>
-                <span className="take30-chip take30-chip-purple">MVP</span>
+                <span className="take30-chip take30-chip-purple">{featureSource}</span>
               </div>
               <div className="take30-stack-12">
                 {features.map((feature) => (
@@ -77,6 +82,14 @@ export default function App() {
                     <div className="take30-caption">Module prêt pour l’intégration web</div>
                   </div>
                 ))}
+                {features.length === 0 ? (
+                  <div className="take30-panel take30-stack-8">
+                    <div className="take30-label">Aucune fonctionnalité synchronisée</div>
+                    <div className="take30-caption">
+                      Ajoute des documents dans la collection Firestore features pour alimenter cette zone.
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </section>
 

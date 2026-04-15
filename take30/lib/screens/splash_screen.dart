@@ -1,62 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import '../theme/take30_screen_themes.dart';
 
-import '../router/router.dart';
-import '../theme/app_theme.dart';
-
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fade;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _fade = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0, 0.7, curve: Curves.easeOut),
-    );
-    _scale = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SplashTheme.background,
+      backgroundColor: SplashScreenTheme.background,
       body: Stack(
         children: [
           Positioned(
-            top: -100,
-            right: -60,
+            top: -80,
+            right: -50,
             child: Container(
-              width: 280,
-              height: 280,
+              width: 240,
+              height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    SplashTheme.glowColor.withValues(alpha: SplashTheme.glowOpacity),
+                    SplashScreenTheme.glow.withValues(
+                      alpha: SplashScreenTheme.glowOpacity,
+                    ),
                     Colors.transparent,
                   ],
                 ),
@@ -64,61 +30,33 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
           Center(
-            child: FadeTransition(
-              opacity: _fade,
-              child: ScaleTransition(
-                scale: _scale,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Take30',
-                      style: AppTextStyles.logoStyle.copyWith(
-                        color: SplashTheme.logoText,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Creer. Partager. Briller.',
-                      style: AppTextStyles.taglineStyle.copyWith(
-                        color: SplashTheme.tagline,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: 160,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () => context.go(AppRouter.onboarding),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.yellow,
-                          foregroundColor: AppColors.navy,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text('Commencer'),
-                      ),
-                    ),
-                  ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Take30', style: T30Text.logo),
+                const SizedBox(height: 12),
+                Text(
+                  'Prouve ton talent\nen 30 secondes',
+                  textAlign: TextAlign.center,
+                  style: T30Text.body.copyWith(
+                    color: T30Colors.textSecondary,
+                    fontSize: 15,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           Positioned(
-            bottom: 8,
+            bottom: 10,
             left: 0,
             right: 0,
-            child: FadeTransition(
-              opacity: _fade,
-              child: Center(
-                child: Container(
-                  width: 134,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: SplashTheme.homePill,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
+            child: Center(
+              child: Container(
+                width: 134,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: SplashScreenTheme.homePill,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),

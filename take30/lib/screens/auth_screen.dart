@@ -148,9 +148,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.red.withOpacity(0.1),
+                    color: AppColors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.red.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.red.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     authState.error!,

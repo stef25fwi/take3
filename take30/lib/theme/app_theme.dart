@@ -2,99 +2,64 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'take30_screen_themes.dart';
+
 class AppColors {
-  static const Color navy = Color(0xFF081020);
-  static const Color dark = Color(0xFF111827);
-  static const Color purple = Color(0xFF6C5CE7);
-  static const Color cyan = Color(0xFF00D4FF);
-  static const Color yellow = Color(0xFFFFB800);
-  static const Color white = Color(0xFFFFFFFF);
+  static const Color navy = T30Colors.navy;
+  static const Color dark = T30Colors.dark;
+  static const Color purple = T30Colors.purple;
+  static const Color cyan = T30Colors.cyan;
+  static const Color yellow = T30Colors.yellow;
+  static const Color white = T30Colors.white;
 
-  static const Color surface = Color(0xFF0D1626);
-  static const Color surfaceCard = Color(0xFF141E2E);
-  static const Color surfaceElevated = Color(0xFF1A2540);
-  static const Color surfaceOverlay = Color(0xFF1E2D45);
-  static const Color borderSubtle = Color(0xFF1E2D45);
-  static const Color borderMedium = Color(0xFF243352);
+  static const Color surface = T30Colors.surface;
+  static const Color surfaceCard = T30Colors.surfaceCard;
+  static const Color surfaceElevated = T30Colors.surfaceElevated;
+  static const Color surfaceOverlay = T30Colors.surfaceOverlay;
+  static const Color borderSubtle = T30Colors.borderSubtle;
+  static const Color borderMedium = T30Colors.borderStrong;
 
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB0BAC9);
-  static const Color textMuted = Color(0xFF6B7A93);
-  static const Color textDisabled = Color(0xFF3D4F6B);
+  static const Color textPrimary = T30Colors.textPrimary;
+  static const Color textSecondary = T30Colors.textSecondary;
+  static const Color textMuted = T30Colors.textMuted;
+  static const Color textDisabled = T30Colors.textDisabled;
 
-  static const Color red = Color(0xFFFF4757);
-  static const Color green = Color(0xFF2ED573);
-  static const Color orange = Color(0xFFFF6B35);
+  static const Color red = T30Colors.red;
+  static const Color green = T30Colors.green;
+  static const Color orange = T30Colors.orange;
 
-  static const Color navBackground = Color(0xFF0D1626);
-  static const Color navActive = Color(0xFFFFB800);
-  static const Color navInactive = Color(0xFF5A6A82);
-  static const Color navPlusButton = Color(0xFFFFB800);
+  static const Color navBackground = T30Colors.surface;
+  static const Color navActive = T30Colors.yellow;
+  static const Color navInactive = T30Colors.textMuted;
+  static const Color navPlusButton = T30Colors.yellow;
 
-  static const Color catDrama = Color(0xFF8B5CF6);
-  static const Color catComedy = Color(0xFF06B6D4);
-  static const Color catAction = Color(0xFFEF4444);
-  static const Color catRomance = Color(0xFFEC4899);
-  static const Color catThriller = Color(0xFF6B7280);
+  static const Color catDrama = ExploreScreenTheme.drama;
+  static const Color catComedy = ExploreScreenTheme.comedy;
+  static const Color catAction = ExploreScreenTheme.action;
+  static const Color catRomance = ExploreScreenTheme.romance;
+  static const Color catThriller = ExploreScreenTheme.thriller;
 
-  static const Color badgeGold = Color(0xFFFFB800);
-  static const Color badgeSilver = Color(0xFFB0BAC9);
-  static const Color badgeBronze = Color(0xFFCD7F32);
-  static const Color badgeBlue = Color(0xFF6C5CE7);
+  static const Color badgeGold = BadgesStatsScreenTheme.gold;
+  static const Color badgeSilver = BadgesStatsScreenTheme.silver;
+  static const Color badgeBronze = BadgesStatsScreenTheme.bronze;
+  static const Color badgeBlue = BadgesStatsScreenTheme.special;
 
-  static const Color notifLike = Color(0xFFFF4757);
-  static const Color notifComment = Color(0xFF00D4FF);
-  static const Color notifDuel = Color(0xFF6C5CE7);
-  static const Color notifTrophy = Color(0xFFFFB800);
+  static const Color notifLike = T30Colors.red;
+  static const Color notifComment = T30Colors.cyan;
+  static const Color notifDuel = T30Colors.purple;
+  static const Color notifTrophy = T30Colors.yellow;
 
-  static const LinearGradient ctaGradient = LinearGradient(
-    colors: [Color(0xFFFFB800), Color(0xFFFF8C00)],
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-  );
+  static const LinearGradient ctaGradient = T30Colors.ctaGradient;
 
-  static const LinearGradient purpleCyanGradient = LinearGradient(
-    colors: [Color(0xFF6C5CE7), Color(0xFF00D4FF)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  static const LinearGradient purpleCyanGradient = T30Colors.purpleCyanGradient;
 
-  static const LinearGradient photoOverlayGradient = LinearGradient(
-    colors: [Colors.transparent, Color(0xBB000000)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    stops: [0.4, 1.0],
-  );
+  static const LinearGradient photoOverlayGradient = T30Colors.photoOverlay;
 
-  static const LinearGradient feedCardOverlay = LinearGradient(
-    colors: [
-      Colors.transparent,
-      Colors.transparent,
-      Color(0xCC000000),
-      Color(0xF0000000),
-    ],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    stops: [0.0, 0.4, 0.72, 1.0],
-  );
+  static const LinearGradient feedCardOverlay = T30Colors.feedOverlay;
 
-  static const LinearGradient onboardingOverlay = LinearGradient(
-    colors: [
-      Color(0x55000000),
-      Color(0x99000000),
-      Color(0xEB081020),
-      Color(0xFF081020),
-    ],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    stops: [0.0, 0.35, 0.68, 1.0],
-  );
+  static const LinearGradient onboardingOverlay = T30Colors.onboardingOverlay;
 
-  static const LinearGradient recordBottomGradient = LinearGradient(
-    colors: [Color(0xE0000000), Colors.transparent],
-    begin: Alignment.bottomCenter,
-    end: Alignment.topCenter,
-  );
+  static const LinearGradient recordBottomGradient = T30Colors.recordBottomOverlay;
 
   static const LinearGradient rank1Highlight = LinearGradient(
     colors: [Color(0x15FFB800), Color(0x08FFB800)],
@@ -520,300 +485,265 @@ class AppTheme {
 }
 
 class SplashTheme {
-  static const Color background = AppColors.navy;
-  static const Color logoText = AppColors.white;
-  static const Color tagline = AppColors.textSecondary;
-  static const Color homePill = AppColors.white;
-  static const Color glowColor = AppColors.purple;
-  static const double glowOpacity = 0.16;
+  static const Color background = SplashScreenTheme.background;
+  static const Color logoText = T30Colors.white;
+  static const Color tagline = T30Colors.textSecondary;
+  static const Color homePill = SplashScreenTheme.homePill;
+  static const Color glowColor = SplashScreenTheme.glow;
+  static const double glowOpacity = SplashScreenTheme.glowOpacity;
 }
 
 class OnboardingTheme {
-  static const Color background = AppColors.navy;
-  static const Color headlineText = AppColors.white;
-  static const Color taglineText = AppColors.textSecondary;
-  static const Color featureIconBg = Color(0x14FFFFFF);
-  static const Color featureText = AppColors.white;
-  static const Color btnPrimaryBg = AppColors.yellow;
-  static const Color btnPrimaryText = AppColors.navy;
-  static const Color btnSecondaryBorder = Color(0x4DFFFFFF);
-  static const Color btnSecondaryText = AppColors.white;
-  static const Color linkText = AppColors.yellow;
-  static LinearGradient get overlay => AppColors.onboardingOverlay;
+  static const Color background = OnboardingScreenTheme.background;
+  static const Color headlineText = T30Colors.white;
+  static const Color taglineText = T30Colors.textSecondary;
+  static const Color featureIconBg = OnboardingScreenTheme.featureBox;
+  static const Color featureText = OnboardingScreenTheme.featureText;
+  static const Color btnPrimaryBg = OnboardingScreenTheme.primaryButton;
+  static const Color btnPrimaryText = T30Colors.navy;
+  static const Color btnSecondaryBorder = OnboardingScreenTheme.secondaryBorder;
+  static const Color btnSecondaryText = OnboardingScreenTheme.secondaryText;
+  static const Color linkText = OnboardingScreenTheme.link;
+  static LinearGradient get overlay => OnboardingScreenTheme.overlay;
 }
 
 class FeedTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color filterIconBg = AppColors.surfaceElevated;
-  static const Color filterIconColor = AppColors.white;
-  static const Color filterIconBorder = AppColors.borderSubtle;
-  static const Color cardBg = AppColors.surfaceCard;
+  static const Color background = HomeScreenTheme.background;
+  static const Color appBarBg = HomeScreenTheme.appBar;
+  static const Color filterIconBg = HomeScreenTheme.topActionBg;
+  static const Color filterIconColor = T30Colors.white;
+  static const Color filterIconBorder = HomeScreenTheme.topActionBorder;
+  static const Color cardBg = HomeScreenTheme.cardBg;
   static const Color cardRadius = AppColors.surfaceCard;
-  static LinearGradient get cardOverlay => AppColors.feedCardOverlay;
-  static const Color likeActive = AppColors.red;
-  static const Color likeInactive = AppColors.white;
-  static const Color commentColor = AppColors.white;
-  static const Color shareColor = AppColors.white;
-  static const Color actionCount = AppColors.white;
-  static const Color categoryBadgeBg = AppColors.purple;
-  static const Color categoryBadgeText = AppColors.white;
-  static const Color statsText = Color(0xCCFFFFFF);
+  static LinearGradient get cardOverlay => HomeScreenTheme.overlay;
+  static const Color likeActive = HomeScreenTheme.like;
+  static const Color likeInactive = T30Colors.white;
+  static const Color commentColor = HomeScreenTheme.sideAction;
+  static const Color shareColor = HomeScreenTheme.sideAction;
+  static const Color actionCount = T30Colors.white;
+  static const Color categoryBadgeBg = HomeScreenTheme.categoryBadge;
+  static const Color categoryBadgeText = T30Colors.white;
+  static const Color statsText = HomeScreenTheme.bottomStats;
 }
 
 class ExploreTheme {
-  static const Color background = AppColors.navy;
-  static const Color searchBg = AppColors.surfaceElevated;
-  static const Color searchBorder = AppColors.borderSubtle;
-  static const Color searchHint = AppColors.textMuted;
-  static const Color searchIcon = AppColors.textMuted;
-  static const Color sectionTitle = AppColors.white;
-  static const Color chipInactiveBg = AppColors.surfaceElevated;
-  static const Color chipInactiveBorder = AppColors.borderSubtle;
-  static const Color chipInactiveText = AppColors.white;
-  static const Color chipActiveBg = AppColors.yellow;
-  static const Color chipActiveText = AppColors.navy;
-  static const Color iconDrama = AppColors.catDrama;
-  static const Color iconComedy = AppColors.catComedy;
-  static const Color iconAction = AppColors.catAction;
-  static const Color iconRomance = AppColors.catRomance;
-  static const Color iconThriller = AppColors.catThriller;
+  static const Color background = ExploreScreenTheme.background;
+  static const Color searchBg = ExploreScreenTheme.searchBg;
+  static const Color searchBorder = ExploreScreenTheme.searchBorder;
+  static const Color searchHint = T30Colors.textMuted;
+  static const Color searchIcon = T30Colors.textMuted;
+  static const Color sectionTitle = ExploreScreenTheme.sectionTitle;
+  static const Color chipInactiveBg = ExploreScreenTheme.chipBg;
+  static const Color chipInactiveBorder = ExploreScreenTheme.chipBorder;
+  static const Color chipInactiveText = T30Colors.white;
+  static const Color chipActiveBg = ExploreScreenTheme.chipActiveBg;
+  static const Color chipActiveText = ExploreScreenTheme.chipActiveText;
+  static const Color iconDrama = ExploreScreenTheme.drama;
+  static const Color iconComedy = ExploreScreenTheme.comedy;
+  static const Color iconAction = ExploreScreenTheme.action;
+  static const Color iconRomance = ExploreScreenTheme.romance;
+  static const Color iconThriller = ExploreScreenTheme.thriller;
   static const Color thumbRadius = AppColors.surfaceCard;
-  static const Color durationBadgeBg = Color(0x88000000);
-  static const Color durationBadgeText = AppColors.white;
+  static const Color durationBadgeBg = ExploreScreenTheme.durationBadgeBg;
+  static const Color durationBadgeText = T30Colors.white;
 }
 
 class RecordTheme {
-  static const Color background = Color(0xFF000000);
-  static const Color cameraAreaBg = Color(0xFF0A0A0A);
-  static const Color overlayBtnBg = Color(0x66000000);
-  static const Color overlayBtnIcon = AppColors.white;
-  static const Color sceneTitleBg = Color(0x88000000);
-  static const Color sceneTitleText = AppColors.white;
-  static const Color timerNormal = AppColors.white;
-  static const Color timerUrgent = AppColors.red;
-  static const Color recordRing = AppColors.white;
-  static const Color recordIdleDot = AppColors.white;
-  static const Color recordActiveDot = AppColors.red;
-  static const Color progressBg = Color(0x33FFFFFF);
-  static const Color progressNormal = AppColors.yellow;
-  static const Color progressUrgent = AppColors.red;
-  static LinearGradient get bottomGrad => AppColors.recordBottomGradient;
-  static const Color ctrlBtnBg = Color(0x1FFFFFFF);
-  static const Color ctrlBtnIcon = AppColors.white;
+  static const Color background = RecordScreenTheme.background;
+  static const Color cameraAreaBg = T30Colors.black;
+  static const Color overlayBtnBg = RecordScreenTheme.overlayButtonBg;
+  static const Color overlayBtnIcon = T30Colors.white;
+  static const Color sceneTitleBg = RecordScreenTheme.scenePillBg;
+  static const Color sceneTitleText = T30Colors.white;
+  static const Color timerNormal = RecordScreenTheme.timerNormal;
+  static const Color timerUrgent = RecordScreenTheme.timerUrgent;
+  static const Color recordRing = RecordScreenTheme.recordRing;
+  static const Color recordIdleDot = RecordScreenTheme.recordIdleCore;
+  static const Color recordActiveDot = RecordScreenTheme.recordActiveCore;
+  static const Color progressBg = RecordScreenTheme.progressBg;
+  static const Color progressNormal = RecordScreenTheme.progressNormal;
+  static const Color progressUrgent = RecordScreenTheme.progressUrgent;
+  static LinearGradient get bottomGrad => RecordScreenTheme.bottomOverlay;
+  static const Color ctrlBtnBg = RecordScreenTheme.bottomMiniControl;
+  static const Color ctrlBtnIcon = T30Colors.white;
   static const Color ctrlBtnLabel = Color(0xB3FFFFFF);
 }
 
 class PreviewTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color appBarText = AppColors.white;
-  static const Color modifyBtnText = AppColors.white;
-  static const Color playIconColor = AppColors.white;
-  static LinearGradient get videoOverlay => AppColors.photoOverlayGradient;
-  static const Color tagChipBg = AppColors.purple;
-  static const Color tagChipText = AppColors.white;
-  static const Color fieldLabel = AppColors.textSecondary;
-  static const Color fieldBg = AppColors.surfaceElevated;
-  static const Color fieldBorder = AppColors.borderSubtle;
-  static const Color fieldText = AppColors.white;
-  static const Color catChipInactive = AppColors.surfaceElevated;
-  static const Color catChipActive = Color(0x26FFB800);
-  static const Color catChipActiveBorder = AppColors.yellow;
-  static const Color catChipActiveText = AppColors.yellow;
-  static const Color publishBtnBg = AppColors.yellow;
-  static const Color publishBtnText = AppColors.navy;
-  static const Color resetBtnBorder = AppColors.borderSubtle;
-  static const Color resetBtnText = AppColors.white;
+  static const Color background = PreviewPublishScreenTheme.background;
+  static const Color appBarBg = PreviewPublishScreenTheme.appBar;
+  static const Color appBarText = T30Colors.white;
+  static const Color modifyBtnText = T30Colors.white;
+  static const Color playIconColor = T30Colors.white;
+  static LinearGradient get videoOverlay => PreviewPublishScreenTheme.mediaOverlay;
+  static const Color tagChipBg = PreviewPublishScreenTheme.tagBg;
+  static const Color tagChipText = T30Colors.white;
+  static const Color fieldLabel = PreviewPublishScreenTheme.fieldLabel;
+  static const Color fieldBg = PreviewPublishScreenTheme.fieldBg;
+  static const Color fieldBorder = T30Colors.borderSubtle;
+  static const Color fieldText = T30Colors.white;
+  static const Color catChipInactive = T30Colors.surfaceElevated;
+  static const Color catChipActive = PreviewPublishScreenTheme.chipActiveBg;
+  static const Color catChipActiveBorder = PreviewPublishScreenTheme.chipActiveBorder;
+  static const Color catChipActiveText = PreviewPublishScreenTheme.chipActiveText;
+  static const Color publishBtnBg = PreviewPublishScreenTheme.publishButton;
+  static const Color publishBtnText = PreviewPublishScreenTheme.publishText;
+  static const Color resetBtnBorder = PreviewPublishScreenTheme.secondaryBorder;
+  static const Color resetBtnText = T30Colors.white;
 }
 
 class BattleTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color titleText = AppColors.white;
-  static const Color vsBadgeBg = AppColors.surfaceElevated;
-  static const Color vsBadgeBorder = AppColors.borderSubtle;
-  static const Color vsBadgeText = AppColors.yellow;
-  static const Color videoBorder = AppColors.borderSubtle;
-  static LinearGradient get videoOverlay => AppColors.photoOverlayGradient;
-  static const Color labelA = AppColors.yellow;
-  static const Color labelB = AppColors.cyan;
-  static const Color voteABg = AppColors.yellow;
-  static const Color voteAText = AppColors.navy;
-  static const Color voteBBg = Color(0xFF1E3A8A);
-  static const Color voteBBorder = Color(0x80007FFF);
-  static const Color voteBText = AppColors.white;
-  static const Color resultBarA = AppColors.yellow;
-  static const Color resultBarB = AppColors.cyan;
-  static const Color resultBarBg = AppColors.surfaceElevated;
-  static const Color trophyColor = AppColors.yellow;
+  static const Color background = BattleScreenTheme.background;
+  static const Color appBarBg = BattleScreenTheme.background;
+  static const Color titleText = BattleScreenTheme.title;
+  static const Color vsBadgeBg = BattleScreenTheme.vsBg;
+  static const Color vsBadgeBorder = BattleScreenTheme.vsBorder;
+  static const Color vsBadgeText = BattleScreenTheme.vsText;
+  static const Color videoBorder = T30Colors.borderSubtle;
+  static LinearGradient get videoOverlay => BattleScreenTheme.mediaOverlay;
+  static const Color labelA = BattleScreenTheme.voteA;
+  static const Color labelB = BattleScreenTheme.resultB;
+  static const Color voteABg = BattleScreenTheme.voteA;
+  static const Color voteAText = BattleScreenTheme.voteAText;
+  static const Color voteBBg = BattleScreenTheme.voteB;
+  static const Color voteBBorder = BattleScreenTheme.voteBBorder;
+  static const Color voteBText = BattleScreenTheme.voteBText;
+  static const Color resultBarA = BattleScreenTheme.resultA;
+  static const Color resultBarB = BattleScreenTheme.resultB;
+  static const Color resultBarBg = BattleScreenTheme.resultBg;
+  static const Color trophyColor = T30Colors.yellow;
 }
 
 class LeaderboardTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color tabActiveBg = AppColors.yellow;
-  static const Color tabActiveText = AppColors.navy;
+  static const Color background = LeaderboardScreenTheme.background;
+  static const Color appBarBg = LeaderboardScreenTheme.background;
+  static const Color tabActiveBg = LeaderboardScreenTheme.tabActiveBg;
+  static const Color tabActiveText = LeaderboardScreenTheme.tabActiveText;
   static const Color tabInactiveBg = Colors.transparent;
-  static const Color tabInactiveText = AppColors.textMuted;
-  static const Color rowBg = AppColors.surfaceCard;
-  static const Color rowBorder = AppColors.borderSubtle;
-  static const Color row1Bg = Color(0x15FFB800);
-  static const Color row1Border = Color(0x40FFB800);
-  static const Color rankTop3 = AppColors.yellow;
-  static const Color rankOther = AppColors.textMuted;
-  static const Color usernameText = AppColors.white;
-  static const Color scoreText = AppColors.white;
-  static const Color heartIcon = AppColors.red;
-  static const Color followerText = AppColors.textMuted;
-  static const Color badgeGlow = AppColors.red;
+  static const Color tabInactiveText = LeaderboardScreenTheme.tabInactiveText;
+  static const Color rowBg = LeaderboardScreenTheme.rowBg;
+  static const Color rowBorder = LeaderboardScreenTheme.rowBorder;
+  static const Color row1Bg = LeaderboardScreenTheme.rowTopBg;
+  static const Color row1Border = LeaderboardScreenTheme.rowTopBorder;
+  static const Color rankTop3 = LeaderboardScreenTheme.rankTop;
+  static const Color rankOther = LeaderboardScreenTheme.rankOther;
+  static const Color usernameText = T30Colors.white;
+  static const Color scoreText = T30Colors.white;
+  static const Color heartIcon = LeaderboardScreenTheme.heart;
+  static const Color followerText = T30Colors.textMuted;
+  static const Color badgeGlow = T30Colors.red;
 }
 
 class ProfileTheme {
-  static const Color background = AppColors.navy;
-  static final LinearGradient headerGradient = const LinearGradient(
-    colors: [Color(0xFF0D1626), Color(0xFF111827)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-  );
-  static const Color headerGlow = AppColors.purple;
+  static const Color background = ProfileScreenTheme.background;
+  static const LinearGradient headerGradient = ProfileScreenTheme.headerGradient;
+  static const Color headerGlow = T30Colors.purple;
   static const double headerGlowOpacity = 0.18;
-  static const Color avatarBorder = AppColors.yellow;
-  static const Color verifiedBg = AppColors.cyan;
-  static const Color verifiedIcon = AppColors.white;
-  static const Color nameText = AppColors.white;
-  static const Color roleText = AppColors.textMuted;
-  static const Color statValue = AppColors.white;
-  static const Color statLabel = AppColors.textMuted;
-  static const Color statDivider = AppColors.borderSubtle;
-  static const Color followBtnActiveBg = AppColors.yellow;
-  static const Color followBtnActiveText = AppColors.navy;
-  static const Color followBtnDoneBg = AppColors.surfaceElevated;
-  static const Color followBtnDoneText = AppColors.textSecondary;
-  static const Color messageBtnBg = AppColors.surfaceElevated;
-  static const Color messageBtnBorder = AppColors.borderSubtle;
-  static const Color messageBtnText = AppColors.white;
-  static const Color downloadBtnBg = AppColors.surfaceElevated;
-  static const Color downloadBtnBorder = AppColors.borderSubtle;
-  static const Color downloadIcon = AppColors.white;
-  static const Color tabIndicator = AppColors.yellow;
-  static const Color tabActiveText = AppColors.white;
-  static const Color tabInactiveText = AppColors.textMuted;
-  static const Color gridBg = AppColors.navy;
+  static const Color avatarBorder = ProfileScreenTheme.avatarBorder;
+  static const Color verifiedBg = ProfileScreenTheme.verifiedBg;
+  static const Color verifiedIcon = T30Colors.white;
+  static const Color nameText = T30Colors.white;
+  static const Color roleText = T30Colors.textMuted;
+  static const Color statValue = T30Colors.white;
+  static const Color statLabel = ProfileScreenTheme.statLabel;
+  static const Color statDivider = ProfileScreenTheme.divider;
+  static const Color followBtnActiveBg = ProfileScreenTheme.followBg;
+  static const Color followBtnActiveText = ProfileScreenTheme.followText;
+  static const Color followBtnDoneBg = ProfileScreenTheme.followingBg;
+  static const Color followBtnDoneText = ProfileScreenTheme.followingText;
+  static const Color messageBtnBg = ProfileScreenTheme.secondaryButtonBg;
+  static const Color messageBtnBorder = ProfileScreenTheme.secondaryButtonBorder;
+  static const Color messageBtnText = T30Colors.white;
+  static const Color downloadBtnBg = ProfileScreenTheme.secondaryButtonBg;
+  static const Color downloadBtnBorder = ProfileScreenTheme.secondaryButtonBorder;
+  static const Color downloadIcon = T30Colors.white;
+  static const Color tabIndicator = ProfileScreenTheme.tabIndicator;
+  static const Color tabActiveText = T30Colors.white;
+  static const Color tabInactiveText = T30Colors.textMuted;
+  static const Color gridBg = ProfileScreenTheme.background;
   static const Color thumbStatsBg = Color(0x88000000);
 }
 
 class BadgesTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color headerTitle = AppColors.white;
-  static const Color voirToutLink = AppColors.cyan;
-  static const Color badgeCardBg = AppColors.surfaceCard;
-  static const Color badgeGoldCircle = AppColors.badgeGold;
-  static const Color badgeSilverCircle = AppColors.badgeSilver;
-  static const Color badgeBronzeCircle = AppColors.badgeBronze;
-  static const Color badgeBlueCircle = AppColors.badgeBlue;
-  static const Color statRowBg = AppColors.surfaceCard;
-  static const Color statRowBorder = AppColors.borderSubtle;
+  static const Color background = BadgesStatsScreenTheme.background;
+  static const Color appBarBg = BadgesStatsScreenTheme.background;
+  static const Color headerTitle = T30Colors.white;
+  static const Color voirToutLink = BadgesStatsScreenTheme.link;
+  static const Color badgeCardBg = BadgesStatsScreenTheme.cardBg;
+  static const Color badgeGoldCircle = BadgesStatsScreenTheme.gold;
+  static const Color badgeSilverCircle = BadgesStatsScreenTheme.silver;
+  static const Color badgeBronzeCircle = BadgesStatsScreenTheme.bronze;
+  static const Color badgeBlueCircle = BadgesStatsScreenTheme.special;
+  static const Color statRowBg = BadgesStatsScreenTheme.cardBg;
+  static const Color statRowBorder = BadgesStatsScreenTheme.cardBorder;
   static const Color iconContainerBg = Color(0x1EFFFFFF);
-  static const Color statValueText = AppColors.white;
-  static const Color statLabelText = AppColors.textSecondary;
-  static const Color statArrow = AppColors.textMuted;
-  static const Color progressBg = AppColors.surfaceElevated;
-  static const Color progressFill = AppColors.green;
-  static const Color chartBarFill = AppColors.cyan;
-  static const Color chartBarBg = AppColors.surfaceElevated;
+  static const Color statValueText = T30Colors.white;
+  static const Color statLabelText = T30Colors.textSecondary;
+  static const Color statArrow = T30Colors.textMuted;
+  static const Color progressBg = BadgesStatsScreenTheme.progressBg;
+  static const Color progressFill = BadgesStatsScreenTheme.progressFill;
+  static const Color chartBarFill = BadgesStatsScreenTheme.chartBar;
+  static const Color chartBarBg = T30Colors.surfaceElevated;
 }
 
 class NotificationsTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color rowReadBg = AppColors.surfaceCard;
-  static const Color rowReadBorder = AppColors.borderSubtle;
-  static const Color rowUnreadBg = AppColors.surfaceElevated;
-  static const Color rowUnreadBorder = Color(0x40FFB800);
-  static const Color iconLikeBg = Color(0x26FF4757);
-  static const Color iconCommentBg = Color(0x2600D4FF);
-  static const Color iconDuelBg = Color(0x266C5CE7);
-  static const Color iconTrophyBg = Color(0x26FFB800);
-  static const Color messageText = AppColors.white;
-  static const Color timeText = AppColors.textMuted;
-  static const Color unreadDot = AppColors.cyan;
-  static const Color actionBtnBg = Color(0x1FFFB800);
-  static const Color actionBtnBorder = Color(0x4DFFB800);
-  static const Color actionBtnText = AppColors.yellow;
+  static const Color background = NotificationsScreenTheme.background;
+  static const Color appBarBg = NotificationsScreenTheme.background;
+  static const Color rowReadBg = NotificationsScreenTheme.rowRead;
+  static const Color rowReadBorder = NotificationsScreenTheme.rowReadBorder;
+  static const Color rowUnreadBg = NotificationsScreenTheme.rowUnread;
+  static const Color rowUnreadBorder = NotificationsScreenTheme.rowUnreadBorder;
+  static const Color iconLikeBg = NotificationsScreenTheme.likeBg;
+  static const Color iconCommentBg = NotificationsScreenTheme.commentBg;
+  static const Color iconDuelBg = NotificationsScreenTheme.duelBg;
+  static const Color iconTrophyBg = NotificationsScreenTheme.trophyBg;
+  static const Color messageText = T30Colors.white;
+  static const Color timeText = T30Colors.textMuted;
+  static const Color unreadDot = NotificationsScreenTheme.unreadDot;
+  static const Color actionBtnBg = NotificationsScreenTheme.actionBg;
+  static const Color actionBtnBorder = NotificationsScreenTheme.actionBorder;
+  static const Color actionBtnText = NotificationsScreenTheme.actionText;
 }
 
 class ChallengeTheme {
-  static const Color background = AppColors.navy;
-  static const Color appBarBg = AppColors.navy;
-  static const Color bellIcon = AppColors.yellow;
-  static const Color bellDot = AppColors.red;
-  static const Color cardBg = AppColors.surfaceCard;
-  static const Color cardBorder = AppColors.borderSubtle;
-  static const Color fireBadgeBg = Color(0x26FF4757);
-  static const Color fireBadgeText = AppColors.red;
-  static const Color sceneTitleText = AppColors.white;
-  static const Color quoteText = AppColors.textSecondary;
-  static const Color bulletColor = AppColors.yellow;
-  static const Color ruleText = AppColors.textSecondary;
-  static const Color photoBg = AppColors.surface;
-  static const Color timerBg = AppColors.surfaceCard;
-  static const Color timerBorder = Color(0x33FFB800);
-  static const Color timerIcon = AppColors.yellow;
-  static const Color timerText = AppColors.white;
-  static const Color participantsText = AppColors.textSecondary;
-  static const Color challengeBtnBg = AppColors.yellow;
-  static const Color challengeBtnText = AppColors.navy;
-  static const Color outlineBtnBorder = AppColors.borderSubtle;
-  static const Color outlineBtnText = AppColors.white;
-  static const Color pastCardBorder = AppColors.borderSubtle;
+  static const Color background = DailyChallengeScreenTheme.background;
+  static const Color appBarBg = DailyChallengeScreenTheme.background;
+  static const Color bellIcon = DailyChallengeScreenTheme.bell;
+  static const Color bellDot = DailyChallengeScreenTheme.bellDot;
+  static const Color cardBg = DailyChallengeScreenTheme.cardBg;
+  static const Color cardBorder = DailyChallengeScreenTheme.cardBorder;
+  static const Color fireBadgeBg = DailyChallengeScreenTheme.fireBadgeBg;
+  static const Color fireBadgeText = DailyChallengeScreenTheme.fireBadgeText;
+  static const Color sceneTitleText = T30Colors.white;
+  static const Color quoteText = DailyChallengeScreenTheme.quote;
+  static const Color bulletColor = DailyChallengeScreenTheme.bullet;
+  static const Color ruleText = DailyChallengeScreenTheme.rule;
+  static const Color photoBg = T30Colors.surface;
+  static const Color timerBg = DailyChallengeScreenTheme.timerBg;
+  static const Color timerBorder = DailyChallengeScreenTheme.timerBorder;
+  static const Color timerIcon = T30Colors.yellow;
+  static const Color timerText = T30Colors.white;
+  static const Color participantsText = T30Colors.textSecondary;
+  static const Color challengeBtnBg = DailyChallengeScreenTheme.challengeButton;
+  static const Color challengeBtnText = DailyChallengeScreenTheme.challengeButtonText;
+  static const Color outlineBtnBorder = T30Colors.borderSubtle;
+  static const Color outlineBtnText = T30Colors.white;
+  static const Color pastCardBorder = T30Colors.borderSubtle;
   static const Color dayBadgeBg = Color(0x88000000);
-  static const Color dayBadgeText = AppColors.textSecondary;
+  static const Color dayBadgeText = T30Colors.textSecondary;
 }
 
 class AppButtonStyles {
   static ButtonStyle primary({double height = 52}) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: AppColors.yellow,
-      foregroundColor: AppColors.navy,
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      minimumSize: Size(double.infinity, height),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      textStyle: GoogleFonts.dmSans(
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-      ),
-    );
+    return T30Buttons.primary(height: height);
   }
 
   static ButtonStyle secondary({double height = 52}) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.white,
-      backgroundColor: AppColors.surfaceElevated,
-      side: const BorderSide(color: AppColors.borderMedium, width: 1.5),
-      minimumSize: Size(double.infinity, height),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      textStyle: GoogleFonts.dmSans(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return T30Buttons.secondary(height: height);
   }
 
   static ButtonStyle outline({double height = 52}) {
-    return OutlinedButton.styleFrom(
-      foregroundColor: AppColors.white,
-      backgroundColor: Colors.transparent,
-      side: const BorderSide(color: AppColors.borderSubtle, width: 1.5),
-      minimumSize: Size(double.infinity, height),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      textStyle: GoogleFonts.dmSans(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return T30Buttons.outline(height: height);
   }
 }
 
