@@ -22,6 +22,37 @@ class NotificationService {
   );
 
   Future<void> initialize() async {
+    if (kIsWeb) {
+      try {
+        await _messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        final token = await _messaging.getToken();
+        debugPrint('FCM token web : $token');
+
+        _messaging.onTokenRefresh.listen((newToken) {
+          debugPrint('FCM token web rafraîchi : $newToken');
+        });
+
+        FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+      } catch (error, stackTrace) {
+        debugPrint('Notification init web skipped: $error');
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stackTrace,
+            library: 'notification_service',
+            context: ErrorDescription('while initializing web notifications'),
+          ),
+        );
+      }
+      return;
+    }
+
     // Demande la permission (iOS + Android 13+)
     final settings = await _messaging.requestPermission(
       alert: true,
@@ -64,6 +95,11 @@ class NotificationService {
 
   void _onForegroundMessage(RemoteMessage message) {
     debugPrint('Push foreground : ${message.messageId}');
+
+    if (kIsWeb) {
+      return;
+    }
+
     final notification = message.notification;
     final android = message.notification?.android;
     if (notification != null && android != null) {
@@ -91,6 +127,11 @@ class NotificationService {
   }
 
   Future<void> showPublishSuccessNotification({required String sceneTitle}) async {
+    if (kIsWeb) {
+      debugPrint('Publication réussie : $sceneTitle');
+      return;
+    }
+
     await _localNotifications.show(
       sceneTitle.hashCode,
       'Scène publiée !',

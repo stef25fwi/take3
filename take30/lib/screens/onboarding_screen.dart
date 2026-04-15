@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../router/router.dart';
 import '../theme/take30_screen_themes.dart';
 
 class OnboardingScreen extends StatelessWidget {
@@ -69,7 +71,7 @@ class OnboardingScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: T30Buttons.primary(),
-                      onPressed: () {},
+                      onPressed: () => context.go(AppRouter.auth),
                       child: Text('Commencer', style: T30Text.buttonPrimary),
                     ),
                   ),
@@ -78,19 +80,22 @@ class OnboardingScreen extends StatelessWidget {
                     width: double.infinity,
                     child: OutlinedButton(
                       style: T30Buttons.outline(),
-                      onPressed: () {},
+                      onPressed: () => context.go('${AppRouter.auth}?tab=login'),
                       child:
                           Text('Se connecter', style: T30Text.buttonSecondary),
                     ),
                   ),
                   const SizedBox(height: 10),
                   Center(
-                    child: Text(
-                      'Créer un compte',
-                      style: T30Text.caption.copyWith(
-                        color: OnboardingScreenTheme.link,
-                        decoration: TextDecoration.underline,
-                        decorationColor: OnboardingScreenTheme.link,
+                    child: GestureDetector(
+                      onTap: () => context.go('${AppRouter.auth}?tab=register'),
+                      child: Text(
+                        'Créer un compte',
+                        style: T30Text.caption.copyWith(
+                          color: OnboardingScreenTheme.link,
+                          decoration: TextDecoration.underline,
+                          decorationColor: OnboardingScreenTheme.link,
+                        ),
                       ),
                     ),
                   ),
