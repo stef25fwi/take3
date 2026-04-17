@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
 import 'mock_data.dart';
+import '../utils/assets.dart';
 
 enum AuthProvider { email, google, apple }
 
@@ -83,7 +84,7 @@ class AuthService extends ChangeNotifier {
       id: 'u_new_${DateTime.now().millisecondsSinceEpoch}',
       username: username,
       displayName: username,
-      avatarUrl: 'https://i.pravatar.cc/150?img=47',
+      avatarUrl: Take30Assets.avatarCurrentUser,
     );
     _error = null;
     _setLoading(false);

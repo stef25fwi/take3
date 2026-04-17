@@ -21,7 +21,7 @@ class Take30Assets {
       'u3': avatarIaMaleLead,
       'u4': avatarIaFemaleAlt,
       'u5': avatarIaMaleLead,
-      'u6': avatarIaFemaleLead,
+      'u6': avatarIaFemaleAlt,
       'u7': avatarIaMaleLead,
     };
     return map[userId] ?? avatarCurrentUser;

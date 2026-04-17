@@ -1,11 +1,12 @@
 import '../models/models.dart';
+import '../utils/assets.dart';
 
 final _users = <UserModel>[
   const UserModel(
     id: 'u1',
     username: 'LunaAct',
     displayName: 'LunaAct',
-    avatarUrl: 'https://i.pravatar.cc/150?img=47',
+    avatarUrl: Take30Assets.avatarIaFemaleLead,
     bio: 'Actrice / Créatrice • Top 10 semaine',
     isVerified: true,
     scenesCount: 47,
@@ -19,21 +20,21 @@ final _users = <UserModel>[
     id: 'u2',
     username: 'Max_Act',
     displayName: 'Max_Act',
-    avatarUrl: 'https://i.pravatar.cc/150?img=12',
+    avatarUrl: Take30Assets.avatarIaMaleLead,
     followersCount: 10800,
   ),
   const UserModel(
     id: 'u3',
     username: 'NeoPlayer',
     displayName: 'NeoPlayer',
-    avatarUrl: 'https://i.pravatar.cc/150?img=33',
+    avatarUrl: Take30Assets.avatarIaMaleLead,
     followersCount: 8900,
   ),
   const UserModel(
     id: 'u4',
     username: 'ClaraScene',
     displayName: 'ClaraScene',
-    avatarUrl: 'https://i.pravatar.cc/150?img=44',
+    avatarUrl: Take30Assets.avatarIaFemaleAlt,
     isVerified: true,
     followersCount: 8100,
   ),
@@ -41,14 +42,14 @@ final _users = <UserModel>[
     id: 'u5',
     username: 'TheoDrama',
     displayName: 'TheoDrama',
-    avatarUrl: 'https://i.pravatar.cc/150?img=15',
+    avatarUrl: Take30Assets.avatarIaMaleLead,
     followersCount: 7500,
   ),
   const UserModel(
     id: 'u6',
     username: 'ActQueen',
     displayName: 'ActQueen',
-    avatarUrl: 'https://i.pravatar.cc/150?img=20',
+    avatarUrl: Take30Assets.avatarIaFemaleAlt,
     isVerified: true,
     followersCount: 6900,
   ),
@@ -56,7 +57,7 @@ final _users = <UserModel>[
     id: 'u7',
     username: 'VictorPlay',
     displayName: 'VictorPlay',
-    avatarUrl: 'https://i.pravatar.cc/150?img=68',
+    avatarUrl: Take30Assets.avatarIaMaleLead,
     followersCount: 6100,
   ),
 ];
@@ -205,7 +206,7 @@ class MockData {
       subMessage: 'Il y a 2 min',
       type: NotificationType.like,
       time: DateTime.now().subtract(const Duration(minutes: 2)),
-      avatarUrl: 'https://i.pravatar.cc/150?img=50',
+      avatarUrl: Take30Assets.avatarIaFemaleLead,
     ),
     NotificationModel(
       id: 'n2',
@@ -220,7 +221,7 @@ class MockData {
       subMessage: 'Il y a 35 min',
       type: NotificationType.comment,
       time: DateTime.now().subtract(const Duration(minutes: 35)),
-      avatarUrl: 'https://i.pravatar.cc/150?img=12',
+      avatarUrl: Take30Assets.avatarIaMaleLead,
     ),
     NotificationModel(
       id: 'n4',
@@ -235,7 +236,7 @@ class MockData {
       subMessage: 'Il y a 2h',
       type: NotificationType.like,
       time: DateTime.now().subtract(const Duration(hours: 2)),
-      avatarUrl: 'https://i.pravatar.cc/150?img=44',
+      avatarUrl: Take30Assets.avatarIaFemaleAlt,
     ),
   ];
 

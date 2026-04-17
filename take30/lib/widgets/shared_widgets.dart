@@ -62,9 +62,9 @@ class SecondaryButton extends StatelessWidget {
 String? avatarPhotoAssetForUserId(String? userId) {
   switch (userId) {
     case 'u1':
-    case 'u6':
       return 'assets/avatars/avatar_ia_female_lead.webp';
     case 'u4':
+    case 'u6':
       return 'assets/avatars/avatar_ia_female_alt.webp';
     case 'u2':
     case 'u3':

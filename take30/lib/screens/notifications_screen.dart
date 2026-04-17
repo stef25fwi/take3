@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/shared_widgets.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -90,6 +91,22 @@ class _NotificationRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+            notification.avatarUrl != null
+                ? UserAvatar(url: notification.avatarUrl, size: 40)
+                : Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _accentColor.withValues(alpha: 0.16),
+                    ),
+                    child: Icon(
+                      _leadingIcon,
+                      size: 18,
+                      color: _accentColor,
+                    ),
+                  ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,6 +178,36 @@ class _NotificationRow extends StatelessWidget {
         return 'Il y a 20 min';
       default:
         return 'Hier';
+    }
+  }
+
+  IconData get _leadingIcon {
+    switch (notification.type) {
+      case NotificationType.duel:
+        return Icons.emoji_events_rounded;
+      case NotificationType.achievement:
+        return Icons.workspace_premium_rounded;
+      case NotificationType.comment:
+        return Icons.chat_bubble_rounded;
+      case NotificationType.like:
+        return Icons.favorite_rounded;
+      case NotificationType.system:
+        return Icons.notifications_rounded;
+    }
+  }
+
+  Color get _accentColor {
+    switch (notification.type) {
+      case NotificationType.duel:
+        return AppColors.yellow;
+      case NotificationType.achievement:
+        return AppColors.purple;
+      case NotificationType.comment:
+        return AppColors.cyan;
+      case NotificationType.like:
+        return AppColors.red;
+      case NotificationType.system:
+        return AppColors.greyLight;
     }
   }
 }
