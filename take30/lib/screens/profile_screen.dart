@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/mock_data.dart';
+import '../widgets/shared_widgets.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // PROFIL TALENT — Page 9 Pixel-Perfect
@@ -270,7 +270,7 @@ class _ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = _avatarAssetFor(user.id);
+    final asset = avatarPhotoAssetForUserId(user.id);
     return Container(
       width: size,
       height: size,
@@ -298,7 +298,22 @@ class _ProfileAvatar extends StatelessWidget {
         child: Container(
           color: const Color(0xFF111827),
           child: asset != null
-              ? SvgPicture.asset(asset, fit: BoxFit.cover)
+              ? Image.asset(
+                  asset,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Image.network(
+                    user.avatarUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFF1A2540),
+                      child: Icon(
+                        Icons.person,
+                        size: size * 0.5,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ),
+                )
               : Image.network(
                   user.avatarUrl,
                   fit: BoxFit.cover,
@@ -629,25 +644,4 @@ String _fmtK(int n) {
   if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
   if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
   return n.toString();
-}
-
-String? _avatarAssetFor(String id) {
-  switch (id) {
-    case 'u1':
-      return 'assets/avatars/avatar_luna_act.svg';
-    case 'u2':
-      return 'assets/avatars/avatar_max_act.svg';
-    case 'u3':
-      return 'assets/avatars/avatar_neo_player.svg';
-    case 'u4':
-      return 'assets/avatars/avatar_clara_scene.svg';
-    case 'u5':
-      return 'assets/avatars/avatar_theo_drama.svg';
-    case 'u6':
-      return 'assets/avatars/avatar_act_queen.svg';
-    case 'u7':
-      return 'assets/avatars/avatar_victor_play.svg';
-    default:
-      return null;
-  }
 }

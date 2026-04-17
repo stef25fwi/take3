@@ -59,20 +59,41 @@ class SecondaryButton extends StatelessWidget {
   }
 }
 
+String? avatarPhotoAssetForUserId(String? userId) {
+  switch (userId) {
+    case 'u1':
+    case 'u6':
+      return 'assets/avatars/avatar_ia_female_lead.webp';
+    case 'u4':
+      return 'assets/avatars/avatar_ia_female_alt.webp';
+    case 'u2':
+    case 'u3':
+    case 'u5':
+    case 'u7':
+      return 'assets/avatars/avatar_ia_male_lead.webp';
+    default:
+      return null;
+  }
+}
+
 class UserAvatar extends StatelessWidget {
   const UserAvatar({
     super.key,
     this.url,
+    this.userId,
     this.size = 40,
     this.showBorder = false,
   });
 
   final String? url;
+  final String? userId;
   final double size;
   final bool showBorder;
 
   @override
   Widget build(BuildContext context) {
+    final preferredAsset = avatarPhotoAssetForUserId(userId);
+
     return Container(
       width: size,
       height: size,
@@ -82,14 +103,37 @@ class UserAvatar extends StatelessWidget {
         color: AppColors.surfaceLight,
       ),
       child: ClipOval(
-        child: url != null
-            ? Image.network(
-                url!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
-              )
-            : _placeholder(),
+        child: _buildAvatarImage(preferredAsset),
       ),
+    );
+  }
+
+  Widget _buildAvatarImage(String? preferredAsset) {
+    if (preferredAsset != null) {
+      return Image.asset(
+        preferredAsset,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildUrlImage(),
+      );
+    }
+    return _buildUrlImage();
+  }
+
+  Widget _buildUrlImage() {
+    if (url == null) {
+      return _placeholder();
+    }
+    if (url!.startsWith('assets/')) {
+      return Image.asset(
+        url!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _placeholder(),
+      );
+    }
+    return Image.network(
+      url!,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _placeholder(),
     );
   }
 

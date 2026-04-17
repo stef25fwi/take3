@@ -188,7 +188,7 @@ class _LeaderboardRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            UserAvatar(url: entry.user.avatarUrl, size: 40),
+            UserAvatar(url: entry.user.avatarUrl, userId: entry.user.id, size: 40),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

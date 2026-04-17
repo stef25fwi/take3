@@ -236,7 +236,7 @@ class _ActivityRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            UserAvatar(url: data.user.avatarUrl, size: 42),
+            UserAvatar(url: data.user.avatarUrl, userId: data.user.id, size: 42),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

@@ -645,7 +645,7 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = _avatarAssetFor(user.id);
+    final asset = avatarPhotoAssetForUserId(user.id);
     if (asset != null) {
       return Container(
         width: size,
@@ -655,11 +655,19 @@ class _Avatar extends StatelessWidget {
           color: Colors.white,
         ),
         child: ClipOval(
-          child: SvgPicture.asset(asset, fit: BoxFit.cover),
+          child: Image.asset(
+            asset,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => UserAvatar(
+              url: user.avatarUrl,
+              userId: user.id,
+              size: size,
+            ),
+          ),
         ),
       );
     }
-    return UserAvatar(url: user.avatarUrl, size: size);
+    return UserAvatar(url: user.avatarUrl, userId: user.id, size: size);
   }
 }
 
@@ -777,27 +785,6 @@ String? _sceneAssetFor(String id) {
       return 'assets/scenes/scene_mauvaise_nouvelle.svg';
     case 's5':
       return 'assets/scenes/scene_confrontation.svg';
-    default:
-      return null;
-  }
-}
-
-String? _avatarAssetFor(String id) {
-  switch (id) {
-    case 'u1':
-      return 'assets/avatars/avatar_luna_act.svg';
-    case 'u2':
-      return 'assets/avatars/avatar_max_act.svg';
-    case 'u3':
-      return 'assets/avatars/avatar_neo_player.svg';
-    case 'u4':
-      return 'assets/avatars/avatar_clara_scene.svg';
-    case 'u5':
-      return 'assets/avatars/avatar_theo_drama.svg';
-    case 'u6':
-      return 'assets/avatars/avatar_act_queen.svg';
-    case 'u7':
-      return 'assets/avatars/avatar_victor_play.svg';
     default:
       return null;
   }
