@@ -117,7 +117,7 @@ class _BattleBodyState extends State<_BattleBody> {
       child: Stack(
         children: [
           // Subtle ambient glow top-left (cyan)
-          Positioned(
+          const Positioned(
             top: -60,
             left: -40,
             child: _AmbientGlow(
@@ -127,7 +127,7 @@ class _BattleBodyState extends State<_BattleBody> {
             ),
           ),
           // Subtle ambient glow right (gold)
-          Positioned(
+          const Positioned(
             top: 200,
             right: -50,
             child: _AmbientGlow(

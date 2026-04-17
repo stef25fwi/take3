@@ -778,7 +778,7 @@ class _ScenePickerSheet extends StatelessWidget {
                         ),
                       ),
                       if (selected)
-                        Icon(
+                        const Icon(
                           Icons.check_circle,
                           color: _K.yellow,
                           size: 18,

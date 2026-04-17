@@ -273,6 +273,10 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       return false;
     }
 
+    if (!context.mounted) {
+      return false;
+    }
+
     await _permissions.requestWithExplanation(
       context,
       AppPermission.microphone,
@@ -435,13 +439,12 @@ final leaderboardProvider = StateNotifierProvider<LeaderboardNotifier, Leaderboa
 );
 
 class DuelNotifier extends StateNotifier<DuelState> {
-  DuelNotifier(this._api, this._haptics, this._notifications) : super(const DuelState()) {
+  DuelNotifier(this._api, this._haptics) : super(const DuelState()) {
     load();
   }
 
   final ApiService _api;
   final HapticsService _haptics;
-  final NotificationService _notifications;
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true);
@@ -482,7 +485,6 @@ final duelProvider = StateNotifierProvider<DuelNotifier, DuelState>(
   (ref) => DuelNotifier(
     ref.read(apiServiceProvider),
     ref.read(hapticsProvider),
-    ref.read(notifServiceProvider),
   ),
 );
 

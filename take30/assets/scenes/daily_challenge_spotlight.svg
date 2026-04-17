@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 260" width="430" height="260">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#362117"/>
+      <stop offset="45%" stop-color="#17141B"/>
+      <stop offset="100%" stop-color="#0D1320"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="50%" cy="22%" r="52%">
+      <stop offset="0%" stop-color="#FFD68B" stop-opacity="0.92"/>
+      <stop offset="38%" stop-color="#FFB84A" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#FFB84A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#40251E"/>
+      <stop offset="50%" stop-color="#5F2F1C"/>
+      <stop offset="100%" stop-color="#2C1C1A"/>
+    </linearGradient>
+    <linearGradient id="silhouetteWarm" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4F2C22"/>
+      <stop offset="100%" stop-color="#140E14"/>
+    </linearGradient>
+    <linearGradient id="silhouetteCool" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2A3A4D"/>
+      <stop offset="100%" stop-color="#0E121A"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="430" height="260" fill="url(#bg)"/>
+  <ellipse cx="215" cy="44" rx="142" ry="76" fill="url(#spot)"/>
+  <ellipse cx="215" cy="224" rx="236" ry="58" fill="url(#floor)" opacity="0.96"/>
+  <rect x="0" y="0" width="430" height="260" fill="#05070D" opacity="0.08"/>
+
+  <g opacity="0.95">
+    <path d="M118 198 C116 168 122 140 136 116 C148 96 166 84 188 84 C210 84 228 98 238 120 C247 140 248 164 244 198 Z" fill="url(#silhouetteWarm)"/>
+    <ellipse cx="186" cy="72" rx="35" ry="39" fill="url(#silhouetteWarm)"/>
+    <path d="M153 67 C161 38 180 28 198 31 C214 34 226 49 224 69 C219 55 208 50 196 49 C177 48 163 55 153 67 Z" fill="#1B1113"/>
+    <path d="M172 122 C184 116 195 116 208 122" stroke="#B36A46" stroke-width="3" stroke-linecap="round" opacity="0.34"/>
+    <path d="M175 144 C186 138 196 138 207 145" stroke="#8F4D32" stroke-width="3" stroke-linecap="round" opacity="0.36"/>
+  </g>
+
+  <g opacity="0.92">
+    <path d="M306 198 C312 170 309 145 298 124 C288 106 272 94 252 92 C232 90 214 100 203 120 C192 141 188 166 190 198 Z" fill="url(#silhouetteCool)"/>
+    <ellipse cx="258" cy="76" rx="33" ry="37" fill="url(#silhouetteCool)"/>
+    <path d="M230 71 C234 45 250 31 270 34 C285 36 297 50 297 70 C289 58 279 52 268 51 C252 50 239 57 230 71 Z" fill="#121922"/>
+    <path d="M228 124 C242 118 254 119 268 127" stroke="#5A8CB0" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+    <path d="M228 147 C241 141 252 142 265 149" stroke="#3E5E7A" stroke-width="3" stroke-linecap="round" opacity="0.36"/>
+  </g>
+
+  <path d="M196 150 C210 132 230 124 251 127" stroke="#FFB45A" stroke-width="4" stroke-linecap="round" opacity="0.34"/>
+  <circle cx="220" cy="142" r="4" fill="#FFD27A" opacity="0.78"/>
+
+  <g opacity="0.85">
+    <rect x="0" y="214" width="430" height="46" fill="#0B1019" opacity="0.34"/>
+    <ellipse cx="164" cy="212" rx="70" ry="16" fill="#090D14" opacity="0.68"/>
+    <ellipse cx="254" cy="212" rx="76" ry="17" fill="#090D14" opacity="0.72"/>
+  </g>
+</svg>

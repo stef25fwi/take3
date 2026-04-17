@@ -108,10 +108,10 @@ class _SceneDetailScreenState extends State<SceneDetailScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Wrap(
+            const Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: const [
+              children: [
                 _TagChip(label: 'Cinématique', color: AppColors.yellow),
                 _TagChip(label: 'Intérieur', color: AppColors.cyan),
                 _TagChip(label: 'Tendance', color: AppColors.purple),
@@ -126,7 +126,7 @@ class _SceneDetailScreenState extends State<SceneDetailScreen> {
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               children: [
-                _StatBox(value: '4.8⭐', label: 'note'),
+                const _StatBox(value: '4.8⭐', label: 'note'),
                 _StatBox(value: '${_scene.viewsCount}👁️', label: 'vues'),
                 _StatBox(value: '${_scene.commentsCount}💬', label: 'commentaires'),
                 _StatBox(value: '${_scene.likesCount}❤️', label: 'likes'),

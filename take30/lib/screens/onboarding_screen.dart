@@ -11,7 +11,7 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final features = const [
+    const features = [
       ('🎬', 'Scènes quotidiennes'),
       ('⚔️', 'Défis & Duels'),
       ('🏆', 'Classements'),
