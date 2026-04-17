@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+
 import '../router/router.dart';
 import '../theme/take30_screen_themes.dart';
+import '../utils/assets.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -20,8 +23,8 @@ class OnboardingScreen extends StatelessWidget {
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/onboarding/onboarding_bg.jpg',
+            child: SvgPicture.asset(
+              Take30Assets.heroOnboarding,
               fit: BoxFit.cover,
             ),
           ),

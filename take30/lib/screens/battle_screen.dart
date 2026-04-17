@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +10,10 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../widgets/shared_widgets.dart';
 
+// ──────────────────────────────────────────────────────────────────────────────
+// BATTLE SCREEN — Pixel Perfect (PRD)
+// ──────────────────────────────────────────────────────────────────────────────
+
 class BattleScreen extends ConsumerWidget {
   const BattleScreen({super.key});
 
@@ -16,17 +21,17 @@ class BattleScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(duelProvider);
     return Scaffold(
-      backgroundColor: _BattlePalette.background,
+      backgroundColor: _P.bgDeep,
       body: state.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: _BattlePalette.yellow),
+              child: CircularProgressIndicator(color: _P.gold),
             )
           : state.duel == null
               ? Center(
                   child: Text(
                     'Aucune battle disponible',
                     style: GoogleFonts.dmSans(
-                      color: _BattlePalette.textWhite,
+                      color: _P.textWhite,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -34,224 +39,199 @@ class BattleScreen extends ConsumerWidget {
                 )
               : _BattleBody(
                   duel: state.duel!,
-                  onVote: (choice) => ref.read(duelProvider.notifier).vote(choice),
+                  onVote: (choice) =>
+                      ref.read(duelProvider.notifier).vote(choice),
                 ),
     );
   }
 }
 
-class _BattleBody extends StatelessWidget {
-  const _BattleBody({required this.duel, required this.onVote});
+// ──────────────────────────────────────────────────────────────────────────────
+// Body
+// ──────────────────────────────────────────────────────────────────────────────
 
+class _BattleBody extends StatefulWidget {
+  const _BattleBody({required this.duel, required this.onVote});
   final DuelModel duel;
   final void Function(int) onVote;
 
   @override
+  State<_BattleBody> createState() => _BattleBodyState();
+}
+
+class _BattleBodyState extends State<_BattleBody> {
+  int? _selectedVote;
+  bool _voteSubmitted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedVote = widget.duel.userVote;
+    _voteSubmitted = widget.duel.userVote != null;
+  }
+
+  @override
+  void didUpdateWidget(covariant _BattleBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.duel.userVote != oldWidget.duel.userVote) {
+      _selectedVote = widget.duel.userVote;
+      _voteSubmitted = widget.duel.userVote != null;
+    }
+  }
+
+  void _handleVote(int choice) {
+    if (_voteSubmitted) return;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedVote = choice;
+      _voteSubmitted = true;
+    });
+    widget.onVote(choice);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final voted = duel.userVote != null;
-    final remaining = duel.expiresAt.difference(DateTime.now());
-    final hours = remaining.inHours.clamp(0, 99);
-    final minutes = remaining.inMinutes.remainder(60).clamp(0, 59);
-    final seconds = remaining.inSeconds.remainder(60).clamp(0, 59);
-    final timer = [
-      hours.toString().padLeft(2, '0'),
-      minutes.toString().padLeft(2, '0'),
-      seconds.toString().padLeft(2, '0'),
-    ].join(':');
+    final mq = MediaQuery.of(context);
+    final screenW = mq.size.width;
+    const hPad = 20.0;
+    final cardAreaW = screenW - hPad * 2;
+    const cardGap = 12.0;
+    final cardW = (cardAreaW - cardGap) / 2;
+    // Card height: proportional, targeting ~46% of screen
+    final cardH = (mq.size.height * 0.46).clamp(260.0, 400.0);
 
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF050816), Color(0xFF070C1C), Color(0xFF050816)],
-          stops: [0, 0.45, 1],
+          colors: [
+            Color(0xFF070B1A),
+            Color(0xFF0A1023),
+            Color(0xFF0E1222),
+            Color(0xFF070B1A),
+          ],
+          stops: [0.0, 0.3, 0.6, 1.0],
         ),
       ),
       child: Stack(
         children: [
-          const Positioned(
-            top: -80,
+          // Subtle ambient glow top-left (cyan)
+          Positioned(
+            top: -60,
             left: -40,
-            child: _BattleGlow(
-              color: _BattlePalette.cyan,
-              size: 220,
-              opacity: 0.16,
+            child: _AmbientGlow(
+              color: _P.cyan,
+              size: 200,
+              opacity: 0.08,
             ),
           ),
-          const Positioned(
-            top: 180,
-            right: -60,
-            child: _BattleGlow(
-              color: _BattlePalette.yellow,
-              size: 240,
-              opacity: 0.12,
+          // Subtle ambient glow right (gold)
+          Positioned(
+            top: 200,
+            right: -50,
+            child: _AmbientGlow(
+              color: _P.gold,
+              size: 180,
+              opacity: 0.06,
             ),
           ),
+
           SafeArea(
             bottom: false,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 6, 18, 116),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight - 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 4),
-                        Center(
-                          child: Container(
-                            width: 126,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                          ),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                // ── Cards ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: hPad),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: cardW,
+                        height: cardH,
+                        child: _BattleCard(
+                          sideLabel: 'A',
+                          borderColor: _P.cyan,
+                          glowColor: _P.cyan,
+                          borderGradient: _P.cyanBorderGrad,
+                          scene: widget.duel.sceneA,
+                          metrics:
+                              '${_fmtCount(widget.duel.sceneA.viewsCount)} vues • ${_fmtCount(widget.duel.sceneA.likesCount)} ♥',
+                          isSelected: _selectedVote == 0,
                         ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _InfoPill(
-                                icon: Icons.schedule_rounded,
-                                label: 'Clôture dans $timer',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: _BattlePalette.red.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: _BattlePalette.red.withValues(alpha: 0.25),
-                                ),
-                              ),
-                              child: Text(
-                                '● EN DIRECT',
-                                style: GoogleFonts.dmSans(
-                                  color: _BattlePalette.red,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ),
-                          ],
+                      ),
+                      const SizedBox(width: cardGap),
+                      SizedBox(
+                        width: cardW,
+                        height: cardH,
+                        child: _BattleCard(
+                          sideLabel: 'B',
+                          borderColor: _P.gold,
+                          glowColor: _P.gold,
+                          borderGradient: _P.goldBorderGrad,
+                          scene: widget.duel.sceneB,
+                          metrics:
+                              '${_fmtCount(widget.duel.sceneB.viewsCount)} vues • ${_fmtCount(widget.duel.sceneB.likesCount)} ♥',
+                          isSelected: _selectedVote == 1,
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          'Battle du soir',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.dmSans(
-                            color: _BattlePalette.textWhite,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            height: 1.08,
-                            letterSpacing: -0.7,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Battle #${duel.id} • thème ${duel.sceneA.category}',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.dmSans(
-                            color: _BattlePalette.muted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _BattleCard(
-                                sideLabel: 'A',
-                                borderColor: _BattlePalette.cyan,
-                                accentColor: _BattlePalette.cyan,
-                                scene: duel.sceneA,
-                                percent: duel.percentA,
-                                isSelected: duel.userVote == 0,
-                                isLeading: duel.percentA >= duel.percentB,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _BattleCard(
-                                sideLabel: 'B',
-                                borderColor: _BattlePalette.yellow,
-                                accentColor: _BattlePalette.yellow,
-                                scene: duel.sceneB,
-                                percent: duel.percentB,
-                                isSelected: duel.userVote == 1,
-                                isLeading: duel.percentB > duel.percentA,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 26),
-                        Text(
-                          'Qui a le mieux joué ?',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.dmSans(
-                            color: _BattlePalette.textWhite,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            height: 1.08,
-                            letterSpacing: -0.7,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '${_formatCompactCount(duel.totalVotes)} votes comptabilisés',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.dmSans(
-                            color: _BattlePalette.muted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _VoteButton(
-                                label: voted && duel.userVote == 0 ? 'A  Choisi' : 'A  Voter A',
-                                background: _BattlePalette.cyan,
-                                foreground: const Color(0xFF08111D),
-                                enabled: !voted,
-                                isSelected: duel.userVote == 0,
-                                onTap: voted ? null : () => onVote(0),
-                              ),
-                            ),
-                            const SizedBox(width: 18),
-                            Expanded(
-                              child: _VoteButton(
-                                label: voted && duel.userVote == 1 ? 'B  Choisi' : 'B  Voter B',
-                                background: _BattlePalette.yellow,
-                                foreground: const Color(0xFF1A1203),
-                                enabled: !voted,
-                                isSelected: duel.userVote == 1,
-                                onTap: voted ? null : () => onVote(1),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        _ResultPanel(
-                          duel: duel,
-                          voted: voted,
-                        ),
-                        const SizedBox(height: 24),
-                        const _FooterGrid(),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                );
-              },
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── Title ──
+                Text(
+                  'Qui a le mieux joué ?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    color: _P.textWhite,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    height: 1.1,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Vote Buttons ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: hPad),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _VoteButton(
+                          label: _selectedVote == 0 ? 'A  Choisi ✓' : 'A  Voter A',
+                          gradient: _P.voteAGrad,
+                          glowColor: _P.cyan,
+                          textColor: const Color(0xFF06101E),
+                          enabled: !_voteSubmitted,
+                          isSelected: _selectedVote == 0,
+                          onTap: () => _handleVote(0),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _VoteButton(
+                          label: _selectedVote == 1 ? 'B  Choisi ✓' : 'B  Voter B',
+                          gradient: _P.voteBGrad,
+                          glowColor: _P.gold,
+                          textColor: const Color(0xFF1A1203),
+                          enabled: !_voteSubmitted,
+                          isSelected: _selectedVote == 1,
+                          onTap: () => _handleVote(1),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Spacer — dark empty zone as in the reference
+                const Spacer(),
+              ],
             ),
           ),
         ],
@@ -260,143 +240,157 @@ class _BattleBody extends StatelessWidget {
   }
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Battle Card
+// ──────────────────────────────────────────────────────────────────────────────
+
 class _BattleCard extends StatelessWidget {
   const _BattleCard({
     required this.sideLabel,
     required this.borderColor,
-    required this.accentColor,
+    required this.glowColor,
+    required this.borderGradient,
     required this.scene,
-    required this.percent,
+    required this.metrics,
     required this.isSelected,
-    required this.isLeading,
   });
 
   final String sideLabel;
   final Color borderColor;
-  final Color accentColor;
+  final Color glowColor;
+  final Gradient borderGradient;
   final SceneModel scene;
-  final double percent;
+  final String metrics;
   final bool isSelected;
-  final bool isLeading;
 
   @override
   Widget build(BuildContext context) {
-    final badgeText = scene.author.scenesCount > 0
-        ? '🔥 ${scene.author.scenesCount} scènes'
-        : scene.category;
+    const outerR = 24.0;
+    const bw = 2.5;
+    const innerR = outerR - bw;
+    const bannerH = 64.0;
 
     return Container(
-      height: 336,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: borderColor, width: 2.6),
+        borderRadius: BorderRadius.circular(outerR),
+        gradient: borderGradient,
         boxShadow: [
           BoxShadow(
-            color: accentColor.withValues(alpha: isLeading ? 0.26 : 0.16),
-            blurRadius: isLeading ? 24 : 18,
+            color: glowColor.withValues(alpha: 0.22),
+            blurRadius: 22,
             spreadRadius: 1,
+          ),
+          BoxShadow(
+            color: glowColor.withValues(alpha: 0.10),
+            blurRadius: 44,
+            spreadRadius: -4,
           ),
         ],
       ),
+      padding: const EdgeInsets.all(bw),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(innerR),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _BattleSceneArtwork(scene: scene),
+            // ── Thumbnail ──
+            _SceneArtwork(scene: scene),
+
+            // ── Dark vignette ──
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
+                    Colors.black.withValues(alpha: 0.0),
                     Colors.black.withValues(alpha: 0.06),
-                    Colors.black.withValues(alpha: 0.14),
-                    Colors.black.withValues(alpha: 0.28),
-                    Colors.black.withValues(alpha: 0.76),
+                    Colors.black.withValues(alpha: 0.30),
+                    Colors.black.withValues(alpha: 0.78),
                   ],
-                  stops: const [0.0, 0.35, 0.66, 1.0],
+                  stops: const [0.0, 0.40, 0.68, 1.0],
                 ),
               ),
             ),
+
+            // ── Side label badge ──
             Positioned(
-              top: 12,
-              left: 12,
+              top: 10,
+              left: 10,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.34),
+                  color: Colors.black.withValues(alpha: 0.38),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: Colors.white.withValues(alpha: 0.10),
                   ),
                 ),
                 child: Text(
                   sideLabel,
                   style: GoogleFonts.dmSans(
-                    color: _BattlePalette.textWhite,
+                    color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ),
+
+            // ── Selected check ──
             if (isSelected)
               Positioned(
-                top: 12,
-                right: 12,
+                top: 10,
+                right: 10,
                 child: Container(
-                  width: 34,
-                  height: 34,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
-                    color: accentColor,
+                    color: borderColor,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: borderColor.withValues(alpha: 0.5),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.check_rounded,
                     color: Color(0xFF07111D),
-                    size: 22,
+                    size: 20,
                   ),
                 ),
               ),
+
+            // ── Bottom banner ──
             Positioned(
-              left: 12,
-              bottom: 74,
-              child: Text(
-                badgeText,
-                style: GoogleFonts.dmSans(
-                  color: accentColor == _BattlePalette.yellow
-                      ? const Color(0xFFFFD36A)
-                      : const Color(0xFF84EAFF),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    height: bannerH,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _BattlePalette.cardBottom.withValues(alpha: 0.82),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        width: 1,
+                      color: const Color(0xFF111524).withValues(alpha: 0.88),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.06),
+                        ),
                       ),
                     ),
                     child: Row(
                       children: [
-                        _BattleAvatar(user: scene.author, size: 30),
+                        _Avatar(user: scene.author, size: 34),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
@@ -404,35 +398,38 @@ class _BattleCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.dmSans(
-                                  color: _BattlePalette.textWhite,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                  letterSpacing: -0.2,
+                                  color: _P.textWhite,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.1,
                                 ),
                               ),
-                              const SizedBox(height: 1),
+                              const SizedBox(height: 2),
                               Text(
-                                '${_formatCompactCount(scene.likesCount)} likes • ${(percent * 100).round()}%',
+                                metrics,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.dmSans(
-                                  color: const Color(0xFFCCD2E0),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
+                                  color: const Color(0xFFB8BFD0),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 4),
                         Container(
-                          width: 28,
-                          height: 28,
+                          width: 26,
+                          height: 26,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF262C46),
-                            borderRadius: BorderRadius.circular(14),
+                            color: const Color(0xFF1C2134),
+                            borderRadius: BorderRadius.circular(13),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.chevron_right_rounded,
-                            size: 18,
-                            color: Color(0xFF9299AB),
+                            size: 16,
+                            color: Colors.white.withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -448,383 +445,220 @@ class _BattleCard extends StatelessWidget {
   }
 }
 
-class _VoteButton extends StatelessWidget {
+// ──────────────────────────────────────────────────────────────────────────────
+// Vote Button
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _VoteButton extends StatefulWidget {
   const _VoteButton({
     required this.label,
-    required this.background,
-    required this.foreground,
+    required this.gradient,
+    required this.glowColor,
+    required this.textColor,
     required this.enabled,
     required this.isSelected,
-    this.onTap,
+    required this.onTap,
   });
 
   final String label;
-  final Color background;
-  final Color foreground;
+  final Gradient gradient;
+  final Color glowColor;
+  final Color textColor;
   final bool enabled;
   final bool isSelected;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
+
+  @override
+  State<_VoteButton> createState() => _VoteButtonState();
+}
+
+class _VoteButtonState extends State<_VoteButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scale = Tween(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails _) {
+    if (!widget.enabled) return;
+    _ctrl.forward();
+  }
+
+  void _onTapUp(TapUpDetails _) {
+    _ctrl.reverse();
+    if (!widget.enabled) return;
+    widget.onTap();
+  }
+
+  void _onTapCancel() {
+    _ctrl.reverse();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled || isSelected ? 1 : 0.72,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(22),
-          child: Ink(
-            height: 78,
+    final dimmed = !widget.enabled && !widget.isSelected;
+
+    return AnimatedBuilder(
+      animation: _scale,
+      builder: (context, child) => Transform.scale(
+        scale: _scale.value,
+        child: child,
+      ),
+      child: GestureDetector(
+        onTapDown: _onTapDown,
+        onTapUp: _onTapUp,
+        onTapCancel: _onTapCancel,
+        child: AnimatedOpacity(
+          opacity: dimmed ? 0.55 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            height: 76,
             decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
+              gradient: widget.gradient,
+              border: Border.all(
+                color: Colors.white
+                    .withValues(alpha: widget.isSelected ? 0.40 : 0.18),
+                width: widget.isSelected ? 1.6 : 1.0,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: background.withValues(alpha: 0.22),
-                  blurRadius: 18,
+                  color: widget.glowColor
+                      .withValues(alpha: widget.isSelected ? 0.45 : 0.30),
+                  blurRadius: widget.isSelected ? 30 : 22,
+                  spreadRadius: widget.isSelected ? 2 : 0,
                   offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: widget.glowColor.withValues(alpha: 0.14),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Center(
-              child: Text(
-                label,
-                style: GoogleFonts.dmSans(
-                  color: foreground,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ResultPanel extends StatelessWidget {
-  const _ResultPanel({required this.duel, required this.voted});
-
-  final DuelModel duel;
-  final bool voted;
-
-  @override
-  Widget build(BuildContext context) {
-    final winnerIsA = duel.percentA >= duel.percentB;
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _BattlePalette.panel,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: _BattlePalette.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: _BattlePalette.surface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.emoji_events_outlined,
-                  color: _BattlePalette.yellow,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      voted ? 'Résultat provisoire' : 'Vote en direct',
-                      style: GoogleFonts.dmSans(
-                        color: _BattlePalette.textWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
+            child: Stack(
+              children: [
+                // Top highlight
+                Positioned(
+                  top: 0,
+                  left: 8,
+                  right: 8,
+                  child: Container(
+                    height: 22,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.26),
+                          Colors.white.withValues(alpha: 0.0),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      voted
-                          ? 'Ton vote est enregistré pour ${duel.userVote == 0 ? duel.sceneA.author.displayName : duel.sceneB.author.displayName}'
-                          : 'Le leader actuel est ${winnerIsA ? duel.sceneA.author.displayName : duel.sceneB.author.displayName}',
-                      style: GoogleFonts.dmSans(
-                        color: _BattlePalette.muted,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
-                      ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    widget.label,
+                    style: GoogleFonts.dmSans(
+                      color: widget.textColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.2,
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _ResultLegend(
-                  label: duel.sceneA.author.displayName,
-                  value: '${(duel.percentA * 100).round()}%',
-                  color: _BattlePalette.cyan,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _ResultLegend(
-                  label: duel.sceneB.author.displayName,
-                  value: '${(duel.percentB * 100).round()}%',
-                  color: _BattlePalette.yellow,
-                  alignEnd: true,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: SizedBox(
-              height: 12,
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: (duel.percentA * 1000).round(),
-                    child: Container(color: _BattlePalette.cyan),
                   ),
-                  Expanded(
-                    flex: (duel.percentB * 1000).round(),
-                    child: Container(color: _BattlePalette.yellow),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _MetaStat(
-                  label: 'Scène A',
-                  value: duel.sceneA.title,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _MetaStat(
-                  label: 'Scène B',
-                  value: duel.sceneB.title,
-                  alignEnd: true,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _ResultLegend extends StatelessWidget {
-  const _ResultLegend({
-    required this.label,
-    required this.value,
-    required this.color,
-    this.alignEnd = false,
-  });
+// ──────────────────────────────────────────────────────────────────────────────
+// Scene Artwork
+// ──────────────────────────────────────────────────────────────────────────────
 
-  final String label;
-  final String value;
-  final Color color;
-  final bool alignEnd;
+class _SceneArtwork extends StatelessWidget {
+  const _SceneArtwork({required this.scene});
+  final SceneModel scene;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
-          children: [
-            if (!alignEnd) ...[
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-            ],
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
-                  color: _BattlePalette.textWhite,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            if (alignEnd) ...[
-              const SizedBox(width: 6),
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: GoogleFonts.dmSans(
-            color: _BattlePalette.muted,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
+    final asset = _sceneAssetFor(scene.id);
+    if (asset != null) {
+      return DecoratedBox(
+        decoration: const BoxDecoration(color: Color(0xFF111524)),
+        child: SvgPicture.asset(asset, fit: BoxFit.cover),
+      );
+    }
+    return Image.network(
+      scene.thumbnailUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          Container(color: const Color(0xFF111524)),
     );
   }
 }
 
-class _MetaStat extends StatelessWidget {
-  const _MetaStat({
-    required this.label,
-    required this.value,
-    this.alignEnd = false,
-  });
+// ──────────────────────────────────────────────────────────────────────────────
+// Avatar
+// ──────────────────────────────────────────────────────────────────────────────
 
-  final String label;
-  final String value;
-  final bool alignEnd;
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.user, required this.size});
+  final UserModel user;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            color: _BattlePalette.muted,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
+    final asset = _avatarAssetFor(user.id);
+    if (asset != null) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: GoogleFonts.dmSans(
-            color: _BattlePalette.textWhite,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            height: 1.3,
-          ),
+        child: ClipOval(
+          child: SvgPicture.asset(asset, fit: BoxFit.cover),
         ),
-      ],
-    );
+      );
+    }
+    return UserAvatar(url: user.avatarUrl, size: size);
   }
 }
 
-class _InfoPill extends StatelessWidget {
-  const _InfoPill({required this.icon, required this.label});
+// ──────────────────────────────────────────────────────────────────────────────
+// Ambient Glow
+// ──────────────────────────────────────────────────────────────────────────────
 
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _BattlePalette.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _BattlePalette.divider),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: _BattlePalette.textWhite),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
-                color: _BattlePalette.textWhite,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FooterGrid extends StatelessWidget {
-  const _FooterGrid();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 120,
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: _BattlePalette.divider, width: 1.2),
-                  right: BorderSide(color: _BattlePalette.divider, width: 0.6),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: _BattlePalette.divider, width: 1.2),
-                  left: BorderSide(color: _BattlePalette.divider, width: 0.6),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BattleGlow extends StatelessWidget {
-  const _BattleGlow({
+class _AmbientGlow extends StatelessWidget {
+  const _AmbientGlow({
     required this.color,
     required this.size,
     required this.opacity,
   });
-
   final Color color;
   final double size;
   final double opacity;
@@ -842,7 +676,7 @@ class _BattleGlow extends StatelessWidget {
             BoxShadow(
               color: color.withValues(alpha: opacity),
               blurRadius: 80,
-              spreadRadius: 24,
+              spreadRadius: 20,
             ),
           ],
         ),
@@ -851,77 +685,74 @@ class _BattleGlow extends StatelessWidget {
   }
 }
 
-class _BattleSceneArtwork extends StatelessWidget {
-  const _BattleSceneArtwork({required this.scene});
+// ──────────────────────────────────────────────────────────────────────────────
+// Palette — PRD pixel-perfect colors
+// ──────────────────────────────────────────────────────────────────────────────
 
-  final SceneModel scene;
+class _P {
+  // Backgrounds
+  static const bgDeep = Color(0xFF070B1A);
 
-  @override
-  Widget build(BuildContext context) {
-    final assetPath = _sceneAssetPathFor(scene.id);
-    if (assetPath != null) {
-      return DecoratedBox(
-        decoration: const BoxDecoration(color: _BattlePalette.cardBottom),
-        child: SvgPicture.asset(
-          assetPath,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
+  // Accent
+  static const cyan = Color(0xFF47D7FF);
+  static const gold = Color(0xFFF2B33A);
 
-    return Image.network(
-      scene.thumbnailUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(color: _BattlePalette.cardBottom),
-    );
-  }
-}
-
-class _BattleAvatar extends StatelessWidget {
-  const _BattleAvatar({required this.user, required this.size});
-
-  final UserModel user;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final assetPath = _avatarAssetPathFor(user.id);
-    if (assetPath == null) {
-      return UserAvatar(url: user.avatarUrl, size: size);
-    }
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-      ),
-      child: ClipOval(
-        child: SvgPicture.asset(
-          assetPath,
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-}
-
-class _BattlePalette {
-  static const background = Color(0xFF050816);
-  static const cyan = Color(0xFF35D9FF);
-  static const yellow = Color(0xFFF6B72E);
-  static const red = Color(0xFFFF5C6A);
+  // Text
   static const textWhite = Color(0xFFF7F8FC);
-  static const muted = Color(0xFF9AA3B2);
-  static const cardBottom = Color(0xFF151B34);
-  static const divider = Color(0xFF14192D);
-  static const surface = Color(0xFF0E1327);
-  static const panel = Color(0xFF0B1022);
+
+  // Card border gradients
+  static const cyanBorderGrad = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF47D7FF),
+      Color(0xFF3DCCFF),
+      Color(0xFF5A9BFF),
+    ],
+  );
+
+  static const goldBorderGrad = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [
+      Color(0xFFFFE168),
+      Color(0xFFF2B33A),
+      Color(0xFFFF9A42),
+    ],
+  );
+
+  // Vote button gradients
+  static const voteAGrad = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF79F4FF),
+      Color(0xFF3DCCFF),
+      Color(0xFF1AB6FF),
+      Color(0xFF4E7CFF),
+    ],
+    stops: [0.0, 0.35, 0.68, 1.0],
+  );
+
+  static const voteBGrad = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFFF07A),
+      Color(0xFFF8BC2C),
+      Color(0xFFFF9A2F),
+      Color(0xFFFF7A1A),
+    ],
+    stops: [0.0, 0.34, 0.7, 1.0],
+  );
 }
 
-String? _sceneAssetPathFor(String sceneId) {
-  switch (sceneId) {
+// ──────────────────────────────────────────────────────────────────────────────
+// Asset mappings
+// ──────────────────────────────────────────────────────────────────────────────
+
+String? _sceneAssetFor(String id) {
+  switch (id) {
     case 's1':
       return 'assets/scenes/scene_rupture_telephone.svg';
     case 's2':
@@ -937,8 +768,8 @@ String? _sceneAssetPathFor(String sceneId) {
   }
 }
 
-String? _avatarAssetPathFor(String userId) {
-  switch (userId) {
+String? _avatarAssetFor(String id) {
+  switch (id) {
     case 'u1':
       return 'assets/avatars/avatar_luna_act.svg';
     case 'u2':
@@ -958,12 +789,8 @@ String? _avatarAssetPathFor(String userId) {
   }
 }
 
-String _formatCompactCount(int count) {
-  if (count >= 1000000) {
-    return '${(count / 1000000).toStringAsFixed(1)}M';
-  }
-  if (count >= 1000) {
-    return '${(count / 1000).toStringAsFixed(1)}k';
-  }
-  return count.toString();
+String _fmtCount(int n) {
+  if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+  if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+  return n.toString();
 }
