@@ -30,7 +30,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.white, size: 20),
-          onPressed: () => context.go(AppRouter.profilePath('u1')),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
         title: Text(
           'Classement',
@@ -43,7 +49,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () => _showChartSheet(context, entries),
             icon: const Icon(Icons.bar_chart_rounded, color: AppColors.white, size: 20),
           ),
         ],
@@ -225,4 +231,94 @@ class _LeaderboardRow extends StatelessWidget {
       ),
     );
   }
+}
+
+
+void _showChartSheet(BuildContext context, List<dynamic> entries) {
+  final top = entries.take(5).toList();
+  final maxScore = top.isEmpty
+      ? 1.0
+      : top.map((e) => (e.score as num).toDouble()).reduce((a, b) => a > b ? a : b);
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.surfaceCard,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderSubtle,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Top 5 — visualisation',
+              style: GoogleFonts.dmSans(
+                fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 160,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (final e in top)
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${(e.score as num).toInt()}',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11,
+                                color: AppColors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              height: 110 * ((e.score as num) / maxScore),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [AppColors.yellow, AppColors.cyan],
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '#${e.rank}',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11, color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

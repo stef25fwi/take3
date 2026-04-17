@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../router/router.dart';
 import '../services/mock_data.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -26,7 +28,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: _C.navy,
-      body: _ProfileBody(user: user, scenes: scenes),
+      body: _ProfileBody(userId: userId, user: user, scenes: scenes),
     );
   }
 }
@@ -35,26 +37,29 @@ class ProfileScreen extends ConsumerWidget {
 // Body
 // ──────────────────────────────────────────────────────────────────────────────
 
-class _ProfileBody extends StatefulWidget {
-  const _ProfileBody({required this.user, required this.scenes});
+class _ProfileBody extends ConsumerStatefulWidget {
+  const _ProfileBody({
+    required this.userId,
+    required this.user,
+    required this.scenes,
+  });
 
+  final String userId;
   final UserModel user;
   final List<SceneModel> scenes;
 
   @override
-  State<_ProfileBody> createState() => _ProfileBodyState();
+  ConsumerState<_ProfileBody> createState() => _ProfileBodyState();
 }
 
-class _ProfileBodyState extends State<_ProfileBody>
+class _ProfileBodyState extends ConsumerState<_ProfileBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-  bool _isFollowing = false;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
-    _isFollowing = widget.user.isFollowing;
   }
 
   @override
@@ -63,8 +68,17 @@ class _ProfileBodyState extends State<_ProfileBody>
     super.dispose();
   }
 
+  Future<void> _onLogout() async {
+    await ref.read(authProvider.notifier).logout();
+    if (mounted) {
+      context.go(AppRouter.onboarding);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final liveUser =
+        ref.watch(profileProvider(widget.userId)).user ?? widget.user;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -80,7 +94,7 @@ class _ProfileBodyState extends State<_ProfileBody>
         bottom: false,
         child: Column(
           children: [
-            _TopBar(),
+            _TopBar(onLogout: _onLogout),
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -90,14 +104,21 @@ class _ProfileBodyState extends State<_ProfileBody>
                       child: Column(
                         children: [
                           const SizedBox(height: 12),
-                          _IdentityBloc(user: widget.user),
+                          _IdentityBloc(user: liveUser),
                           const SizedBox(height: 18),
-                          _StatsRow(user: widget.user),
+                          _StatsRow(user: liveUser),
                           const SizedBox(height: 18),
                           _ActionButtons(
-                            isFollowing: _isFollowing,
+                            isFollowing: liveUser.isFollowing,
                             onFollowTap: () {
-                              setState(() => _isFollowing = !_isFollowing);
+                              ref
+                                  .read(profileProvider(widget.userId).notifier)
+                                  .toggleFollow();
+                            },
+                            onShareTap: () {
+                              ref
+                                  .read(profileProvider(widget.userId).notifier)
+                                  .shareProfile();
                             },
                           ),
                           const SizedBox(height: 16),
@@ -124,7 +145,12 @@ class _ProfileBodyState extends State<_ProfileBody>
                         (context, index) {
                           final scene =
                               widget.scenes[index % widget.scenes.length];
-                          return _PerformanceCard(scene: scene, index: index);
+                          return _PerformanceCard(
+                            scene: scene,
+                            index: index,
+                            onTap: () =>
+                                context.go(AppRouter.scenePath(scene.id)),
+                          );
                         },
                         childCount: 6,
                       ),
@@ -146,6 +172,10 @@ class _ProfileBodyState extends State<_ProfileBody>
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _TopBar extends StatelessWidget {
+  const _TopBar({required this.onLogout});
+
+  final VoidCallback onLogout;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -154,7 +184,13 @@ class _TopBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () => Navigator.maybePop(context),
+            onTap: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRouter.home);
+              }
+            },
             behavior: HitTestBehavior.opaque,
             child: const SizedBox(
               width: 44,
@@ -168,20 +204,69 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          GestureDetector(
-            onTap: () {},
-            behavior: HitTestBehavior.opaque,
-            child: const SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: Icon(
-                  Icons.search_rounded,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () => context.go(AppRouter.explore),
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(
+                  Icons.more_vert_rounded,
                   color: Colors.white,
                   size: 22,
                 ),
+                color: const Color(0xFF1A2540),
+                onSelected: (value) {
+                  switch (value) {
+                    case 'leaderboard':
+                      context.go(AppRouter.leaderboard);
+                    case 'badges':
+                      context.go(AppRouter.badges);
+                    case 'logout':
+                      onLogout();
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'leaderboard',
+                    child: Text(
+                      'Voir le classement',
+                      style: GoogleFonts.dmSans(color: Colors.white),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'badges',
+                    child: Text(
+                      'Badges & stats',
+                      style: GoogleFonts.dmSans(color: Colors.white),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Text(
+                      'Se déconnecter',
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFFFF6B6B),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -402,10 +487,12 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.isFollowing,
     required this.onFollowTap,
+    required this.onShareTap,
   });
 
   final bool isFollowing;
   final VoidCallback onFollowTap;
+  final VoidCallback onShareTap;
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +557,7 @@ class _ActionButtons extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         GestureDetector(
-          onTap: () {},
+          onTap: onShareTap,
           child: Container(
             width: 44,
             height: 44,
@@ -482,7 +569,7 @@ class _ActionButtons extends StatelessWidget {
               ),
             ),
             child: Icon(
-              Icons.bookmark_border_rounded,
+              Icons.ios_share_rounded,
               color: Colors.white.withValues(alpha: 0.70),
               size: 20,
             ),
@@ -557,18 +644,26 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _PerformanceCard extends StatelessWidget {
-  const _PerformanceCard({required this.scene, required this.index});
+  const _PerformanceCard({
+    required this.scene,
+    required this.index,
+    required this.onTap,
+  });
 
   final SceneModel scene;
   final int index;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final demoCounts = ['12.4K', '8.3K', '6.1K', '5.8K', '4.2K', '3.9K'];
     final likeText = demoCounts[index % demoCounts.length];
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -622,6 +717,7 @@ class _PerformanceCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

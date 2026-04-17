@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../router/router.dart';
 import '../services/mock_data.dart';
 import '../theme/app_theme.dart';
 
-class SceneDetailScreen extends StatefulWidget {
+class SceneDetailScreen extends ConsumerStatefulWidget {
   const SceneDetailScreen({
     super.key,
     required this.title,
@@ -18,18 +20,56 @@ class SceneDetailScreen extends StatefulWidget {
   final SceneModel? scene;
 
   @override
-  State<SceneDetailScreen> createState() => _SceneDetailScreenState();
+  ConsumerState<SceneDetailScreen> createState() => _SceneDetailScreenState();
 }
 
-class _SceneDetailScreenState extends State<SceneDetailScreen> {
+class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
   late SceneModel _scene;
   bool _liked = false;
+  final List<_SceneComment> _comments = <_SceneComment>[];
 
   @override
   void initState() {
     super.initState();
     _scene = widget.scene ?? MockData.scenes.first;
     _liked = _scene.isLiked;
+  }
+
+  void _onBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRouter.explore);
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    setState(() => _liked = !_liked);
+    await ref.read(feedProvider.notifier).toggleLike(_scene.id);
+  }
+
+  void _openComments() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return _CommentsSheet(
+          comments: _comments,
+          onSubmit: (text) {
+            setState(() {
+              _comments.insert(
+                0,
+                _SceneComment(author: 'Toi', text: text, postedAt: DateTime.now()),
+              );
+            });
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -41,7 +81,7 @@ class _SceneDetailScreenState extends State<SceneDetailScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.white, size: 20),
-          onPressed: () => context.go(AppRouter.explore),
+          onPressed: _onBack,
         ),
         title: Text(
           'Détail scène',
@@ -169,7 +209,7 @@ class _SceneDetailScreenState extends State<SceneDetailScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => setState(() => _liked = !_liked),
+                    onPressed: _toggleLike,
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(
                         color: _liked ? AppColors.red : AppColors.borderSubtle,
@@ -180,7 +220,7 @@ class _SceneDetailScreenState extends State<SceneDetailScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: Text(
-                      'Liker',
+                      _liked ? 'Liké' : 'Liker',
                       style: GoogleFonts.dmSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -192,7 +232,7 @@ class _SceneDetailScreenState extends State<SceneDetailScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _openComments,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.cyan,
                       foregroundColor: AppColors.navy,
@@ -280,6 +320,180 @@ class _StatBox extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+class _SceneComment {
+  const _SceneComment({
+    required this.author,
+    required this.text,
+    required this.postedAt,
+  });
+
+  final String author;
+  final String text;
+  final DateTime postedAt;
+}
+
+class _CommentsSheet extends StatefulWidget {
+  const _CommentsSheet({required this.comments, required this.onSubmit});
+
+  final List<_SceneComment> comments;
+  final ValueChanged<String> onSubmit;
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final TextEditingController _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty) return;
+    widget.onSubmit(text);
+    _ctrl.clear();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderSubtle,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Commentaires',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 320),
+                child: widget.comments.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          "Sois le premier a commenter cette scene.",
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: widget.comments.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (_, index) {
+                          final c = widget.comments[index];
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.borderSubtle),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  c.author,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.cyan,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  c.text,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 13,
+                                    color: AppColors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      style: GoogleFonts.dmSans(color: AppColors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: "Ecris un commentaire...",
+                        hintStyle: GoogleFonts.dmSans(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surfaceLight,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.borderSubtle),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.borderSubtle),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.cyan),
+                        ),
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _submit(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: _submit,
+                    icon: const Icon(Icons.send_rounded, color: AppColors.cyan),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

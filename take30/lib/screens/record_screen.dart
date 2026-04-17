@@ -242,7 +242,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                       _SideControl(
                         icon: Icons.auto_awesome_rounded,
                         label: 'Effets',
-                        onTap: isRecording ? null : () {},
+                        onTap: isRecording ? null : _showEffectsSheet,
                       ),
                     ],
                   ),
@@ -271,6 +271,59 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
           ref.read(recordingProvider.notifier).setScene(scene);
           Navigator.pop(context);
         },
+      ),
+    );
+  }
+
+  void _showEffectsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF111827),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: _K.yellow,
+                size: 36,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Effets (bientôt)',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Filtres et effets vidéo arrivent dans une prochaine version.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.65),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

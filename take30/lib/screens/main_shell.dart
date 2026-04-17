@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
@@ -20,7 +22,7 @@ class MainShell extends StatelessWidget {
     return 0;
   }
 
-  void _go(BuildContext context, int index) {
+  void _go(BuildContext context, int index, String currentUserId) {
     switch (index) {
       case 0:
         context.go(AppRouter.home);
@@ -31,13 +33,14 @@ class MainShell extends StatelessWidget {
       case 3:
         context.go(AppRouter.battle);
       case 4:
-        context.go(AppRouter.profilePath('u1'));
+        context.go(AppRouter.profilePath(currentUserId));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final index = _indexForLocation(context);
+    final currentUserId = ref.watch(authProvider).user?.id ?? 'u1';
     return Scaffold(
       backgroundColor: AppColors.navy,
       body: child,
@@ -56,17 +59,17 @@ class MainShell extends StatelessWidget {
                   icon: Icons.home_rounded,
                   label: 'Accueil',
                   selected: index == 0,
-                  onTap: () => _go(context, 0),
+                  onTap: () => _go(context, 0, currentUserId),
                 ),
                 _Tab(
                   icon: Icons.explore_rounded,
                   label: 'Explorer',
                   selected: index == 1,
-                  onTap: () => _go(context, 1),
+                  onTap: () => _go(context, 1, currentUserId),
                 ),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => _go(context, 2),
+                    onTap: () => _go(context, 2, currentUserId),
                     behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -112,13 +115,13 @@ class MainShell extends StatelessWidget {
                   icon: Icons.sports_mma_outlined,
                   label: 'Battle',
                   selected: index == 3,
-                  onTap: () => _go(context, 3),
+                  onTap: () => _go(context, 3, currentUserId),
                 ),
                 _Tab(
                   icon: Icons.person_outline_rounded,
                   label: 'Profil',
                   selected: index == 4,
-                  onTap: () => _go(context, 4),
+                  onTap: () => _go(context, 4, currentUserId),
                 ),
               ],
             ),

@@ -54,7 +54,13 @@ class NotificationsScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     _NotificationsTopBar(
-                      onBackTap: () => context.go(AppRouter.home),
+                      onBackTap: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(AppRouter.home);
+                        }
+                      },
                     ),
                     const SizedBox(height: 16),
                     _NotificationsSummaryCard(unreadCount: unreadCount),
@@ -102,7 +108,10 @@ class NotificationsScreen extends ConsumerWidget {
         context.go(AppRouter.battle);
       case NotificationType.achievement:
         context.go(AppRouter.badges);
-      default:
+      case NotificationType.like:
+      case NotificationType.comment:
+        context.go(AppRouter.explore);
+      case NotificationType.system:
         context.go(AppRouter.home);
     }
   }
