@@ -294,7 +294,7 @@ class _BattleCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // ── Thumbnail ──
-            _SceneArtwork(scene: scene),
+            _SceneArtwork(scene: scene, side: sideLabel),
 
             // ── Dark vignette ──
             Container(
@@ -599,23 +599,37 @@ class _VoteButtonState extends State<_VoteButton>
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _SceneArtwork extends StatelessWidget {
-  const _SceneArtwork({required this.scene});
+  const _SceneArtwork({required this.scene, this.side = 'A'});
   final SceneModel scene;
+  final String side;
 
   @override
   Widget build(BuildContext context) {
-    final asset = _sceneAssetFor(scene.id);
-    if (asset != null) {
-      return DecoratedBox(
-        decoration: const BoxDecoration(color: Color(0xFF111524)),
-        child: SvgPicture.asset(asset, fit: BoxFit.cover),
-      );
-    }
-    return Image.network(
-      scene.thumbnailUrl,
+    // Use battle PNG photos first
+    final battleAsset = side == 'A'
+        ? 'assets/scenes/battle_player_a.png'
+        : 'assets/scenes/battle_player_b.png';
+
+    return Image.asset(
+      battleAsset,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) =>
-          Container(color: const Color(0xFF111524)),
+      errorBuilder: (_, __, ___) {
+        // Fallback: SVG scene asset
+        final svgAsset = _sceneAssetFor(scene.id);
+        if (svgAsset != null) {
+          return DecoratedBox(
+            decoration: const BoxDecoration(color: Color(0xFF111524)),
+            child: SvgPicture.asset(svgAsset, fit: BoxFit.cover),
+          );
+        }
+        // Fallback: network thumbnail
+        return Image.network(
+          scene.thumbnailUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) =>
+              Container(color: const Color(0xFF111524)),
+        );
+      },
     );
   }
 }
