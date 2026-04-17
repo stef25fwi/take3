@@ -80,10 +80,7 @@ class _ProfileBodyState extends State<_ProfileBody>
         bottom: false,
         child: Column(
           children: [
-            // ── Top bar ──
             _TopBar(),
-
-            // ── Scrollable content ──
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -93,42 +90,26 @@ class _ProfileBodyState extends State<_ProfileBody>
                       child: Column(
                         children: [
                           const SizedBox(height: 12),
-
-                          // ── Identity bloc ──
                           _IdentityBloc(user: widget.user),
-
                           const SizedBox(height: 18),
-
-                          // ── Stats row ──
                           _StatsRow(user: widget.user),
-
                           const SizedBox(height: 18),
-
-                          // ── Action buttons ──
                           _ActionButtons(
                             isFollowing: _isFollowing,
                             onFollowTap: () {
                               setState(() => _isFollowing = !_isFollowing);
                             },
                           ),
-
                           const SizedBox(height: 16),
                         ],
                       ),
                     ),
                   ),
-
-                  // ── Tab bar (pinned) ──
                   SliverPersistentHeader(
                     pinned: true,
-                    delegate: _TabBarDelegate(
-                      tabController: _tabCtrl,
-                    ),
+                    delegate: _TabBarDelegate(tabController: _tabCtrl),
                   ),
-
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-                  // ── Grid ──
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     sliver: SliverGrid(
@@ -143,16 +124,12 @@ class _ProfileBodyState extends State<_ProfileBody>
                         (context, index) {
                           final scene =
                               widget.scenes[index % widget.scenes.length];
-                          return _PerformanceCard(
-                            scene: scene,
-                            index: index,
-                          );
+                          return _PerformanceCard(scene: scene, index: index);
                         },
                         childCount: 6,
                       ),
                     ),
                   ),
-
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               ),
@@ -225,10 +202,8 @@ class _IdentityBloc extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Avatar
         _ProfileAvatar(user: user, size: 78),
         const SizedBox(width: 16),
-        // Name + badge + role
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,22 +331,15 @@ class _StatsRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _StatColumn(
-            value: '${user.scenesCount}',
-            label: 'Scènes',
-          ),
+          child: _StatColumn(value: '${user.scenesCount}', label: 'Scènes'),
         ),
         Expanded(
           child: _StatColumn(
-            value: _fmtK(user.followersCount),
-            label: 'Followers',
-          ),
+              value: _fmtK(user.followersCount), label: 'Followers'),
         ),
         Expanded(
-          child: _StatColumn(
-            value: _fmtK(user.likesCount),
-            label: 'Likes',
-          ),
+          child:
+              _StatColumn(value: _fmtK(user.likesCount), label: 'Likes'),
         ),
       ],
     );
@@ -428,7 +396,6 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Follow
         Expanded(
           flex: 5,
           child: GestureDetector(
@@ -459,10 +426,7 @@ class _ActionButtons extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(width: 10),
-
-        // Message
         Expanded(
           flex: 5,
           child: GestureDetector(
@@ -489,10 +453,7 @@ class _ActionButtons extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(width: 10),
-
-        // Small action button (bookmark)
         GestureDetector(
           onTap: () {},
           child: Container(
@@ -596,16 +557,12 @@ class _PerformanceCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Image
           Image.network(
             scene.thumbnailUrl,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFF1A2540),
-            ),
+            errorBuilder: (_, __, ___) =>
+                Container(color: const Color(0xFF1A2540)),
           ),
-
-          // Warm cinema overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -621,8 +578,6 @@ class _PerformanceCard extends StatelessWidget {
               ),
             ),
           ),
-
-          // Bottom left: heart + count
           Positioned(
             left: 10,
             bottom: 10,
