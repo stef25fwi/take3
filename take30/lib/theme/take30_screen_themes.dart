@@ -96,10 +96,10 @@ class T30Colors {
 
 class T30Text {
   static TextStyle logo = GoogleFonts.dmSans(
-    fontSize: 52,
-    fontWeight: FontWeight.w800,
+    fontSize: 72,
+    fontWeight: FontWeight.w900,
     color: T30Colors.white,
-    letterSpacing: -2.0,
+    letterSpacing: -3.0,
     height: 1,
   );
 

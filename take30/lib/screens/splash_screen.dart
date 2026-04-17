@@ -55,7 +55,10 @@ class _SplashScreenState extends State<SplashScreen> {
                   textAlign: TextAlign.center,
                   style: T30Text.body.copyWith(
                     color: T30Colors.textSecondary,
-                    fontSize: 15,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.3,
+                    height: 1.4,
                   ),
                 ),
               ],
