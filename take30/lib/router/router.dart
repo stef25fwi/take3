@@ -9,8 +9,8 @@ import '../screens/battle_screen.dart';
 import '../screens/daily_challenge_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/leaderboard_screen.dart';
 import '../screens/main_shell.dart';
-import '../pages/take30_ranking_page.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/preview_publish_screen.dart';
@@ -91,23 +91,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               return ProfileScreen(userId: userId);
             },
           ),
+          GoRoute(
+            path: AppRouter.notifications,
+            builder: (_, __) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.badges,
+            builder: (_, __) => const BadgesStatsScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.leaderboard,
+            builder: (_, __) => const LeaderboardScreen(),
+          ),
         ],
-      ),
-      GoRoute(
-        path: AppRouter.notifications,
-        builder: (_, __) => const NotificationsScreen(),
       ),
       GoRoute(
         path: AppRouter.challenge,
         builder: (_, __) => const DailyChallengeScreen(),
-      ),
-      GoRoute(
-        path: AppRouter.badges,
-        builder: (_, __) => const BadgesStatsScreen(),
-      ),
-      GoRoute(
-        path: AppRouter.leaderboard,
-        builder: (_, __) => const Take30RankingPage(),
       ),
       GoRoute(
         path: AppRouter.preview,

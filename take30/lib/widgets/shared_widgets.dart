@@ -109,10 +109,13 @@ class UserAvatar extends StatelessWidget {
   }
 
   Widget _buildAvatarImage(String? preferredAsset) {
+    final cacheDim = (size * 2).round();
     if (preferredAsset != null) {
       return Image.asset(
         preferredAsset,
         fit: BoxFit.cover,
+        cacheWidth: cacheDim,
+        cacheHeight: cacheDim,
         errorBuilder: (_, __, ___) => _buildUrlImage(),
       );
     }
@@ -120,6 +123,7 @@ class UserAvatar extends StatelessWidget {
   }
 
   Widget _buildUrlImage() {
+    final cacheDim = (size * 2).round();
     if (url == null) {
       return _placeholder();
     }
@@ -127,12 +131,16 @@ class UserAvatar extends StatelessWidget {
       return Image.asset(
         url!,
         fit: BoxFit.cover,
+        cacheWidth: cacheDim,
+        cacheHeight: cacheDim,
         errorBuilder: (_, __, ___) => _placeholder(),
       );
     }
     return Image.network(
       url!,
       fit: BoxFit.cover,
+      cacheWidth: cacheDim,
+      cacheHeight: cacheDim,
       errorBuilder: (_, __, ___) => _placeholder(),
     );
   }

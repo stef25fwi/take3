@@ -110,7 +110,12 @@ class NotificationsScreen extends ConsumerWidget {
         context.go(AppRouter.badges);
       case NotificationType.like:
       case NotificationType.comment:
-        context.go(AppRouter.explore);
+        final sceneId = notification.sceneId;
+        if (sceneId != null && sceneId.isNotEmpty) {
+          context.go(AppRouter.scenePath(sceneId));
+        } else {
+          context.go(AppRouter.explore);
+        }
       case NotificationType.system:
         context.go(AppRouter.home);
     }
@@ -262,9 +267,7 @@ class _NotificationCard extends StatelessWidget {
       onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
+        child: Container(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
             decoration: BoxDecoration(
               color: unread
@@ -369,8 +372,7 @@ class _NotificationCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

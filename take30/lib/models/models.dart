@@ -171,6 +171,8 @@ class NotificationModel {
     required this.time,
     this.isRead = false,
     this.avatarUrl,
+    this.sceneId,
+    this.userId,
   });
 
   final String id;
@@ -180,6 +182,8 @@ class NotificationModel {
   final DateTime time;
   final bool isRead;
   final String? avatarUrl;
+  final String? sceneId;
+  final String? userId;
 }
 
 enum NotificationType { like, comment, duel, achievement, system }

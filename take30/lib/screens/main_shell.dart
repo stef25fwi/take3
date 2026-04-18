@@ -19,7 +19,7 @@ class MainShell extends ConsumerWidget {
     if (location.startsWith(AppRouter.record)) return 2;
     if (location.startsWith(AppRouter.battle)) return 3;
     if (location.startsWith(AppRouter.profile)) return 4;
-    return 0;
+    return -1;
   }
 
   void _go(BuildContext context, int index, String currentUserId) {
@@ -40,7 +40,8 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = _indexForLocation(context);
-    final currentUserId = ref.watch(authProvider).user?.id ?? 'u1';
+    final currentUserId =
+        ref.watch(authProvider.select((s) => s.user?.id)) ?? 'u1';
     return Scaffold(
       backgroundColor: AppColors.navy,
       body: child,

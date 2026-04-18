@@ -207,6 +207,8 @@ class MockData {
       type: NotificationType.like,
       time: DateTime.now().subtract(const Duration(minutes: 2)),
       avatarUrl: Take30Assets.avatarIaFemaleLead,
+      sceneId: 's1',
+      userId: 'u1',
     ),
     NotificationModel(
       id: 'n2',
@@ -222,6 +224,8 @@ class MockData {
       type: NotificationType.comment,
       time: DateTime.now().subtract(const Duration(minutes: 35)),
       avatarUrl: Take30Assets.avatarIaMaleLead,
+      sceneId: 's2',
+      userId: 'u2',
     ),
     NotificationModel(
       id: 'n4',
@@ -237,6 +241,8 @@ class MockData {
       type: NotificationType.like,
       time: DateTime.now().subtract(const Duration(hours: 2)),
       avatarUrl: Take30Assets.avatarIaFemaleAlt,
+      sceneId: 's3',
+      userId: 'u4',
     ),
   ];
 
