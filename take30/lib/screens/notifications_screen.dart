@@ -20,7 +20,7 @@ class NotificationsScreen extends ConsumerWidget {
     final unreadCount = ref.watch(unreadCountProvider);
 
     return Scaffold(
-      backgroundColor: NotificationsTheme.background,
+      backgroundColor: const Color(0xFF0B1020),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

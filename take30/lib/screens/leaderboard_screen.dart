@@ -115,13 +115,16 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
                   itemBuilder: (context, index) {
                     final entry = entries[index];
-                    return _RankingRow(
-                      entry: entry,
-                      scoreText: _formatScore(entry.score),
-                      followersLabel:
-                          _formatFollowers(entry.user.followersCount),
-                      onTap: () =>
-                          context.go(AppRouter.profilePath(entry.user.id)),
+                    return SizedBox(
+                      height: 74,
+                      child: _RankingRow(
+                        entry: entry,
+                        scoreText: _formatScore(entry.score),
+                        followersLabel:
+                            _formatFollowers(entry.user.followersCount),
+                        onTap: () =>
+                            context.go(AppRouter.profilePath(entry.user.id)),
+                      ),
                     );
                   },
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
