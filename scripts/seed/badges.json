@@ -1,0 +1,5 @@
+[
+  { "id": "first_scene",  "userId": "u_luna", "title": "Première scène",    "emoji": "🎬", "description": "Publie ta première scène", "unlockedAt": "2024-12-01T00:00:00.000Z" },
+  { "id": "hot_streak",   "userId": "u_luna", "title": "Hot streak",         "emoji": "🔥", "description": "100 likes en 24 h",        "unlockedAt": "2025-01-05T00:00:00.000Z" },
+  { "id": "first_scene",  "userId": "u_max",  "title": "Première scène",    "emoji": "🎬", "description": "Publie ta première scène", "unlockedAt": "2024-11-12T00:00:00.000Z" }
+]

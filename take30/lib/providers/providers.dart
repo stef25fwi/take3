@@ -24,42 +24,56 @@ final connectivityProvider = ChangeNotifierProvider<ConnectivityService>((ref) =
 final permissionProvider = Provider<PermissionService>((ref) => PermissionService());
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._api) : super(const AuthState());
+  AuthNotifier(this._auth) : super(const AuthState()) {
+    _init();
+  }
 
-  final ApiService _api;
+  final AuthService _auth;
+
+  Future<void> _init() async {
+    await _auth.checkPersistedAuth();
+    final user = _auth.currentUser;
+    if (user != null) {
+      state = state.copyWith(user: user, isAuthenticated: true);
+    }
+  }
 
   Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-    try {
-      final user = await _api.login(email, password);
+    final result = await _auth.loginWithEmail(email: email, password: password);
+    if (result.success) {
       state = state.copyWith(
         isLoading: false,
-        user: user,
+        user: result.user,
         isAuthenticated: true,
         error: null,
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+    } else {
+      state = state.copyWith(isLoading: false, error: result.error);
     }
   }
 
   Future<void> register(String username, String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-    try {
-      final user = await _api.register(username, email, password);
+    final result = await _auth.registerWithEmail(
+      username: username,
+      email: email,
+      password: password,
+    );
+    if (result.success) {
       state = state.copyWith(
         isLoading: false,
-        user: user,
+        user: result.user,
         isAuthenticated: true,
         error: null,
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+    } else {
+      state = state.copyWith(isLoading: false, error: result.error);
     }
   }
 
   Future<void> logout() async {
-    await _api.logout();
+    await _auth.logout();
     state = const AuthState();
   }
 
@@ -97,7 +111,7 @@ class AuthState {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(ref.read(apiServiceProvider)),
+  (ref) => AuthNotifier(ref.read(authServiceProvider)),
 );
 
 class FeedNotifier extends StateNotifier<FeedState> {
@@ -412,8 +426,15 @@ final duelProvider = StateNotifierProvider<DuelNotifier, DuelState>(
   ),
 );
 
-final notificationsProvider = FutureProvider<List<NotificationModel>>((ref) async {
-  return ref.read(apiServiceProvider).getNotifications();
+final notificationsProvider =
+    StreamProvider<List<NotificationModel>>((ref) async* {
+  final api = ref.watch(apiServiceProvider);
+  final uid = api.currentUid;
+  if (uid == null) {
+    yield const <NotificationModel>[];
+    return;
+  }
+  yield* api.notifications.watchForUser(uid);
 });
 
 final unreadCountProvider = Provider<int>((ref) {
@@ -425,8 +446,10 @@ final unreadCountProvider = Provider<int>((ref) {
   );
 });
 
-final dailyChallengeProvider = FutureProvider<DailyChallengeModel>((ref) async {
-  return ref.read(apiServiceProvider).getDailyChallenge();
+final dailyChallengeProvider =
+    StreamProvider<DailyChallengeModel?>((ref) async* {
+  final api = ref.watch(apiServiceProvider);
+  yield* api.dailyChallenge.watchToday();
 });
 
 class ProfileNotifier extends StateNotifier<ProfileState> {

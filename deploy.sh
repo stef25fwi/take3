@@ -25,10 +25,16 @@ echo "════════════════════════�
 echo "  🚀  Take30  —  ADD · COMMIT · PUSH · BUILD · DEPLOY"
 echo "══════════════════════════════════════════"
 
+# ── 0. Flutter pub get ──────────────────────
+echo ""
+echo "▸ [0/5] Flutter pub get..."
+cd "$FLUTTER_DIR"
+"$FLUTTER_BIN" pub get
+echo "  ✓ Dépendances OK"
+
 # ── 1. Flutter analyze ──────────────────────
 echo ""
 echo "▸ [1/5] Flutter analyze..."
-cd "$FLUTTER_DIR"
 "$FLUTTER_BIN" analyze --no-fatal-infos --no-fatal-warnings
 echo "  ✓ Analyse OK"
 

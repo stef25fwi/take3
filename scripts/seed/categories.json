@@ -1,0 +1,10 @@
+[
+  { "id": "comedy",    "name": "Comédie",        "emoji": "😂", "color": "#F5A623", "order": 1, "scenesCount": 0 },
+  { "id": "drama",     "name": "Drame",          "emoji": "🎭", "color": "#BD10E0", "order": 2, "scenesCount": 0 },
+  { "id": "action",    "name": "Action",         "emoji": "💥", "color": "#D0021B", "order": 3, "scenesCount": 0 },
+  { "id": "thriller",  "name": "Thriller",       "emoji": "🔪", "color": "#4A4A4A", "order": 4, "scenesCount": 0 },
+  { "id": "romance",   "name": "Romance",        "emoji": "❤️",  "color": "#FF4B7F", "order": 5, "scenesCount": 0 },
+  { "id": "scifi",     "name": "Sci-Fi",         "emoji": "🛸", "color": "#00C2FF", "order": 6, "scenesCount": 0 },
+  { "id": "horror",    "name": "Horreur",        "emoji": "👻", "color": "#1E1E1E", "order": 7, "scenesCount": 0 },
+  { "id": "impro",     "name": "Impro",          "emoji": "🎤", "color": "#7ED321", "order": 8, "scenesCount": 0 }
+]

@@ -1,0 +1,138 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ────────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function isAuthor() {
+      return isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+    // Champs réservés aux Cloud Functions (jamais écrits par le client).
+    function writesNoCounters(allowed) {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(allowed);
+    }
+
+    // ─── users ──────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read: if true;
+      allow create: if isSelf(uid)
+        && request.resource.data.keys().hasAll(['username', 'displayName', 'avatarUrl', 'createdAt'])
+        && request.resource.data.scenesCount == 0
+        && request.resource.data.followersCount == 0;
+      // L'utilisateur peut éditer son profil mais pas ses compteurs.
+      allow update: if isSelf(uid)
+        && writesNoCounters(['displayName', 'avatarUrl', 'bio', 'username', 'fcmTokens', 'lastActiveAt']);
+      allow delete: if false;
+
+      // Sous-collections écrites uniquement par Functions.
+      match /followers/{followerId} {
+        allow read: if true;
+        allow write: if false;
+      }
+      match /following/{followeeId} {
+        allow read: if true;
+        allow write: if false;
+      }
+      match /badges/{badgeId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // ─── scenes ─────────────────────────────────────────────────────────────
+    match /scenes/{sceneId} {
+      allow read: if resource == null || resource.data.status == 'published' || isAuthor();
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.likesCount == 0
+        && request.resource.data.commentsCount == 0
+        && request.resource.data.viewsCount == 0
+        && request.resource.data.sharesCount == 0
+        && request.resource.data.status in ['draft', 'published'];
+      allow update: if isAuthor()
+        && writesNoCounters(['title', 'category', 'thumbnailUrl', 'videoUrl', 'tags', 'status', 'updatedAt']);
+      allow delete: if isAuthor();
+
+      // Commentaires : lecture publique, CRUD par l'auteur du commentaire.
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.likesCount == 0;
+        allow update, delete: if isSignedIn()
+          && resource.data.authorId == request.auth.uid;
+      }
+
+      // Likes : unicité par user, pas de double like.
+      match /likes/{uid} {
+        allow read: if true;
+        allow create: if isSelf(uid)
+          && !exists(/databases/$(database)/documents/scenes/$(sceneId)/likes/$(uid));
+        allow delete: if isSelf(uid);
+        allow update: if false;
+      }
+    }
+
+    // ─── notifications : lecture par le destinataire, écriture via Functions ──
+    match /notifications/{uid}/items/{notifId} {
+      allow read: if isSelf(uid);
+      allow update: if isSelf(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      allow create, delete: if false;
+    }
+
+    // ─── duels ──────────────────────────────────────────────────────────────
+    match /duels/{duelId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /votes/{uid} {
+        allow read: if true;
+        allow create: if isSelf(uid)
+          && request.resource.data.choice in ['A', 'B']
+          && !exists(/databases/$(database)/documents/duels/$(duelId)/votes/$(uid));
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── daily challenges ───────────────────────────────────────────────────
+    match /dailyChallenges/{dateKey} {
+      allow read: if true;
+      allow write: if false;
+
+      match /participants/{uid} {
+        allow read: if true;
+        allow create: if isSelf(uid);
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── leaderboards / categories : read public, write Functions only ──────
+    match /leaderboards/{period}/entries/{entryId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── feed fan-out : lecture par le destinataire uniquement ──────────────
+    match /feed/{uid}/items/{sceneId} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
+    // Tout le reste est refusé par défaut.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

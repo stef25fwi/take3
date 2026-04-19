@@ -7,3 +7,15 @@ coverage/
 .dart_tool/
 .pub/
 build/
+
+# Firebase
+functions/lib/
+functions/node_modules/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+
+# Service accounts (NE JAMAIS COMMIT)
+scripts/seed/serviceAccountKey.json
+**/serviceAccountKey*.json

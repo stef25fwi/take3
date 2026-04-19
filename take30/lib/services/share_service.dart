@@ -19,7 +19,12 @@ Par @${scene.author.username}
 
 👉 https://take30.app/scene/${scene.id}''';
 
-    await Share.share(text, subject: '${scene.title} sur Take30');
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: '${scene.title} sur Take30',
+      ),
+    );
   }
 
   Future<void> shareProfile(UserModel user) async {
@@ -30,7 +35,12 @@ ${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take30'}
 
 👉 https://take30.app/profile/${user.id}''';
 
-    await Share.share(text, subject: '@${user.username} sur Take30');
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: '@${user.username} sur Take30',
+      ),
+    );
   }
 
   Future<void> shareDailyChallenge(DailyChallengeModel challenge) async {
@@ -41,7 +51,12 @@ ${challenge.quote}
 
 👉 https://take30.app/challenge''';
 
-    await Share.share(text, subject: 'Défi du Jour Take30');
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: 'Défi du Jour Take30',
+      ),
+    );
   }
 
   Future<void> shareAfterPublish({
@@ -52,7 +67,12 @@ ${challenge.quote}
 
 👉 https://take30.app/scene/$sceneId''';
 
-    await Share.share(text, subject: sceneTitle);
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: sceneTitle,
+      ),
+    );
   }
 
   String _formatCount(int count) {

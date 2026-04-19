@@ -1,0 +1,6 @@
+[
+  { "id": "u_luna",  "username": "LunaAct",    "avatarUrl": "https://i.pravatar.cc/150?u=luna",  "isVerified": true,  "score": 248000, "scenesCount": 47 },
+  { "id": "u_max",   "username": "Max_Act",    "avatarUrl": "https://i.pravatar.cc/150?u=max",   "isVerified": true,  "score": 189000, "scenesCount": 38 },
+  { "id": "u_clara", "username": "ClaraScene", "avatarUrl": "https://i.pravatar.cc/150?u=clara", "isVerified": false, "score":  98000, "scenesCount": 22 },
+  { "id": "u_theo",  "username": "TheoDrama",  "avatarUrl": "https://i.pravatar.cc/150?u=theo",  "isVerified": false, "score":  72000, "scenesCount": 15 }
+]

@@ -1,0 +1,13 @@
+{
+  "name": "take30-seed",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "seed": "node seed_firestore.js",
+    "seed:force": "node seed_firestore.js --force",
+    "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 node seed_firestore.js --force"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.5.0"
+  }
+}
