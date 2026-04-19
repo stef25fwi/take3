@@ -27,6 +27,7 @@ class UserModel {
     required this.username,
     required this.displayName,
     required this.avatarUrl,
+    this.email,
     this.bio = '',
     this.isVerified = false,
     this.scenesCount = 0,
@@ -47,6 +48,7 @@ class UserModel {
   final String username;
   final String displayName;
   final String avatarUrl;
+  final String? email;
   final String bio;
   final bool isVerified;
   final int scenesCount;
@@ -71,6 +73,7 @@ class UserModel {
       username: username,
       displayName: displayName,
       avatarUrl: avatarUrl,
+      email: email,
       bio: bio,
       isVerified: isVerified,
       scenesCount: scenesCount,
@@ -95,6 +98,7 @@ class UserModel {
       username: d['username'] as String? ?? '',
       displayName: d['displayName'] as String? ?? '',
       avatarUrl: d['avatarUrl'] as String? ?? '',
+      email: d['email'] as String?,
       bio: d['bio'] as String? ?? '',
       isVerified: d['isVerified'] as bool? ?? false,
       scenesCount: (d['scenesCount'] as num?)?.toInt() ?? 0,
@@ -117,6 +121,7 @@ class UserModel {
         'username': username,
         'displayName': displayName,
         'avatarUrl': avatarUrl,
+      if (email != null && email!.isNotEmpty) 'email': email,
         'bio': bio,
         'isVerified': isVerified,
         'scenesCount': scenesCount,

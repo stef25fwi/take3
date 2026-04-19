@@ -73,7 +73,42 @@ class AuthService extends ChangeNotifier {
     String? preferredAvatarUrl,
   }) async {
     final existing = await _api.users.getById(fbUser.uid);
-    if (existing != null) return existing;
+    final email = fbUser.email?.trim();
+    if (existing != null) {
+      if ((existing.email == null || existing.email!.isEmpty) &&
+          email != null &&
+          email.isNotEmpty) {
+        try {
+          await _api.users.updateProfile(fbUser.uid, {'email': email});
+          return UserModel(
+            id: existing.id,
+            username: existing.username,
+            displayName: existing.displayName,
+            avatarUrl: existing.avatarUrl,
+            email: email,
+            bio: existing.bio,
+            isVerified: existing.isVerified,
+            scenesCount: existing.scenesCount,
+            followersCount: existing.followersCount,
+            likesCount: existing.likesCount,
+            totalViews: existing.totalViews,
+            approvalRate: existing.approvalRate,
+            sharesCount: existing.sharesCount,
+            badges: existing.badges,
+            isFollowing: existing.isFollowing,
+            isAdmin: existing.isAdmin,
+            createdAt: existing.createdAt,
+            lastActiveAt: existing.lastActiveAt,
+            fcmTokens: existing.fcmTokens,
+          );
+        } on FirebaseException catch (error) {
+          if (!_isOfflineFirestoreError(error)) {
+            rethrow;
+          }
+        }
+      }
+      return existing;
+    }
     final fallback = _buildFallbackProfile(
       fbUser,
       preferredUsername: preferredUsername,
@@ -104,6 +139,7 @@ class AuthService extends ChangeNotifier {
       displayName: preferredDisplayName ?? fbUser.displayName ?? username,
       avatarUrl:
           preferredAvatarUrl ?? fbUser.photoURL ?? Take30Assets.avatarCurrentUser,
+      email: fbUser.email?.trim(),
       createdAt: DateTime.now(),
     );
   }
@@ -136,6 +172,49 @@ class AuthService extends ChangeNotifier {
     try {
       final cred = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
+        password: password,
+      );
+      final user = await _loadOrCreateProfile(cred.user!);
+      _currentUser = user;
+      _api.setCurrentUser(user);
+      _error = null;
+      _setLoading(false);
+      return AuthResult.success(user);
+    } on fa.FirebaseAuthException catch (e) {
+      _setLoading(false);
+      return AuthResult.failure(_mapAuthError(e));
+    } catch (e) {
+      _setLoading(false);
+      return AuthResult.failure(e.toString());
+    }
+  }
+
+  Future<AuthResult> loginWithIdentifier({
+    required String identifier,
+    required String password,
+  }) async {
+    final cleanIdentifier = identifier.trim();
+    if (cleanIdentifier.isEmpty) {
+      return const AuthResult.failure('Email ou pseudo requis');
+    }
+
+    if (cleanIdentifier.contains('@')) {
+      return loginWithEmail(email: cleanIdentifier, password: password);
+    }
+
+    _setLoading(true);
+    try {
+      final profile = await _api.users.getByUsername(cleanIdentifier);
+      final profileEmail = profile?.email?.trim();
+      if (profileEmail == null || profileEmail.isEmpty) {
+        _setLoading(false);
+        return const AuthResult.failure(
+          'Ce pseudo doit d\'abord se connecter avec son email une fois.',
+        );
+      }
+
+      final cred = await _auth.signInWithEmailAndPassword(
+        email: profileEmail,
         password: password,
       );
       final user = await _loadOrCreateProfile(cred.user!);
@@ -243,6 +322,7 @@ class AuthService extends ChangeNotifier {
         username: cleanUsername,
         displayName: cleanUsername,
         avatarUrl: cred.user!.photoURL ?? Take30Assets.avatarCurrentUser,
+        email: cred.user!.email?.trim(),
         createdAt: DateTime.now(),
       );
       await _api.users.createProfile(user);

@@ -104,12 +104,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 24),
-              const Take30Logo(height: 60),
+              const SizedBox(height: 12),
+              const Align(
+                alignment: Alignment.topCenter,
+                child: Take30Logo(height: 72),
+              ),
               const SizedBox(height: 10),
               Text(
-                'Prouve ton talent en 30 secondes',
-                style: GoogleFonts.dmSans(fontSize: 13, color: AppColors.grey),
+                'Prouve ton talent en 60 secondes',
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.white,
+                ),
               ),
               const SizedBox(height: 36),
               Container(
@@ -150,10 +157,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               ],
               _field(
                 ctrl: _emailCtrl,
-                label: 'Email',
-                hint: 'ton@email.com',
+                label: _tabs.index == 0 ? 'Email / pseudo' : 'Email',
+                hint: _tabs.index == 0 ? 'ton@email.com ou tonpseudo' : 'ton@email.com',
                 icon: Icons.email_outlined,
-                type: TextInputType.emailAddress,
+                type: _tabs.index == 0
+                    ? TextInputType.text
+                    : TextInputType.emailAddress,
               ),
               const SizedBox(height: 14),
               _field(

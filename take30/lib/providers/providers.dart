@@ -38,9 +38,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String identifier, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-    final result = await _auth.loginWithEmail(email: email, password: password);
+    final result = await _auth.loginWithIdentifier(
+      identifier: identifier,
+      password: password,
+    );
     if (result.success) {
       state = state.copyWith(
         isLoading: false,

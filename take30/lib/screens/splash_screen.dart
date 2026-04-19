@@ -97,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _hourglassRotation = Tween<double>(
       begin: 0,
-      end: math.pi * 0.62,
+      end: math.pi * 2,
     ).animate(
       CurvedAnimation(
         parent: _master,
@@ -203,8 +203,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     final logoTextSize = isSmall ? 74.0 : 88.0;
     final hourglassHeight = logoTextSize;
-    final leftTuck = -(logoTextSize * 0.16);
-    final rightTuck = -(logoTextSize * 0.14);
+    final leftTuck = -(logoTextSize * 0.22);
+    final rightTuck = -(logoTextSize * 0.19);
 
     return Scaffold(
       backgroundColor: _bg,
@@ -264,7 +264,7 @@ class _SplashScreenState extends State<SplashScreen>
                                         offset: Offset(
                                           0,
                                           _hourglassDrop.value +
-                                              (logoTextSize * 0.01),
+                                              (logoTextSize * -0.015),
                                         ),
                                         child: Transform.rotate(
                                           angle: _hourglassRotation.value,
