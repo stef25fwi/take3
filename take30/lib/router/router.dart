@@ -48,8 +48,6 @@ class AppRouter {
 final appRouterNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-
   return GoRouter(
     navigatorKey: appRouterNavigatorKey,
     initialLocation: AppRouter.splash,
@@ -76,13 +74,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRouter.admin,
         builder: (context, __) {
-          if (authState.user?.isAdmin ?? false) {
-            return AdminDashboardPage(
-              onLogout: () => context.pop(),
-              actionLabel: 'Retour',
-            );
-          }
-          return const AdminAccessGate();
+          return Consumer(
+            builder: (context, ref, _) {
+              final authState = ref.watch(authProvider);
+              if (authState.user?.isAdmin ?? false) {
+                return AdminDashboardPage(
+                  onLogout: () => context.pop(),
+                  actionLabel: 'Retour',
+                );
+              }
+              return const AdminAccessGate();
+            },
+          );
         },
       ),
       ShellRoute(

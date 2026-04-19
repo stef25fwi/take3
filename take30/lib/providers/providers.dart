@@ -436,6 +436,11 @@ final leaderboardProvider = StateNotifierProvider<LeaderboardNotifier, Leaderboa
 );
 
 class DuelNotifier extends StateNotifier<DuelState> {
+  static const String _demoDuelId = 'duel_demo_local';
+  static const String _demoEmail = 'demo@take30.app';
+  static const String _demoUsername = 'demo_take30';
+  static const String _demoDisplayName = 'Mode Demo';
+
   DuelNotifier(this._api, this._haptics) : super(const DuelState()) {
     load();
   }
@@ -447,9 +452,15 @@ class DuelNotifier extends StateNotifier<DuelState> {
     state = state.copyWith(isLoading: true);
     try {
       final duel = await _api.getCurrentDuel();
-      state = state.copyWith(isLoading: false, duel: duel);
+      state = state.copyWith(
+        isLoading: false,
+        duel: duel ?? (_isDemoMode ? _buildDemoDuel() : null),
+      );
     } catch (_) {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(
+        isLoading: false,
+        duel: _isDemoMode ? _buildDemoDuel() : null,
+      );
     }
   }
 
@@ -459,8 +470,87 @@ class DuelNotifier extends StateNotifier<DuelState> {
     }
 
     await _haptics.heavy();
+
+    if (state.duel!.id == _demoDuelId) {
+      final updated = state.duel!.copyWith(
+        userVote: choice,
+        votesA: choice == 0 ? state.duel!.votesA + 1 : state.duel!.votesA,
+        votesB: choice == 1 ? state.duel!.votesB + 1 : state.duel!.votesB,
+      );
+      state = state.copyWith(duel: updated);
+      return;
+    }
+
     final updated = await _api.vote(state.duel!.id, choice);
     state = state.copyWith(duel: updated);
+  }
+
+  bool get _isDemoMode {
+    final user = _api.currentUser;
+    if (user == null) {
+      return false;
+    }
+    return user.username == _demoUsername ||
+        user.displayName == _demoDisplayName ||
+        user.email == _demoEmail;
+  }
+
+  DuelModel _buildDemoDuel() {
+    final now = DateTime.now();
+
+    const authorA = UserModel(
+      id: 'u_demo_a',
+      username: 'LunaDemo',
+      displayName: 'Luna Demo',
+      avatarUrl: 'assets/scenes/battle_player_a.png',
+      isVerified: true,
+    );
+
+    const authorB = UserModel(
+      id: 'u_demo_b',
+      username: 'MaxDemo',
+      displayName: 'Max Demo',
+      avatarUrl: 'assets/scenes/battle_player_b.png',
+      isVerified: true,
+    );
+
+    final sceneA = SceneModel(
+      id: 's_demo_battle_a',
+      title: 'Take 60 — Spotlight A',
+      category: 'drama',
+      thumbnailUrl: 'assets/scenes/battle_player_a.png',
+      durationSeconds: 30,
+      likesCount: 184,
+      commentsCount: 23,
+      viewsCount: 3200,
+      author: authorA,
+      createdAt: now.subtract(const Duration(hours: 3)),
+      tags: const ['battle', 'demo', 'drama'],
+    );
+
+    final sceneB = SceneModel(
+      id: 's_demo_battle_b',
+      title: 'Take 60 — Spotlight B',
+      category: 'comedy',
+      thumbnailUrl: 'assets/scenes/battle_player_b.png',
+      durationSeconds: 30,
+      likesCount: 172,
+      commentsCount: 19,
+      viewsCount: 2980,
+      author: authorB,
+      createdAt: now.subtract(const Duration(hours: 2)),
+      tags: const ['battle', 'demo', 'comedy'],
+    );
+
+    return DuelModel(
+      id: _demoDuelId,
+      sceneA: sceneA,
+      sceneB: sceneB,
+      votesA: 42,
+      votesB: 39,
+      expiresAt: now.add(const Duration(hours: 12)),
+      status: 'active',
+    );
   }
 }
 
