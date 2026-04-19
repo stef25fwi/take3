@@ -11,19 +11,40 @@ class UsersRepo {
   final FirebaseFunctions _functions;
 
   Future<UserModel?> getById(String uid) async {
-    final snap = await _refs.userDoc(uid).get();
-    return snap.exists ? snap.data() : null;
+    try {
+      final snap = await _refs.userDoc(uid).get();
+      return snap.exists ? snap.data() : null;
+    } on FirebaseException catch (error) {
+      if (!_isOfflineReadError(error)) {
+        rethrow;
+      }
+      try {
+        final cached = await _refs
+            .userDoc(uid)
+            .get(const GetOptions(source: Source.cache));
+        return cached.exists ? cached.data() : null;
+      } on FirebaseException {
+        return null;
+      }
+    }
   }
 
   Stream<UserModel?> watch(String uid) =>
       _refs.userDoc(uid).snapshots().map((s) => s.exists ? s.data() : null);
 
   Future<UserModel?> getByUsername(String username) async {
-    final q = await _refs.users
-        .where('username', isEqualTo: username)
-        .limit(1)
-        .get();
-    return q.docs.isEmpty ? null : q.docs.first.data();
+    try {
+      final q = await _refs.users
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+      return q.docs.isEmpty ? null : q.docs.first.data();
+    } on FirebaseException catch (error) {
+      if (_isOfflineReadError(error)) {
+        return null;
+      }
+      rethrow;
+    }
   }
 
   /// Création initiale à la 1re connexion : écrit `users/{uid}` en vérifiant
@@ -84,5 +105,11 @@ class UsersRepo {
       }
       yield results;
     }
+  }
+
+  bool _isOfflineReadError(FirebaseException error) {
+    return error.code == 'unavailable' ||
+        error.code == 'failed-precondition' ||
+        error.code == 'network-request-failed';
   }
 }

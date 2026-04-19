@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -73,8 +74,31 @@ class AuthService extends ChangeNotifier {
   }) async {
     final existing = await _api.users.getById(fbUser.uid);
     if (existing != null) return existing;
+    final fallback = _buildFallbackProfile(
+      fbUser,
+      preferredUsername: preferredUsername,
+      preferredDisplayName: preferredDisplayName,
+      preferredAvatarUrl: preferredAvatarUrl,
+    );
+    try {
+      await _api.users.createProfile(fallback);
+    } on FirebaseException catch (error) {
+      if (!_isOfflineFirestoreError(error)) {
+        rethrow;
+      }
+      debugPrint('Profile creation deferred while offline: ${error.code}');
+    }
+    return fallback;
+  }
+
+  UserModel _buildFallbackProfile(
+    fa.User fbUser, {
+    String? preferredUsername,
+    String? preferredDisplayName,
+    String? preferredAvatarUrl,
+  }) {
     final username = preferredUsername ?? _deriveUsername(fbUser);
-    final fallback = UserModel(
+    return UserModel(
       id: fbUser.uid,
       username: username,
       displayName: preferredDisplayName ?? fbUser.displayName ?? username,
@@ -82,8 +106,6 @@ class AuthService extends ChangeNotifier {
           preferredAvatarUrl ?? fbUser.photoURL ?? Take30Assets.avatarCurrentUser,
       createdAt: DateTime.now(),
     );
-    await _api.users.createProfile(fallback);
-    return fallback;
   }
 
   String _deriveUsername(fa.User fbUser) {
@@ -347,10 +369,17 @@ class AuthService extends ChangeNotifier {
   Future<void> checkPersistedAuth() async {
     final fbUser = _auth.currentUser;
     if (fbUser == null) return;
-    final user = await _api.users.getById(fbUser.uid);
+    final user = await _api.users.getById(fbUser.uid) ??
+        _buildFallbackProfile(fbUser);
     _currentUser = user;
     _api.setCurrentUser(user);
     notifyListeners();
+  }
+
+  bool _isOfflineFirestoreError(FirebaseException error) {
+    return error.code == 'unavailable' ||
+        error.code == 'failed-precondition' ||
+        error.code == 'network-request-failed';
   }
 
   String _mapAuthError(fa.FirebaseAuthException e) {
