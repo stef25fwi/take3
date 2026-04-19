@@ -95,13 +95,25 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _hourglassRotation = Tween<double>(
-      begin: 0,
-      end: math.pi * 2,
-    ).animate(
+    _hourglassRotation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0,
+          end: (math.pi * 2) + 0.14,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 84,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: (math.pi * 2) + 0.14,
+          end: math.pi * 2,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 16,
+      ),
+    ]).animate(
       CurvedAnimation(
         parent: _master,
-        curve: const Interval(0.20, 0.66, curve: Curves.easeOutCubic),
+        curve: const Interval(0.20, 0.74, curve: Curves.linear),
       ),
     );
 
@@ -553,33 +565,6 @@ class _PremiumHourglassPainter extends CustomPainter {
       )
       ..close();
 
-    final streamRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.478,
-        size.height * 0.39,
-        size.width * 0.044,
-        size.height * 0.22,
-      ),
-      Radius.circular(size.width * 0.022),
-    );
-
-    final bottomSand = Path()
-      ..moveTo(size.width * 0.31, size.height * 0.82)
-      ..quadraticBezierTo(
-        size.width * 0.38,
-        size.height * 0.67,
-        size.width * 0.46,
-        size.height * 0.61,
-      )
-      ..lineTo(size.width * 0.54, size.height * 0.61)
-      ..quadraticBezierTo(
-        size.width * 0.62,
-        size.height * 0.67,
-        size.width * 0.69,
-        size.height * 0.82,
-      )
-      ..close();
-
     final fillPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -621,12 +606,7 @@ class _PremiumHourglassPainter extends CustomPainter {
       ..strokeWidth = size.width * 0.03;
 
     canvas.drawPath(topSand, glowPaint);
-    canvas.drawRRect(streamRect, glowPaint);
-    canvas.drawPath(bottomSand, glowPaint);
-
     canvas.drawPath(topSand, fillPaint);
-    canvas.drawRRect(streamRect, fillPaint);
-    canvas.drawPath(bottomSand, fillPaint);
 
     canvas.drawPath(outline, outlineShadowPaint);
     canvas.drawPath(outline, outlinePaint);

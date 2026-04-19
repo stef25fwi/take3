@@ -157,7 +157,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               ],
               _field(
                 ctrl: _emailCtrl,
-                label: _tabs.index == 0 ? 'Email / pseudo' : 'Email',
+                label: _tabs.index == 0
+                    ? 'Email / nom d\'utilisateur'
+                    : 'Email',
                 hint: _tabs.index == 0 ? 'ton@email.com ou tonpseudo' : 'ton@email.com',
                 icon: Icons.email_outlined,
                 type: _tabs.index == 0
