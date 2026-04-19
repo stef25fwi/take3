@@ -59,7 +59,11 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    // Skip if a login method already loaded the profile for this uid.
+    if (_currentUser?.id == fbUser.uid) return;
     final profile = await _loadOrCreateProfile(fbUser);
+    // Check again after the async gap: a concurrent login may have set it already.
+    if (_currentUser?.id == fbUser.uid) return;
     _currentUser = profile;
     _api.setCurrentUser(profile);
     await _syncFcmToken(fbUser.uid);
