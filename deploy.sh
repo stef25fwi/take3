@@ -9,6 +9,15 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 FLUTTER_DIR="$ROOT/take30"
 COMMIT_MSG="${1:-feat: update Take30}"
 FLUTTER_BIN="${FLUTTER_BIN:-}"
+BUILD_ARGS=(--release --base-href /take3/)
+
+if [[ -n "${TAKE30_ADMIN_ID:-}" ]]; then
+  BUILD_ARGS+=(--dart-define "TAKE30_ADMIN_ID=$TAKE30_ADMIN_ID")
+fi
+
+if [[ -n "${TAKE30_ADMIN_PASSWORD:-}" ]]; then
+  BUILD_ARGS+=(--dart-define "TAKE30_ADMIN_PASSWORD=$TAKE30_ADMIN_PASSWORD")
+fi
 
 if [[ -z "$FLUTTER_BIN" ]]; then
   if command -v flutter >/dev/null 2>&1; then
@@ -41,7 +50,7 @@ echo "  ✓ Analyse OK"
 # ── 2. Flutter build web ────────────────────
 echo ""
 echo "▸ [2/5] Flutter build web..."
-"$FLUTTER_BIN" build web --release --base-href /take3/
+"$FLUTTER_BIN" build web "${BUILD_ARGS[@]}"
 echo "  ✓ Build OK"
 
 # ── 3. Git add ──────────────────────────────

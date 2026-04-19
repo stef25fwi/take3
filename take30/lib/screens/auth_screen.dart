@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
+import '../router/router.dart';
 import '../theme/app_theme.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -238,6 +239,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     color: AppColors.cyan,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: authState.isLoading ? null : () => context.push(AppRouter.admin),
+                child: Text(
+                  'Accès admin →',
+                  style: GoogleFonts.dmSans(
+                    color: AppColors.yellow,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

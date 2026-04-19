@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../admin/take30_admin_scene_flow.dart';
 import '../models/models.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
@@ -34,6 +35,7 @@ class AppRouter {
   static const battle = '/battle';
   static const badges = '/badges';
   static const leaderboard = '/leaderboard';
+  static const admin = '/admin';
   static const preview = '/preview';
   static const sceneDetail = '/scene';
 
@@ -67,6 +69,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final tab = state.uri.queryParameters['tab'] ?? 'login';
           return AuthScreen(initialTab: tab);
         },
+      ),
+      GoRoute(
+        path: AppRouter.admin,
+        builder: (_, __) => const AdminAccessGate(),
       ),
       ShellRoute(
         builder: (_, __, child) => MainShell(child: child),

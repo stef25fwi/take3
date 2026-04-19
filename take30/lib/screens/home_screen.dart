@@ -89,6 +89,7 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     _HomeHeader(
                       unreadCount: unreadCount,
+                      onAdminTap: () => context.push(AppRouter.admin),
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
                     const SizedBox(height: 18),
@@ -151,10 +152,12 @@ class HomeScreen extends ConsumerWidget {
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.unreadCount,
+    required this.onAdminTap,
     required this.onNotificationsTap,
   });
 
   final int unreadCount;
+  final VoidCallback onAdminTap;
   final VoidCallback onNotificationsTap;
 
   @override
@@ -185,9 +188,31 @@ class _HomeHeader extends StatelessWidget {
             ),
           ],
         ),
-        Stack(
-          clipBehavior: Clip.none,
+        Row(
           children: [
+            GestureDetector(
+              onTap: onAdminTap,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: Colors.white,
+                  size: 21,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
             GestureDetector(
               onTap: onNotificationsTap,
               child: Container(
@@ -231,6 +256,8 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
+            ),
           ],
         ),
       ],
