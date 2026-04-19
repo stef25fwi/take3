@@ -13,6 +13,9 @@ class Take30Assets {
   static const String sceneConfrontation = 'assets/scenes/scene_confrontation.svg';
 
   static const String heroOnboarding = 'assets/onboarding/hero_onboarding.svg';
+  static const String logoPrimary = 'assets/take_hourglass_60_logo.svg';
+  static const String logoTransparent = 'assets/take_hourglass_60_logo_transparent.svg';
+  static const String logoDark = 'assets/take_hourglass_60_logo_dark.svg';
 
   static String avatarForUserId(String userId) {
     const map = {

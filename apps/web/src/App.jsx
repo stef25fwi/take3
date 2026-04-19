@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { fetchJson } from './lib/api';
 import { loadFeatures } from './lib/features';
 
+const logoSrc = '/branding/take_hourglass_60_logo_dark.svg';
+
 export default function App() {
   const [status, setStatus] = useState('Chargement...');
   const [features, setFeatures] = useState([]);
@@ -33,7 +35,11 @@ export default function App() {
       <div className="take30-app">
         <div className="take30-screen">
           <header className="take30-header">
-            <div className="take30-header-title">Take30</div>
+            <img
+              className="take30-header-logo"
+              src={logoSrc}
+              alt="Take 60"
+            />
             <button className="take30-icon-btn" aria-label="Ouvrir les notifications">
               ⚡
             </button>
@@ -42,9 +48,14 @@ export default function App() {
           <main className="take30-container take30-stack-20">
             <section className="take30-panel take30-stack-12">
               <span className="take30-chip take30-chip-active">Nouveau thème appliqué</span>
+              <img
+                className="take30-hero-logo"
+                src={logoSrc}
+                alt="Take 60"
+              />
               <h1 className="take30-h1">Crée, tourne et publie en 30 minutes.</h1>
               <p className="take30-body">
-                La version web utilise maintenant la direction Take30 sombre avec
+                La version web utilise maintenant la direction Take 60 sombre avec
                 Navy, Yellow et Cyan.
               </p>
               <div className="take30-row" style={{ gap: '10px', flexWrap: 'wrap' }}>

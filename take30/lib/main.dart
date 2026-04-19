@@ -81,7 +81,7 @@ class Take30App extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Take30',
+      title: 'Take 60',
       theme: AppTheme.darkTheme,
       routerConfig: router,
       builder: (context, child) => Column(

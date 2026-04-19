@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/take30_logo.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key, this.initialTab = 'login'});
@@ -105,15 +106,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           child: Column(
             children: [
               const SizedBox(height: 36),
-              Text(
-                'Take30',
-                style: GoogleFonts.dmSans(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.white,
-                  letterSpacing: -1.5,
-                ),
-              ),
+              const Take30Logo(height: 34),
               const SizedBox(height: 4),
               Text(
                 'Prouve ton talent en 30 secondes',

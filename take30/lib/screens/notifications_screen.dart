@@ -529,7 +529,7 @@ String _actionLabel(NotificationType type) {
     case NotificationType.comment:
       return 'Voir le commentaire';
     case NotificationType.like:
-      return 'Voir le take';
+      return 'Voir la vidéo';
     case NotificationType.follow:
       return 'Voir le profil';
     case NotificationType.system:

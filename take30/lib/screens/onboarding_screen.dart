@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../router/router.dart';
 import '../theme/take30_screen_themes.dart';
 import '../utils/assets.dart';
+import '../widgets/take30_logo.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -41,7 +42,7 @@ class OnboardingScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Take30', style: T30Text.logo.copyWith(fontSize: 44)),
+                  const Take30Logo(height: 40),
                   const SizedBox(height: 8),
                   Text(
                     'Rejoue des scènes\n& deviens viral',

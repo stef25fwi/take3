@@ -79,7 +79,7 @@ class Take30AdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Take30 Admin',
+      title: 'Take 60 Admin',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -594,7 +594,7 @@ class AdminDashboardPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Take30 • Administration'),
+        title: const Text('Take 60 • Administration'),
         backgroundColor: Colors.transparent,
         actions: [
           TextButton.icon(

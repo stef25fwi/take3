@@ -21,8 +21,8 @@ class NotificationService {
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'take30_high_importance',
-    'Notifications Take30',
-    description: 'Notifications Push pour Take30',
+    'Notifications Take 60',
+    description: 'Notifications push pour Take 60',
     importance: Importance.high,
   );
 

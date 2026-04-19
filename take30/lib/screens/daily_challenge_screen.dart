@@ -32,7 +32,7 @@ class DailyChallengeScreen extends StatelessWidget {
     ),
     _ChallengeRuleData(
       icon: Icons.send_outlined,
-      label: 'Publie ton take pour entrer dans le classement',
+      label: 'Publie ta vidéo pour entrer dans le classement',
     ),
   ];
 

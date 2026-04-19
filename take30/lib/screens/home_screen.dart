@@ -38,7 +38,7 @@ class HomeScreen extends ConsumerWidget {
       if (scenes.length > 1)
         _ActivityData(
           user: scenes[1].author,
-          description: 'fait grimper le classement avec un nouveau take',
+          description: 'fait grimper le classement avec une nouvelle performance',
           timeLabel: 'Il y a quelques minutes',
         ),
       if (scenes.length > 2)
@@ -106,7 +106,7 @@ class HomeScreen extends ConsumerWidget {
                     else if (featuredScenes.isEmpty)
                       const _EmptyPanel(
                         title: 'Aucune scène publiée',
-                        subtitle: 'Seed Firestore ou publie ton premier take pour remplir l’accueil.',
+                        subtitle: 'Seed Firestore ou publie ta première vidéo pour remplir l’accueil.',
                       )
                     else
                       SingleChildScrollView(
@@ -327,7 +327,7 @@ class _HomeHeroCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Prêt à tourner un Take qui marque ?',
+                      'Prêt à tourner une performance qui marque ?',
                       style: GoogleFonts.dmSans(
                         fontSize: 23,
                         fontWeight: FontWeight.w700,
@@ -359,7 +359,7 @@ class _HomeHeroCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _HomePrimaryButton(
-                  label: 'Nouveau Take',
+                  label: 'Nouvelle vidéo',
                   onTap: onPrimaryTap,
                 ),
               ),

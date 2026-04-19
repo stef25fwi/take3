@@ -261,7 +261,7 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       context,
       AppPermission.camera,
       title: 'Caméra requise',
-      message: 'Take30 a besoin de ta caméra pour enregistrer tes performances.',
+      message: 'Take 60 a besoin de ta caméra pour enregistrer tes performances.',
     );
     if (!granted) {
       return false;
@@ -275,7 +275,7 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       context,
       AppPermission.microphone,
       title: 'Micro requis',
-      message: 'Take30 a besoin du microphone pour capturer le son.',
+      message: 'Take 60 a besoin du microphone pour capturer le son.',
     );
 
     final ready = await _camera.initialize();

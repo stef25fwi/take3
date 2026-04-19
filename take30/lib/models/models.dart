@@ -454,7 +454,7 @@ class NotificationModel {
 String _notificationFallbackSubMessage(NotificationType type) {
   switch (type) {
     case NotificationType.like:
-      return 'Ouvre le take pour voir qui a réagi.';
+      return 'Ouvre la vidéo pour voir qui a réagi.';
     case NotificationType.comment:
       return 'Lis le commentaire et réponds si besoin.';
     case NotificationType.duel:

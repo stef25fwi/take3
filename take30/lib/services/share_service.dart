@@ -10,7 +10,7 @@ class ShareService {
   factory ShareService() => _instance;
 
   Future<void> shareScene(SceneModel scene) async {
-    final text = '''🎬 Regarde ma performance sur Take30 !
+    final text = '''🎬 Regarde ma performance sur Take 60 !
 
 "${scene.title}" — ${scene.category}
 Par @${scene.author.username}
@@ -22,15 +22,15 @@ Par @${scene.author.username}
     await SharePlus.instance.share(
       ShareParams(
         text: text,
-        subject: '${scene.title} sur Take30',
+        subject: '${scene.title} sur Take 60',
       ),
     );
   }
 
   Future<void> shareProfile(UserModel user) async {
-    final text = '''🌟 Découvre @${user.username} sur Take30 !
+    final text = '''🌟 Découvre @${user.username} sur Take 60 !
 
-${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take30'}
+${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take 60'}
 🎬 ${user.scenesCount} scènes · ❤️ ${_formatCount(user.likesCount)} likes
 
 👉 https://take30.app/profile/${user.id}''';
@@ -38,13 +38,13 @@ ${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take30'}
     await SharePlus.instance.share(
       ShareParams(
         text: text,
-        subject: '@${user.username} sur Take30',
+        subject: '@${user.username} sur Take 60',
       ),
     );
   }
 
   Future<void> shareDailyChallenge(DailyChallengeModel challenge) async {
-    final text = '''🔥 Défi du Jour Take30 !
+    final text = '''🔥 Défi du Jour Take 60 !
 
 Scène : "${challenge.sceneTitle}"
 ${challenge.quote}
@@ -54,7 +54,7 @@ ${challenge.quote}
     await SharePlus.instance.share(
       ShareParams(
         text: text,
-        subject: 'Défi du Jour Take30',
+        subject: 'Défi du Jour Take 60',
       ),
     );
   }
@@ -63,7 +63,7 @@ ${challenge.quote}
     required String sceneTitle,
     required String sceneId,
   }) async {
-    final text = '''🎭 Je viens de poster "$sceneTitle" sur Take30 !
+    final text = '''🎭 Je viens de poster "$sceneTitle" sur Take 60 !
 
 👉 https://take30.app/scene/$sceneId''';
 
