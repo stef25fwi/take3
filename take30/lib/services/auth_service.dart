@@ -346,6 +346,9 @@ class AuthService extends ChangeNotifier {
       fa.OAuthCredential credential;
       if (kIsWeb) {
         final provider = fa.GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        provider.setCustomParameters({'prompt': 'select_account'});
         final cred = await _auth.signInWithPopup(provider);
         final user = await _loadOrCreateProfile(cred.user!);
         _currentUser = user;
@@ -478,6 +481,18 @@ class AuthService extends ChangeNotifier {
         return 'Mot de passe trop faible (min 6 car.)';
       case 'network-request-failed':
         return 'Pas de connexion réseau';
+      case 'popup-blocked':
+        return 'La popup Google a été bloquée par le navigateur. Autorise les popups puis réessaie.';
+      case 'popup-closed-by-user':
+      case 'cancelled-popup-request':
+      case 'web-context-cancelled':
+        return 'Connexion Google annulée';
+      case 'operation-not-supported-in-this-environment':
+        return 'Connexion Google indisponible dans cet environnement navigateur';
+      case 'unauthorized-domain':
+        return 'Ce domaine n\'est pas autorisé pour la connexion Google dans Firebase';
+      case 'account-exists-with-different-credential':
+        return 'Un compte existe déjà avec ce même email via une autre méthode de connexion';
       case 'operation-not-allowed':
         return 'Méthode de connexion non activée dans Firebase';
       case 'demo-account-misconfigured':

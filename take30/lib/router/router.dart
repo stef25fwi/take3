@@ -48,9 +48,40 @@ class AppRouter {
 final appRouterNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final authService = ref.read(authServiceProvider);
+
   return GoRouter(
     navigatorKey: appRouterNavigatorKey,
     initialLocation: AppRouter.splash,
+    refreshListenable: authService,
+    redirect: (_, state) {
+      final location = state.matchedLocation;
+      final isAuthenticated = authService.isAuthenticated;
+      final isAdmin = authService.currentUser?.isAdmin ?? false;
+      final isPublicRoute = location == AppRouter.splash ||
+          location == AppRouter.onboarding ||
+          location == AppRouter.auth;
+
+      if (location == '/') {
+        return isAuthenticated ? AppRouter.home : AppRouter.splash;
+      }
+
+      if (location == AppRouter.admin) {
+        if (!isAuthenticated) {
+          return '${AppRouter.auth}?tab=login';
+        }
+        if (!isAdmin) {
+          return AppRouter.home;
+        }
+        return null;
+      }
+
+      if (isAuthenticated && isPublicRoute) {
+        return AppRouter.home;
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -73,20 +104,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.admin,
-        builder: (context, __) {
-          return Consumer(
-            builder: (context, ref, _) {
-              final authState = ref.watch(authProvider);
-              if (authState.user?.isAdmin ?? false) {
-                return AdminDashboardPage(
-                  onLogout: () => context.pop(),
-                  actionLabel: 'Retour',
-                );
-              }
-              return const AdminAccessGate();
-            },
-          );
-        },
+        builder: (context, __) => AdminDashboardPage(
+          onLogout: () => context.go(AppRouter.home),
+          actionLabel: 'Retour',
+        ),
       ),
       ShellRoute(
         builder: (_, __, child) => MainShell(child: child),

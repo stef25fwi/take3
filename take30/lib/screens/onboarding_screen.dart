@@ -13,7 +13,7 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: T30Colors.black,
+      backgroundColor: T30Colors.navy,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
@@ -136,14 +136,14 @@ class _HeroCollagePlaceholder extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
-        final cardWidth = width * 0.37;
-        final cardHeight = height * 0.61;
+        final cardWidth = width * 0.44;
+        final cardHeight = height * 0.72;
 
         return Stack(
           children: [
             Positioned(
-              left: width * 0.04,
-              top: height * 0.18,
+              left: width * -0.01,
+              top: height * 0.14,
               child: _PhotoSlot(
                 width: cardWidth,
                 height: cardHeight,
@@ -152,19 +152,19 @@ class _HeroCollagePlaceholder extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: width * 0.33,
-              top: height * 0.02,
+              left: width * 0.28,
+              top: height * -0.01,
               child: _PhotoSlot(
-                width: cardWidth * 1.02,
-                height: cardHeight * 1.08,
+                width: cardWidth * 1.03,
+                height: cardHeight * 1.10,
                 imagePath: '../take 30 images IA/2pic.png',
                 angle: 0.02,
                 highlighted: true,
               ),
             ),
             Positioned(
-              right: width * 0.04,
-              top: height * 0.20,
+              right: width * -0.01,
+              top: height * 0.15,
               child: _PhotoSlot(
                 width: cardWidth,
                 height: cardHeight,
@@ -245,16 +245,21 @@ class _PhotoSlotState extends State<_PhotoSlot>
       child: AnimatedBuilder(
         animation: _borderAnimation,
         builder: (context, _) {
+          final borderGlow = widget.highlighted
+              ? const Color.fromRGBO(8, 16, 32, 0.34)
+              : const Color.fromRGBO(8, 16, 32, 0.26);
+
           return Container(
             width: widget.width,
             height: widget.height,
             decoration: BoxDecoration(
               borderRadius: borderRadius,
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.30),
-                  blurRadius: 22,
-                  offset: Offset(0, 14),
+                  color: borderGlow,
+                  blurRadius: widget.highlighted ? 32 : 26,
+                  offset: const Offset(0, 18),
+                  spreadRadius: widget.highlighted ? 2 : 0,
                 ),
               ],
             ),
@@ -276,7 +281,12 @@ class _PhotoSlotState extends State<_PhotoSlot>
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: borderRadius,
-                    color: const Color(0xFF111111),
+                    color: const Color(0xFF0D1626),
+                    border: Border.all(
+                      color: Colors.white.withValues(
+                        alpha: widget.highlighted ? 0.08 : 0.05,
+                      ),
+                    ),
                   ),
                   child: Stack(
                     children: [
@@ -297,9 +307,9 @@ class _PhotoSlotState extends State<_PhotoSlot>
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                     colors: [
-                                      Colors.white.withValues(alpha: 0.04),
+                                      Colors.white.withValues(alpha: 0.06),
                                       Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.34),
+                                      const Color(0xCC081020),
                                     ],
                                   ),
                                 ),
@@ -318,10 +328,10 @@ class _PhotoSlotState extends State<_PhotoSlot>
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.30),
+                            color: const Color(0xCC0D1626),
                             borderRadius: BorderRadius.circular(999),
                             border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: Colors.white.withValues(alpha: 0.10),
                             ),
                           ),
                           child: Text(

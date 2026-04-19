@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../utils/assets.dart';
 
@@ -10,7 +9,8 @@ class Take30Logo extends StatelessWidget {
     this.assetPath = Take30Assets.logoDark,
     this.semanticLabel = 'Take 60',
     this.color = Colors.white,
-    this.sandColor = const Color(0xFFFFD54F),
+    this.sandColor = const Color(0xFFF4C20D),
+    this.innerGlow = 0.25,
   });
 
   final double height;
@@ -18,12 +18,13 @@ class Take30Logo extends StatelessWidget {
   final String semanticLabel;
   final Color color;
   final Color sandColor;
+  final double innerGlow;
 
   @override
   Widget build(BuildContext context) {
     final fontSize = height;
-    final leftTuck = -(fontSize * 0.13);
-    final rightTuck = -(fontSize * 0.11);
+    final leftTuck = -(fontSize * 0.22);
+    final rightTuck = -(fontSize * 0.19);
 
     return Semantics(
       label: semanticLabel,
@@ -45,6 +46,7 @@ class Take30Logo extends StatelessWidget {
                 height: fontSize,
                 strokeColor: color,
                 sandColor: sandColor,
+                innerGlow: innerGlow,
               ),
               SizedBox(width: rightTuck),
               _LogoText(
@@ -79,7 +81,7 @@ class _LogoText extends StatelessWidget {
         applyHeightToFirstAscent: false,
         applyHeightToLastDescent: false,
       ),
-      style: GoogleFonts.dmSans(
+      style: TextStyle(
         fontSize: fontSize,
         fontWeight: FontWeight.w900,
         height: 1,
@@ -95,11 +97,13 @@ class _PremiumHourglass extends StatelessWidget {
     required this.height,
     required this.strokeColor,
     required this.sandColor,
+    required this.innerGlow,
   });
 
   final double height;
   final Color strokeColor;
   final Color sandColor;
+  final double innerGlow;
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +114,7 @@ class _PremiumHourglass extends StatelessWidget {
         painter: _PremiumHourglassPainter(
           strokeColor: strokeColor,
           sandColor: sandColor,
+          innerGlow: innerGlow,
         ),
       ),
     );
@@ -120,10 +125,12 @@ class _PremiumHourglassPainter extends CustomPainter {
   _PremiumHourglassPainter({
     required this.strokeColor,
     required this.sandColor,
+    required this.innerGlow,
   });
 
   final Color strokeColor;
   final Color sandColor;
+  final double innerGlow;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -199,33 +206,6 @@ class _PremiumHourglassPainter extends CustomPainter {
       )
       ..close();
 
-    final streamRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.478,
-        size.height * 0.39,
-        size.width * 0.044,
-        size.height * 0.22,
-      ),
-      Radius.circular(size.width * 0.022),
-    );
-
-    final bottomSand = Path()
-      ..moveTo(size.width * 0.31, size.height * 0.82)
-      ..quadraticBezierTo(
-        size.width * 0.38,
-        size.height * 0.67,
-        size.width * 0.46,
-        size.height * 0.61,
-      )
-      ..lineTo(size.width * 0.54, size.height * 0.61)
-      ..quadraticBezierTo(
-        size.width * 0.62,
-        size.height * 0.67,
-        size.width * 0.69,
-        size.height * 0.82,
-      )
-      ..close();
-
     final fillPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -236,6 +216,10 @@ class _PremiumHourglassPainter extends CustomPainter {
           sandColor.withValues(alpha: 0.92),
         ],
       ).createShader(Offset.zero & size);
+
+    final glowPaint = Paint()
+      ..color = sandColor.withValues(alpha: innerGlow)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
     final outlineShadowPaint = Paint()
       ..color = Colors.black.withValues(alpha: 0.06)
@@ -262,9 +246,8 @@ class _PremiumHourglassPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.03;
 
+    canvas.drawPath(topSand, glowPaint);
     canvas.drawPath(topSand, fillPaint);
-    canvas.drawRRect(streamRect, fillPaint);
-    canvas.drawPath(bottomSand, fillPaint);
 
     canvas.drawPath(outline, outlineShadowPaint);
     canvas.drawPath(outline, outlinePaint);
@@ -284,6 +267,7 @@ class _PremiumHourglassPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PremiumHourglassPainter oldDelegate) {
     return oldDelegate.strokeColor != strokeColor ||
-        oldDelegate.sandColor != sandColor;
+        oldDelegate.sandColor != sandColor ||
+        oldDelegate.innerGlow != innerGlow;
   }
 }

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router/router.dart';
+import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,7 +17,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  static const _bg = Color(0xFF000000);
+  static const _bg = AppColors.navy;
   static const _text = Color(0xFFFFFFFF);
   static const _subtleGrey = Color(0xFF2A2A2E);
   static const _yellow = Color(0xFFF4C20D);
@@ -198,7 +200,9 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) {
       return;
     }
-    context.go(AppRouter.auth);
+    context.go(
+      AuthService().isAuthenticated ? AppRouter.home : AppRouter.auth,
+    );
   }
 
   @override
