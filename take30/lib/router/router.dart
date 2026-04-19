@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../admin/take30_admin_scene_flow.dart';
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
 import '../screens/battle_screen.dart';
@@ -47,6 +48,8 @@ class AppRouter {
 final appRouterNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authProvider);
+
   return GoRouter(
     navigatorKey: appRouterNavigatorKey,
     initialLocation: AppRouter.splash,
@@ -72,7 +75,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.admin,
-        builder: (_, __) => const AdminAccessGate(),
+        builder: (context, __) {
+          if (authState.user?.isAdmin ?? false) {
+            return AdminDashboardPage(
+              onLogout: () => context.pop(),
+              actionLabel: 'Retour',
+            );
+          }
+          return const AdminAccessGate();
+        },
       ),
       ShellRoute(
         builder: (_, __, child) => MainShell(child: child),

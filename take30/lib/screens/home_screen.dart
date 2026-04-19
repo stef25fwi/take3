@@ -19,6 +19,7 @@ class HomeScreen extends ConsumerWidget {
     final feedState = ref.watch(feedProvider);
     final unreadCount = ref.watch(unreadCountProvider);
     final dailyChallenge = ref.watch(dailyChallengeProvider).value;
+    final authState = ref.watch(authProvider);
     final currentUser = ref.watch(authProvider).user ??
         const UserModel(
           id: 'anonymous',
@@ -89,6 +90,7 @@ class HomeScreen extends ConsumerWidget {
                   children: [
                     _HomeHeader(
                       unreadCount: unreadCount,
+                      canOpenAdmin: authState.user?.isAdmin ?? false,
                       onAdminTap: () => context.push(AppRouter.admin),
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
@@ -152,11 +154,13 @@ class HomeScreen extends ConsumerWidget {
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.unreadCount,
+    required this.canOpenAdmin,
     required this.onAdminTap,
     required this.onNotificationsTap,
   });
 
   final int unreadCount;
+  final bool canOpenAdmin;
   final VoidCallback onAdminTap;
   final VoidCallback onNotificationsTap;
 
@@ -190,26 +194,28 @@ class _HomeHeader extends StatelessWidget {
         ),
         Row(
           children: [
-            GestureDetector(
-              onTap: onAdminTap,
-              child: Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+            if (canOpenAdmin) ...[
+              GestureDetector(
+                onTap: onAdminTap,
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.admin_panel_settings_outlined,
+                    color: Colors.white,
+                    size: 21,
                   ),
                 ),
-                child: const Icon(
-                  Icons.admin_panel_settings_outlined,
-                  color: Colors.white,
-                  size: 21,
-                ),
               ),
-            ),
-            const SizedBox(width: 10),
+              const SizedBox(width: 10),
+            ],
             Stack(
               clipBehavior: Clip.none,
               children: [

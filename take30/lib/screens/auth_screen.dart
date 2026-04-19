@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
-import '../router/router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/take30_logo.dart';
 
@@ -105,9 +104,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 36),
-              const Take30Logo(height: 34),
-              const SizedBox(height: 4),
+              const SizedBox(height: 24),
+              const Take30Logo(height: 60),
+              const SizedBox(height: 10),
               Text(
                 'Prouve ton talent en 30 secondes',
                 style: GoogleFonts.dmSans(fontSize: 13, color: AppColors.grey),
@@ -232,17 +231,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     color: AppColors.cyan,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: authState.isLoading ? null : () => context.push(AppRouter.admin),
-                child: Text(
-                  'Accès admin →',
-                  style: GoogleFonts.dmSans(
-                    color: AppColors.yellow,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

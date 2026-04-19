@@ -583,9 +583,14 @@ class SceneFormData {
 }
 
 class AdminDashboardPage extends StatelessWidget {
-  const AdminDashboardPage({super.key, required this.onLogout});
+  const AdminDashboardPage({
+    super.key,
+    required this.onLogout,
+    this.actionLabel = 'Déconnexion',
+  });
 
   final VoidCallback onLogout;
+  final String actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -600,7 +605,7 @@ class AdminDashboardPage extends StatelessWidget {
           TextButton.icon(
             onPressed: onLogout,
             icon: const Icon(Icons.logout_rounded),
-            label: const Text('Déconnexion'),
+            label: Text(actionLabel),
           ),
           const SizedBox(width: 8),
         ],

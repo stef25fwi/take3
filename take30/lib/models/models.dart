@@ -37,6 +37,7 @@ class UserModel {
     this.sharesCount = 0,
     this.badges = const [],
     this.isFollowing = false,
+    this.isAdmin = false,
     this.createdAt,
     this.lastActiveAt,
     this.fcmTokens = const [],
@@ -56,6 +57,7 @@ class UserModel {
   final int sharesCount;
   final List<BadgeModel> badges;
   final bool isFollowing;
+  final bool isAdmin;
   final DateTime? createdAt;
   final DateTime? lastActiveAt;
   final List<String> fcmTokens;
@@ -79,6 +81,7 @@ class UserModel {
       sharesCount: sharesCount,
       badges: badges,
       isFollowing: isFollowing ?? this.isFollowing,
+      isAdmin: isAdmin,
       createdAt: createdAt,
       lastActiveAt: lastActiveAt,
       fcmTokens: fcmTokens,
@@ -100,6 +103,7 @@ class UserModel {
       totalViews: (d['totalViews'] as num?)?.toInt() ?? 0,
       approvalRate: (d['approvalRate'] as num?)?.toDouble() ?? 0,
       sharesCount: (d['sharesCount'] as num?)?.toInt() ?? 0,
+        isAdmin: d['isAdmin'] as bool? ?? false,
       createdAt: d['createdAt'] == null ? null : _readDate(d['createdAt']),
       lastActiveAt:
           d['lastActiveAt'] == null ? null : _readDate(d['lastActiveAt']),
@@ -121,6 +125,7 @@ class UserModel {
         'totalViews': totalViews,
         'approvalRate': approvalRate,
         'sharesCount': sharesCount,
+        'isAdmin': isAdmin,
         if (createdAt != null) 'createdAt': _writeDate(createdAt!),
         if (lastActiveAt != null) 'lastActiveAt': _writeDate(lastActiveAt!),
         'fcmTokens': fcmTokens,

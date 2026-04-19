@@ -15,9 +15,9 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  static const _bg = Color(0xFFFFFFFF);
-  static const _text = Color(0xFF111111);
-  static const _subtleGrey = Color(0xFFF5F5F7);
+  static const _bg = Color(0xFF000000);
+  static const _text = Color(0xFFFFFFFF);
+  static const _subtleGrey = Color(0xFF2A2A2E);
   static const _yellow = Color(0xFFF4C20D);
 
   late final AnimationController _master;
@@ -95,10 +95,13 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _hourglassRotation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
+    _hourglassRotation = Tween<double>(
+      begin: 0,
+      end: math.pi * 0.62,
+    ).animate(
       CurvedAnimation(
         parent: _master,
-        curve: const Interval(0.20, 0.62, curve: Curves.easeInOutCubic),
+        curve: const Interval(0.20, 0.66, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -199,8 +202,9 @@ class _SplashScreenState extends State<SplashScreen>
     final isSmall = size.width < 380;
 
     final logoTextSize = isSmall ? 74.0 : 88.0;
-    final hourglassHeight = isSmall ? 82.0 : 96.0;
-    final gap = isSmall ? 10.0 : 14.0;
+    final hourglassHeight = logoTextSize;
+    final leftTuck = -(logoTextSize * 0.16);
+    final rightTuck = -(logoTextSize * 0.14);
 
     return Scaffold(
       backgroundColor: _bg,
@@ -253,11 +257,15 @@ class _SplashScreenState extends State<SplashScreen>
                                       scale: _takeScale.value,
                                       blur: _takeBlurFade.value,
                                     ),
-                                    SizedBox(width: gap),
+                                    SizedBox(width: leftTuck),
                                     Opacity(
                                       opacity: _hourglassOpacity.value,
                                       child: Transform.translate(
-                                        offset: Offset(0, _hourglassDrop.value),
+                                        offset: Offset(
+                                          0,
+                                          _hourglassDrop.value +
+                                              (logoTextSize * 0.01),
+                                        ),
                                         child: Transform.rotate(
                                           angle: _hourglassRotation.value,
                                           child: Transform.scale(
@@ -275,7 +283,7 @@ class _SplashScreenState extends State<SplashScreen>
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: gap),
+                                    SizedBox(width: rightTuck),
                                     Opacity(
                                       opacity: _sixtyOpacity.value,
                                       child: Transform.translate(
@@ -683,14 +691,14 @@ class _AmbientGlowPainter extends CustomPainter {
     final paint2 = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFFF4F4F6).withValues(alpha: 0.70),
-          const Color(0xFFF9F9FA).withValues(alpha: 0.22),
+          const Color(0xFFFFFFFF).withValues(alpha: 0.08),
+          const Color(0xFFFFFFFF).withValues(alpha: 0.02),
           Colors.transparent,
         ],
         stops: const [0.0, 0.55, 1.0],
       ).createShader(rect2);
 
-    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
+    canvas.drawRect(Offset.zero & size, Paint()..color = _SplashScreenState._bg);
     canvas.drawCircle(center2, size.width * 0.34, paint2);
     canvas.drawCircle(center1, size.width * 0.22, paint1);
   }
