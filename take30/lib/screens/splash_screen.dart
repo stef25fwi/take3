@@ -395,26 +395,50 @@ class _AnimatedLogoText extends StatelessWidget {
       scale: scale,
       child: Opacity(
         opacity: opacity,
-        child: Text(
-          text,
-          textHeightBehavior: const TextHeightBehavior(
-            applyHeightToFirstAscent: false,
-            applyHeightToLastDescent: false,
-          ),
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.w900,
-            height: 1,
-            letterSpacing: -3.2,
-            color: color,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: shadowOpacity),
-                blurRadius: blur,
-                offset: const Offset(0, 2),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Text(
+              text,
+              textHeightBehavior: const TextHeightBehavior(
+                applyHeightToFirstAscent: false,
+                applyHeightToLastDescent: false,
               ),
-            ],
-          ),
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                height: 1,
+                letterSpacing: -3.4,
+                foreground: Paint()
+                  ..style = PaintingStyle.stroke
+                  ..strokeWidth = fontSize * 0.055
+                  ..strokeJoin = StrokeJoin.round
+                  ..strokeCap = StrokeCap.round
+                  ..color = color,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withValues(alpha: shadowOpacity),
+                    blurRadius: blur,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              text,
+              textHeightBehavior: const TextHeightBehavior(
+                applyHeightToFirstAscent: false,
+                applyHeightToLastDescent: false,
+              ),
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                height: 1,
+                letterSpacing: -3.4,
+                color: color,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -434,19 +458,43 @@ class _StaticLogoText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      textHeightBehavior: const TextHeightBehavior(
-        applyHeightToFirstAscent: false,
-        applyHeightToLastDescent: false,
-      ),
-      style: TextStyle(
-        fontSize: fontSize,
-        fontWeight: FontWeight.w900,
-        height: 1,
-        letterSpacing: -3.2,
-        color: color,
-      ),
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Text(
+          text,
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w900,
+            height: 1,
+            letterSpacing: -3.4,
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = fontSize * 0.055
+              ..strokeJoin = StrokeJoin.round
+              ..strokeCap = StrokeCap.round
+              ..color = color,
+          ),
+        ),
+        Text(
+          text,
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w900,
+            height: 1,
+            letterSpacing: -3.4,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }
