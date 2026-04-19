@@ -14,7 +14,7 @@ class BadgesStatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = MockData.users.first;
-    final badges = MockData.badges;
+    const badges = MockData.badges;
     final stats = <_ProfileStatData>[
       _ProfileStatData(
         label: 'Vues totales',
