@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -46,6 +47,7 @@ class AuthService extends ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _error;
+  bool _skipProfileSyncOnNextAuthChange = false;
 
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _auth.currentUser != null;
@@ -59,10 +61,15 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    // FCM token sync does not need to block auth completion.
+    unawaited(_syncFcmToken(fbUser.uid));
+    if (_skipProfileSyncOnNextAuthChange) {
+      _skipProfileSyncOnNextAuthChange = false;
+      return;
+    }
     final profile = await _loadOrCreateProfile(fbUser);
     _currentUser = profile;
     _api.setCurrentUser(profile);
-    await _syncFcmToken(fbUser.uid);
     notifyListeners();
   }
 
@@ -133,6 +140,7 @@ class AuthService extends ChangeNotifier {
     required String password,
   }) async {
     _setLoading(true);
+    _skipProfileSyncOnNextAuthChange = true;
     try {
       final cred = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
@@ -145,9 +153,11 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(_mapAuthError(e));
     } catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(e.toString());
     }
@@ -155,6 +165,7 @@ class AuthService extends ChangeNotifier {
 
   Future<AuthResult> loginDemo() async {
     _setLoading(true);
+    _skipProfileSyncOnNextAuthChange = true;
     try {
       final cred = await _signInOrCreateDemoAccount();
       final user = await _loadOrCreateProfile(
@@ -169,9 +180,11 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(_mapAuthError(e));
     } catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(e.toString());
     }
@@ -233,6 +246,7 @@ class AuthService extends ChangeNotifier {
         _setLoading(false);
         return const AuthResult.failure('Pseudo déjà pris');
       }
+      _skipProfileSyncOnNextAuthChange = true;
       final cred = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
@@ -252,9 +266,11 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(_mapAuthError(e));
     } catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(e.toString());
     }
@@ -266,6 +282,7 @@ class AuthService extends ChangeNotifier {
       fa.OAuthCredential credential;
       if (kIsWeb) {
         final provider = fa.GoogleAuthProvider();
+        _skipProfileSyncOnNextAuthChange = true;
         final cred = await _auth.signInWithPopup(provider);
         final user = await _loadOrCreateProfile(cred.user!);
         _currentUser = user;
@@ -286,6 +303,7 @@ class AuthService extends ChangeNotifier {
           idToken: auth.idToken,
         );
       }
+      _skipProfileSyncOnNextAuthChange = true;
       final cred = await _auth.signInWithCredential(credential);
       final user = await _loadOrCreateProfile(cred.user!);
       _currentUser = user;
@@ -293,9 +311,11 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(_mapAuthError(e));
     } catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(e.toString());
     }
@@ -318,6 +338,7 @@ class AuthService extends ChangeNotifier {
         idToken: appleCred.identityToken,
         accessToken: appleCred.authorizationCode,
       );
+      _skipProfileSyncOnNextAuthChange = true;
       final cred = await _auth.signInWithCredential(oauth);
       final user = await _loadOrCreateProfile(cred.user!);
       _currentUser = user;
@@ -325,9 +346,11 @@ class AuthService extends ChangeNotifier {
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(_mapAuthError(e));
     } catch (e) {
+      _skipProfileSyncOnNextAuthChange = false;
       _setLoading(false);
       return AuthResult.failure(e.toString());
     }
