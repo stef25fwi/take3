@@ -386,7 +386,7 @@ class _BattleCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        _Avatar(user: scene.author, size: 34),
+                        _Avatar(user: scene.author, size: 34, battleSide: sideLabel),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -639,13 +639,20 @@ class _SceneArtwork extends StatelessWidget {
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.user, required this.size});
+  const _Avatar({required this.user, required this.size, this.battleSide});
   final UserModel user;
   final double size;
+  final String? battleSide;
 
   @override
   Widget build(BuildContext context) {
-    final asset = avatarPhotoAssetForUserId(user.id);
+    // Try battle photo first for banner avatars
+    final battleAsset = battleSide == 'A'
+        ? 'assets/scenes/battle_player_a.png'
+        : battleSide == 'B'
+            ? 'assets/scenes/battle_player_b.png'
+            : null;
+    final asset = battleAsset ?? avatarPhotoAssetForUserId(user.id);
     if (asset != null) {
       return Container(
         width: size,
@@ -658,6 +665,8 @@ class _Avatar extends StatelessWidget {
           child: Image.asset(
             asset,
             fit: BoxFit.cover,
+            cacheWidth: (size * 2).round(),
+            cacheHeight: (size * 2).round(),
             errorBuilder: (_, __, ___) => UserAvatar(
               url: user.avatarUrl,
               userId: user.id,
