@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -19,25 +18,37 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feedState = ref.watch(feedProvider);
     final unreadCount = ref.watch(unreadCountProvider);
-    final currentUser = MockData.users.first;
-    final scenes = feedState.scenes.isEmpty ? MockData.scenes : feedState.scenes;
+    final dailyChallenge = ref.watch(dailyChallengeProvider).value;
+    final currentUser = ref.watch(authProvider).user ??
+        const UserModel(
+          id: 'anonymous',
+          username: 'guest',
+          displayName: 'Créateur',
+          avatarUrl: '',
+        );
+    final scenes = feedState.scenes;
     final featuredScenes = scenes.take(3).toList();
     final activities = <_ActivityData>[
-      _ActivityData(
-        user: scenes[0].author,
-        description: 'a publié « ${scenes[0].title} » dans ${scenes[0].category}',
-        timeLabel: 'Il y a 8 min',
-      ),
-      _ActivityData(
-        user: scenes[1].author,
-        description: 'a remporté une battle avec 58% des votes',
-        timeLabel: 'Il y a 22 min',
-      ),
-      _ActivityData(
-        user: scenes[2].author,
-        description: 'a relevé le défi du jour « ${MockData.dailyChallenge.sceneTitle} »',
-        timeLabel: 'Il y a 1 h',
-      ),
+      if (scenes.isNotEmpty)
+        _ActivityData(
+          user: scenes[0].author,
+          description: 'a publié « ${scenes[0].title} » dans ${scenes[0].category}',
+          timeLabel: 'À l’instant',
+        ),
+      if (scenes.length > 1)
+        _ActivityData(
+          user: scenes[1].author,
+          description: 'fait grimper le classement avec un nouveau take',
+          timeLabel: 'Il y a quelques minutes',
+        ),
+      if (scenes.length > 2)
+        _ActivityData(
+          user: scenes[2].author,
+          description: dailyChallenge == null
+              ? 'a rejoint le flux créatif du jour'
+              : 'a relevé le défi du jour « ${dailyChallenge.sceneTitle} »',
+          timeLabel: 'Aujourd’hui',
+        ),
     ];
 
     return Scaffold(
@@ -91,6 +102,11 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     if (feedState.isLoading)
                       const _LoadingPanel()
+                    else if (featuredScenes.isEmpty)
+                      const _EmptyPanel(
+                        title: 'Aucune scène publiée',
+                        subtitle: 'Seed Firestore ou publie ton premier take pour remplir l’accueil.',
+                      )
                     else
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -306,7 +322,7 @@ class _HomeHeroCard extends StatelessWidget {
               _HeroStat(value: '${user.scenesCount}', label: 'Scènes'),
               const SizedBox(width: 18),
               _HeroStat(
-                value: MockData.formatCount(user.likesCount),
+                value: _formatCompact(user.likesCount),
                 label: 'Likes',
               ),
             ],
@@ -593,7 +609,7 @@ class _FeaturedTakeCard extends StatelessWidget {
                         const Icon(Icons.favorite_rounded, size: 14, color: Color(0xFFFF6B6B)),
                         const SizedBox(width: 4),
                         Text(
-                          MockData.formatCount(scene.likesCount),
+                          _formatCompact(scene.likesCount),
                           style: GoogleFonts.dmSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -632,6 +648,13 @@ class _ActivityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (activities.isEmpty) {
+      return const _EmptyPanel(
+        title: 'Pas encore d’activité',
+        subtitle: 'Les interactions récentes apparaîtront ici quand Firestore commencera à se remplir.',
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
@@ -674,6 +697,47 @@ class _LoadingPanel extends StatelessWidget {
       ),
       child: const Center(
         child: CircularProgressIndicator(color: AppColors.yellow),
+      ),
+    );
+  }
+}
+
+class _EmptyPanel extends StatelessWidget {
+  const _EmptyPanel({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.dmSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.66),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -782,6 +846,12 @@ class _ActivityRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatCompact(int n) {
+  if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+  if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+  return n.toString();
 }
 
 class _AmbientGlow extends StatelessWidget {

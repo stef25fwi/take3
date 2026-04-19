@@ -138,9 +138,11 @@ export const onLikeWrite = onDocumentWritten("scenes/{sceneId}/likes/{uid}", asy
     type: "like",
     time: FieldValue.serverTimestamp(),
     isRead: false,
-    actorDenorm: actor,
+    message: `${actor.username} a aimé ta scène`,
+    subMessage: "Ouvre le take pour voir qui a réagi.",
+    avatarUrl: actor.avatarUrl,
+    userId: actor.id,
     sceneId,
-    text: `${actor.username} a aimé ta scène`,
   });
 });
 
@@ -173,10 +175,12 @@ export const onCommentCreate = onDocumentCreated(
       type: "comment",
       time: FieldValue.serverTimestamp(),
       isRead: false,
-      actorDenorm: actor,
+      message: `${actor.username} a commenté ta scène`,
+      subMessage: "Lis le commentaire et réponds si besoin.",
+      avatarUrl: actor.avatarUrl,
+      userId: actor.id,
       sceneId,
       commentId: event.params.commentId,
-      text: `${actor.username} a commenté ta scène`,
     });
   }
 );
@@ -238,8 +242,10 @@ export const toggleFollow = onCall<{ targetUid: string }>(async (req) => {
     type: "follow",
     time: now,
     isRead: false,
-    actorDenorm: actor,
-    text: `${actor?.username ?? "Quelqu'un"} te suit maintenant`,
+    message: `${actor?.username ?? "Quelqu'un"} te suit maintenant`,
+    subMessage: "Découvre son profil ou rends-lui la pareille.",
+    avatarUrl: actor?.avatarUrl ?? "",
+    userId: actor?.id ?? uid,
   });
   await batch.commit();
   return { following: true };
@@ -302,7 +308,7 @@ export const sendPushOnNotificationCreate = onDocumentCreated(
       tokens,
       notification: {
         title: "Take30",
-        body: (data.text as string) ?? "Nouvelle activité",
+        body: (data.message as string) ?? (data.text as string) ?? "Nouvelle activité",
       },
       data: {
         type: (data.type as string) ?? "",

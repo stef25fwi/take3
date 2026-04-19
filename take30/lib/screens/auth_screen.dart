@@ -72,6 +72,26 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     }
   }
 
+  Future<void> _loginWithGoogle() async {
+    await ref.read(authProvider.notifier).loginWithGoogle();
+    if (mounted) {
+      final state = ref.read(authProvider);
+      if (state.isAuthenticated) {
+        context.go('/home');
+      }
+    }
+  }
+
+  Future<void> _loginWithApple() async {
+    await ref.read(authProvider.notifier).loginWithApple();
+    if (mounted) {
+      final state = ref.read(authProvider);
+      if (state.isAuthenticated) {
+        context.go('/home');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -197,6 +217,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                         ),
                 ),
               ),
+                    const SizedBox(height: 14),
+                    _SocialAuthButton(
+                      label: 'Continuer avec Google',
+                      icon: Icons.g_mobiledata_rounded,
+                      onTap: authState.isLoading ? null : _loginWithGoogle,
+                    ),
+                    const SizedBox(height: 10),
+                    _SocialAuthButton(
+                      label: 'Continuer avec Apple',
+                      icon: Icons.apple_rounded,
+                      onTap: authState.isLoading ? null : _loginWithApple,
+                    ),
               const SizedBox(height: 14),
               TextButton(
                 onPressed: authState.isLoading ? null : _openDemo,
@@ -265,6 +297,44 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SocialAuthButton extends StatelessWidget {
+  const _SocialAuthButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, color: AppColors.white, size: 22),
+        label: Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppColors.white,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.borderSubtle),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
     );
   }
 }

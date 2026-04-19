@@ -1,8 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../models/models.dart';
-import '../services/mock_data.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
 import '../screens/battle_screen.dart';
@@ -11,6 +11,7 @@ import '../screens/explore_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/leaderboard_screen.dart';
 import '../screens/main_shell.dart';
+import '../screens/messages_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/preview_publish_screen.dart';
@@ -28,6 +29,7 @@ class AppRouter {
   static const record = '/record';
   static const profile = '/profile';
   static const notifications = '/notifications';
+  static const messages = '/messages';
   static const challenge = '/challenge';
   static const battle = '/battle';
   static const badges = '/badges';
@@ -36,11 +38,15 @@ class AppRouter {
   static const sceneDetail = '/scene';
 
   static String profilePath(String userId) => '$profile/$userId';
+  static String messagesPath(String userId) => '$messages/$userId';
   static String scenePath(String sceneId) => '$sceneDetail/$sceneId';
 }
 
+final appRouterNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: appRouterNavigatorKey,
     initialLocation: AppRouter.splash,
     routes: [
       GoRoute(
@@ -96,6 +102,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const NotificationsScreen(),
           ),
           GoRoute(
+            path: '${AppRouter.messages}/:userId',
+            builder: (_, state) {
+              final userId = state.pathParameters['userId']!;
+              return MessagesScreen(userId: userId);
+            },
+          ),
+          GoRoute(
             path: AppRouter.badges,
             builder: (_, __) => const BadgesStatsScreen(),
           ),
@@ -125,15 +138,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '${AppRouter.sceneDetail}/:sceneId',
         builder: (_, state) {
           final sceneId = state.pathParameters['sceneId']!;
-          SceneModel? scene;
-          try {
-            scene = MockData.scenes.firstWhere((item) => item.id == sceneId);
-          } catch (_) {
-            scene = null;
-          }
           return SceneDetailScreen(
-            title: scene?.title ?? 'Détail',
-            scene: scene,
+            sceneId: sceneId,
+            scene: state.extra is SceneModel ? state.extra as SceneModel : null,
           );
         },
       ),

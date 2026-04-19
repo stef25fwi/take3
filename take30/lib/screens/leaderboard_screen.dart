@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -28,36 +28,13 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
     (id: _RankingPeriod.global, label: 'Global'),
   ];
 
-  /// Applique un multiplicateur de score selon la période pour donner un
-  /// filtrage visuel cohérent sans backend réel.
-  List<LeaderboardEntry> _entriesForPeriod(_RankingPeriod p) {
-    final base = MockData.leaderboard;
-    final factor = switch (p) {
-      _RankingPeriod.day => 0.05,
-      _RankingPeriod.week => 1.0,
-      _RankingPeriod.month => 4.2,
-      _RankingPeriod.global => 12.7,
+  String _periodKey(_RankingPeriod p) {
+    return switch (p) {
+      _RankingPeriod.day => 'day',
+      _RankingPeriod.week => 'week',
+      _RankingPeriod.month => 'month',
+      _RankingPeriod.global => 'global',
     };
-    final scaled = base
-        .map(
-          (e) => LeaderboardEntry(
-            rank: e.rank,
-            user: e.user,
-            score: e.score * factor,
-            scoreLabel: e.scoreLabel,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.score.compareTo(a.score));
-    return [
-      for (var i = 0; i < scaled.length; i++)
-        LeaderboardEntry(
-          rank: i + 1,
-          user: scaled[i].user,
-          score: scaled[i].score,
-          scoreLabel: scaled[i].scoreLabel,
-        ),
-    ];
   }
 
   String _formatScore(double score) {
@@ -73,7 +50,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final entries = _entriesForPeriod(_period);
+    final entries = ref.watch(leaderboardProvider).entries;
 
     return Scaffold(
       backgroundColor: AppColors.navy,
@@ -106,7 +83,10 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _RankingTabs(
                   selected: _period,
-                  onChanged: (p) => setState(() => _period = p),
+                  onChanged: (p) {
+                    setState(() => _period = p);
+                    ref.read(leaderboardProvider.notifier).load(_periodKey(p));
+                  },
                 ),
               ),
               const SizedBox(height: 16),

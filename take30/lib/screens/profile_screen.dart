@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
 import '../widgets/shared_widgets.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -20,11 +19,41 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authUser = ref.watch(authProvider).user;
     final profileState = ref.watch(profileProvider(userId));
-    final user = profileState.user ?? MockData.users[0];
-    final scenes = profileState.scenes.isNotEmpty
-        ? profileState.scenes
-        : MockData.scenes;
+    final user = profileState.user ??
+        (authUser?.id == userId ? authUser : null);
+    final scenes = profileState.scenes;
+
+    if (user == null && profileState.isLoading) {
+      return const Scaffold(
+        backgroundColor: _C.navy,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: _C.navy,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Profil introuvable.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: _C.navy,
@@ -79,6 +108,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
   Widget build(BuildContext context) {
     final liveUser =
         ref.watch(profileProvider(widget.userId)).user ?? widget.user;
+    final sceneCount = widget.scenes.length > 6 ? 6 : widget.scenes.length;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -115,6 +145,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                   .read(profileProvider(widget.userId).notifier)
                                   .toggleFollow();
                             },
+                            onMessageTap: () {
+                              context.go(AppRouter.messagesPath(widget.userId));
+                            },
                             onShareTap: () {
                               ref
                                   .read(profileProvider(widget.userId).notifier)
@@ -133,28 +166,49 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 0.82,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final scene =
-                              widget.scenes[index % widget.scenes.length];
-                          return _PerformanceCard(
-                            scene: scene,
-                            index: index,
-                            onTap: () =>
-                                context.go(AppRouter.scenePath(scene.id)),
-                          );
-                        },
-                        childCount: 6,
-                      ),
-                    ),
+                    sliver: sceneCount == 0
+                        ? SliverToBoxAdapter(
+                            child: Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Text(
+                                'Aucune performance publiée pour l’instant.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withValues(alpha: 0.66),
+                                ),
+                              ),
+                            ),
+                          )
+                        : SliverGrid(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 0.82,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final scene = widget.scenes[index];
+                                return _PerformanceCard(
+                                  scene: scene,
+                                  index: index,
+                                  onTap: () =>
+                                      context.go(AppRouter.scenePath(scene.id)),
+                                );
+                              },
+                              childCount: sceneCount,
+                            ),
+                          ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
@@ -487,11 +541,13 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.isFollowing,
     required this.onFollowTap,
+    required this.onMessageTap,
     required this.onShareTap,
   });
 
   final bool isFollowing;
   final VoidCallback onFollowTap;
+  final VoidCallback onMessageTap;
   final VoidCallback onShareTap;
 
   @override
@@ -532,7 +588,7 @@ class _ActionButtons extends StatelessWidget {
         Expanded(
           flex: 5,
           child: GestureDetector(
-            onTap: () {},
+            onTap: onMessageTap,
             child: Container(
               height: 44,
               decoration: BoxDecoration(
@@ -656,8 +712,7 @@ class _PerformanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final demoCounts = ['12.4K', '8.3K', '6.1K', '5.8K', '4.2K', '3.9K'];
-    final likeText = demoCounts[index % demoCounts.length];
+    final likeText = _fmtK(scene.likesCount);
 
     return GestureDetector(
       onTap: onTap,

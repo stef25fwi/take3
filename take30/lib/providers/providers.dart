@@ -87,6 +87,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await _auth.loginWithGoogle();
+    if (result.success) {
+      state = state.copyWith(
+        isLoading: false,
+        user: result.user,
+        isAuthenticated: true,
+        error: null,
+      );
+    } else {
+      state = state.copyWith(isLoading: false, error: result.error);
+    }
+  }
+
+  Future<void> loginWithApple() async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await _auth.loginWithApple();
+    if (result.success) {
+      state = state.copyWith(
+        isLoading: false,
+        user: result.user,
+        isAuthenticated: true,
+        error: null,
+      );
+    } else {
+      state = state.copyWith(isLoading: false, error: result.error);
+    }
+  }
+
   Future<void> logout() async {
     await _auth.logout();
     state = const AuthState();
@@ -199,6 +229,17 @@ class FeedState {
 final feedProvider = StateNotifierProvider<FeedNotifier, FeedState>(
   (ref) => FeedNotifier(ref.read(apiServiceProvider), ref.read(hapticsProvider)),
 );
+
+final sceneProvider = StreamProvider.family<SceneModel?, String>((ref, sceneId) {
+  final api = ref.watch(apiServiceProvider);
+  return api.scenes.watchById(sceneId);
+});
+
+final sceneCommentsProvider =
+    StreamProvider.family<List<CommentModel>, String>((ref, sceneId) {
+  final api = ref.watch(apiServiceProvider);
+  return api.comments.watch(sceneId);
+});
 
 class RecordingNotifier extends StateNotifier<RecordingState> {
   RecordingNotifier(

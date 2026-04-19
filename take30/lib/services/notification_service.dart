@@ -1,6 +1,10 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import '../router/router.dart';
+import 'api_service.dart';
 
 class NotificationService {
   NotificationService._();
@@ -10,6 +14,7 @@ class NotificationService {
   factory NotificationService() => _instance;
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final ApiService _api = ApiService();
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
@@ -32,9 +37,11 @@ class NotificationService {
 
         final token = await _messaging.getToken();
         debugPrint('FCM token web : $token');
+        await _syncToken(token);
 
-        _messaging.onTokenRefresh.listen((newToken) {
+        _messaging.onTokenRefresh.listen((newToken) async {
           debugPrint('FCM token web rafraîchi : $newToken');
+          await _syncToken(newToken);
         });
 
         FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -76,10 +83,11 @@ class NotificationService {
     // Token FCM
     final token = await _messaging.getToken();
     debugPrint('FCM token : $token');
+    await _syncToken(token);
 
-    _messaging.onTokenRefresh.listen((newToken) {
+    _messaging.onTokenRefresh.listen((newToken) async {
       debugPrint('FCM token rafraîchi : $newToken');
-      // TODO : envoyer newToken au backend
+      await _syncToken(newToken);
     });
 
     // Push reçu en foreground → notification locale
@@ -91,6 +99,18 @@ class NotificationService {
     // App lancée depuis une notification terminée
     final initial = await _messaging.getInitialMessage();
     if (initial != null) _onMessageOpenedApp(initial);
+  }
+
+  Future<void> _syncToken(String? token) async {
+    final uid = _api.currentUid;
+    if (uid == null || token == null || token.isEmpty) {
+      return;
+    }
+    try {
+      await _api.users.addFcmToken(uid: uid, token: token);
+    } catch (error) {
+      debugPrint('FCM sync skipped: $error');
+    }
   }
 
   void _onForegroundMessage(RemoteMessage message) {
@@ -123,7 +143,32 @@ class NotificationService {
 
   void _onMessageOpenedApp(RemoteMessage message) {
     debugPrint('App ouverte via push : ${message.data}');
-    // TODO : naviguer vers l'écran lié aux données du message
+    final context = appRouterNavigatorKey.currentContext;
+    if (context == null) {
+      return;
+    }
+    final data = message.data;
+    final type = data['type'];
+    final sceneId = data['sceneId'];
+    final userId = data['userId'];
+
+    if ((type == 'like' || type == 'comment') && sceneId is String && sceneId.isNotEmpty) {
+      GoRouter.of(context).go(AppRouter.scenePath(sceneId));
+      return;
+    }
+    if (type == 'duel') {
+      GoRouter.of(context).go(AppRouter.battle);
+      return;
+    }
+    if (type == 'achievement') {
+      GoRouter.of(context).go(AppRouter.badges);
+      return;
+    }
+    if (type == 'follow' && userId is String && userId.isNotEmpty) {
+      GoRouter.of(context).go(AppRouter.profilePath(userId));
+      return;
+    }
+    GoRouter.of(context).go(AppRouter.notifications);
   }
 
   Future<void> showPublishSuccessNotification({required String sceneTitle}) async {

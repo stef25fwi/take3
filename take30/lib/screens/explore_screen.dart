@@ -1,21 +1,22 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
 
-class ExploreScreen extends StatefulWidget {
+class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
 
   @override
-  State<ExploreScreen> createState() => _ExploreScreenState();
+  ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
+class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   String _query = '';
@@ -50,58 +51,23 @@ class _ExploreScreenState extends State<ExploreScreen> {
     ),
   ];
 
-  static final List<_SceneEntry> _popularEntries = [
-    _SceneEntry(
-      scene: MockData.scenes[0],
-      displayTitle: 'Rupture\nau téléphone',
-      durationLabel: '01:33',
-      exploreCategory: 'Drame',
-    ),
-    _SceneEntry(
-      scene: MockData.scenes[1],
-      displayTitle: 'Interrogatoire\ntendu',
-      durationLabel: '01:15',
-      exploreCategory: 'Action',
-    ),
-    _SceneEntry(
-      scene: MockData.scenes[2],
-      displayTitle: 'Déclaration\nd\'amour',
-      durationLabel: '01:25',
-      exploreCategory: 'Romance',
-    ),
-  ];
-
-  static final List<_SceneEntry> _newEntries = [
-    _SceneEntry(
-      scene: MockData.scenes[3],
-      displayTitle: 'Mauvaise\nnouvelle',
-      durationLabel: '01:29',
-      exploreCategory: 'Drame',
-    ),
-    _SceneEntry(
-      scene: MockData.scenes[4],
-      displayTitle: 'Confrontation\nfamiliale',
-      durationLabel: '01:28',
-      exploreCategory: 'Comédie',
-    ),
-    _SceneEntry(
-      scene: MockData.scenes[5],
-      displayTitle: 'Monologue\ndu héros',
-      durationLabel: '01:12',
-      exploreCategory: 'Action',
-    ),
-    _SceneEntry(
-      scene: MockData.scenes[0],
-      displayTitle: 'Émotion\nbrute',
-      durationLabel: '00:58',
-      exploreCategory: 'Romance',
-    ),
-  ];
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  _SceneEntry _entryForScene(SceneModel scene) {
+    final words = scene.title.split(' ');
+    final title = words.length >= 2
+        ? '${words.first}\n${words.sublist(1).join(' ')}'
+        : scene.title;
+    return _SceneEntry(
+      scene: scene,
+      displayTitle: title,
+      durationLabel: scene.durationFormatted,
+      exploreCategory: scene.category,
+    );
   }
 
   bool _matches(_SceneEntry entry) {
@@ -125,8 +91,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final visiblePopular = _popularEntries.where(_matches).take(3).toList();
-    final visibleNew = _newEntries.where(_matches).toList();
+    final feedState = ref.watch(feedProvider);
+    final scenes = feedState.scenes;
+    final popularEntries = [...scenes]
+      ..sort((a, b) => b.likesCount.compareTo(a.likesCount));
+    final newEntries = [...scenes]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final visiblePopular = popularEntries
+        .map(_entryForScene)
+        .where(_matches)
+        .take(3)
+        .toList();
+    final visibleNew = newEntries.map(_entryForScene).where(_matches).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B1020),
@@ -208,7 +185,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     const SizedBox(height: 20),
                     const _SectionTitle('Scènes populaires'),
                     const SizedBox(height: 12),
-                    if (visiblePopular.isEmpty)
+                    if (feedState.isLoading && scenes.isEmpty)
+                      const _EmptyState(
+                        label: 'Chargement des scènes…',
+                      )
+                    else if (visiblePopular.isEmpty)
                       const _EmptyState(
                         label: 'Aucune scène populaire pour ce filtre.',
                       )
@@ -232,7 +213,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     const SizedBox(height: 20),
                     const _SectionTitle('Nouvelles scènes'),
                     const SizedBox(height: 12),
-                    if (visibleNew.isEmpty)
+                    if (feedState.isLoading && scenes.isEmpty)
+                      const _EmptyState(
+                        label: 'Chargement des nouveautés…',
+                      )
+                    else if (visibleNew.isEmpty)
                       const _EmptyState(
                         label: 'Aucune nouvelle scène pour ce filtre.',
                       )

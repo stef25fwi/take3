@@ -44,7 +44,8 @@ class DefaultFirebaseOptions {
   // ─── Android ───────────────────────────────────────────────────────────────
   // TODO : déclare l'app Android dans Firebase Console, télécharge
   // google-services.json → take30/android/app/google-services.json,
-  // puis lance `flutterfire configure` pour remplacer l'appId ci-dessous.
+  // pour l'application `app.take30`, puis lance `flutterfire configure`
+  // pour remplacer l'appId ci-dessous.
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBM6Wr064fmsyElN6cZEF5irLqlctcxHqc',
     projectId: 'take30',
@@ -57,7 +58,8 @@ class DefaultFirebaseOptions {
   // ─── iOS ───────────────────────────────────────────────────────────────────
   // TODO : déclare l'app iOS dans Firebase Console, télécharge
   // GoogleService-Info.plist → take30/ios/Runner/GoogleService-Info.plist,
-  // puis lance `flutterfire configure` pour remplacer les valeurs ci-dessous.
+  // pour le bundle `app.take30`, puis lance `flutterfire configure`
+  // pour remplacer les valeurs ci-dessous.
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBM6Wr064fmsyElN6cZEF5irLqlctcxHqc',
     projectId: 'take30',
@@ -68,6 +70,6 @@ class DefaultFirebaseOptions {
     // iosClientId vient de REVERSED_CLIENT_ID dans GoogleService-Info.plist.
     // Nécessaire pour Google Sign-In iOS.
     iosClientId: null,
-    iosBundleId: 'com.example.take30',
+    iosBundleId: 'app.take30',
   );
 }

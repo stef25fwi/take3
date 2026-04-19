@@ -1,61 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../models/models.dart';
+import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
-import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 
-class BadgesStatsScreen extends StatelessWidget {
+class BadgesStatsScreen extends ConsumerWidget {
   const BadgesStatsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = MockData.users.first;
-    const badges = MockData.badges;
-    final stats = <_ProfileStatData>[
-      _ProfileStatData(
-        label: 'Vues totales',
-        value: MockData.formatCount(user.totalViews),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authProvider).user;
+
+    const badges = [
+      _BadgeMedalData(
+        label: 'Révélation du jour',
+        emoji: '✦',
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFE07A), Color(0xFFFFB800), Color(0xFFFF9C1A)],
+        ),
+      ),
+      _BadgeMedalData(
+        label: 'Top 10 Semaine',
+        emoji: '★',
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFBE73), Color(0xFFCB7B34), Color(0xFF9E5928)],
+        ),
+      ),
+      _BadgeMedalData(
+        label: 'Meilleure Emotion',
+        emoji: '◈',
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF8D6DFF), Color(0xFF6C5CE7), Color(0xFF4E39BF)],
+        ),
+      ),
+      _BadgeMedalData(
+        label: 'Scène la plus jouée',
+        emoji: '⬢',
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFD46B), Color(0xFFE9A11F), Color(0xFFB16A10)],
+        ),
+      ),
+    ];
+
+    final stats = [
+      _StatTileData(
+        title: 'Vues totales',
+        value: _formatCompact(user?.totalViews ?? 0),
         icon: Icons.play_circle_fill_rounded,
-        color: AppColors.cyan,
+        iconColor: const Color(0xFFD5D8E3),
       ),
-      _ProfileStatData(
-        label: 'Likes',
-        value: MockData.formatCount(user.likesCount),
-        icon: Icons.favorite_rounded,
-        color: AppColors.red,
-      ),
-      _ProfileStatData(
-        label: 'Partages',
-        value: MockData.formatCount(user.sharesCount),
-        icon: Icons.share_rounded,
-        color: AppColors.yellow,
-      ),
-      _ProfileStatData(
-        label: 'Scènes',
-        value: '${user.scenesCount}',
-        icon: Icons.movie_creation_outlined,
-        color: AppColors.purple,
-      ),
-      _ProfileStatData(
-        label: 'Abonnés',
-        value: MockData.formatCount(user.followersCount),
-        icon: Icons.groups_rounded,
-        color: AppColors.white,
-      ),
-      _ProfileStatData(
-        label: 'Approbation',
-        value: '${user.approvalRate.toInt()}%',
+      _StatTileData(
+        title: 'Taux d\'approbation',
+        value: '${(user?.approvalRate ?? 0).toInt()}%',
         icon: Icons.verified_rounded,
-        color: AppColors.yellow,
+        iconColor: const Color(0xFFFFB800),
+      ),
+      _StatTileData(
+        title: 'Partages',
+        value: _formatCompact(user?.sharesCount ?? 0),
+        icon: Icons.sync_rounded,
+        iconColor: const Color(0xFF00D4FF),
+      ),
+      _StatTileData(
+        title: 'Scènes jouées',
+        value: '${user?.scenesCount ?? 0}',
+        icon: Icons.movie_creation_outlined,
+        iconColor: const Color(0xFF7C67F8),
       ),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.dark,
+      backgroundColor: const Color(0xFF0B1020),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -64,364 +89,185 @@ class BadgesStatsScreen extends StatelessWidget {
             colors: [Color(0xFF0B1020), Color(0xFF111827)],
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _CircleIconButton(
-                      icon: Icons.chevron_left_rounded,
-                      onTap: () => context.go(AppRouter.home),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
+        child: Stack(
+          children: [
+            const Positioned(
+              top: -80,
+              left: -60,
+              child: _AmbientGlow(
+                size: 200,
+                color: Color.fromRGBO(124, 103, 248, 0.10),
+              ),
+            ),
+            const Positioned(
+              top: 120,
+              right: -40,
+              child: _AmbientGlow(
+                size: 220,
+                color: Color.fromRGBO(255, 184, 0, 0.08),
+              ),
+            ),
+            SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Tes badges',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () =>
+                                    _showAllBadgesSheet(context, badges),
+                                child: Text(
+                                  'Voir tout',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white.withValues(alpha: 0.72),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (var index = 0; index < badges.length; index++) ...[
+                                Expanded(
+                                  child: _BadgeMedalItem(
+                                    data: badges[index],
+                                    onTap: () =>
+                                        _showBadgeSheet(context, badges[index]),
+                                  ),
+                                ),
+                                if (index != badges.length - 1)
+                                  const SizedBox(width: 10),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 28),
                           Text(
-                            'Badges & stats',
+                            'Stats',
                             style: GoogleFonts.dmSans(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
-                              letterSpacing: -0.5,
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Ton parcours Take30 en un coup d’oeil',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.64),
+                          const SizedBox(height: 14),
+                          for (var index = 0; index < stats.length; index++) ...[
+                            _StatCardTile(
+                              data: stats[index],
+                              onTap: () => _showStatSheet(context, stats[index]),
+                            ),
+                            if (index != stats.length - 1)
+                              const SizedBox(height: 12),
+                          ],
+                          const SizedBox(height: 22),
+                          GestureDetector(
+                            onTap: () => context.go(AppRouter.leaderboard),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFFB800), Color(0xFFFF9C1A)],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFB800)
+                                        .withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Voir le classement →',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF0B1020),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    TextButton(
-                      onPressed: () => context.go(AppRouter.leaderboard),
-                      child: Text(
-                        'Classement',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.yellow,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _ProfileHeaderCard(user: user, badgeCount: badges.length),
-                const SizedBox(height: 28),
-                Text(
-                  'Badges débloqués',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.25,
                   ),
-                ),
-                const SizedBox(height: 14),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: badges.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.06,
-                  ),
-                  itemBuilder: (context, index) {
-                    return _BadgeCard(badge: badges[index]);
-                  },
-                ),
-                const SizedBox(height: 28),
-                Text(
-                  'Statistiques',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: -0.25,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (final stat in stats) ...[
-                  _StatRow(stat: stat),
-                  if (stat != stats.last) const SizedBox(height: 12),
                 ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileHeaderCard extends StatelessWidget {
-  const _ProfileHeaderCard({required this.user, required this.badgeCount});
-
-  final UserModel user;
-  final int badgeCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.18),
-            blurRadius: 16,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          UserAvatar(
-            url: user.avatarUrl,
-            userId: user.id,
-            size: 64,
-            showBorder: user.isVerified,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '@${user.username}',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user.bio.isEmpty ? 'Talent Take30' : user.bio,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    height: 1.35,
-                    color: Colors.white.withValues(alpha: 0.62),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _MiniPill(
-                      icon: Icons.workspace_premium_rounded,
-                      label: '$badgeCount badges',
-                    ),
-                    const SizedBox(width: 8),
-                    _MiniPill(
-                      icon: Icons.groups_rounded,
-                      label: MockData.formatCount(user.followersCount),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BadgeCard extends StatelessWidget {
-  const _BadgeCard({required this.badge});
-
-  final BadgeModel badge;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = switch (badge.type) {
-      BadgeType.gold => AppColors.badgeGold,
-      BadgeType.silver => AppColors.badgeSilver,
-      BadgeType.bronze => AppColors.badgeBronze,
-      BadgeType.special => AppColors.badgeBlue,
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.28),
-            Colors.white.withValues(alpha: 0.04),
-          ],
-        ),
-        border: Border.all(color: accent.withValues(alpha: 0.30)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.18),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              badge.emoji,
-              style: const TextStyle(fontSize: 22),
-            ),
-          ),
-          const Spacer(),
-          Text(
-            badge.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.dmSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            badge.description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.dmSans(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w500,
-              height: 1.3,
-              color: Colors.white.withValues(alpha: 0.64),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  const _StatRow({required this.stat});
-
-  final _ProfileStatData stat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: stat.color.withValues(alpha: 0.18),
-            ),
-            child: Icon(stat.icon, color: stat.color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              stat.label,
-              style: GoogleFonts.dmSans(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.72),
               ),
             ),
-          ),
-          Text(
-            stat.value,
-            style: GoogleFonts.dmSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
+class _BadgeMedalItem extends StatelessWidget {
+  const _BadgeMedalItem({required this.data, required this.onTap});
 
-  final IconData icon;
+  final _BadgeMedalData data;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.06),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Icon(icon, color: Colors.white, size: 24),
-      ),
-    );
-  }
-}
-
-class _MiniPill extends StatelessWidget {
-  const _MiniPill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
-          Icon(icon, size: 14, color: AppColors.yellow),
-          const SizedBox(width: 6),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: data.gradient,
+            ),
+            child: Center(
+              child: Text(
+                data.emoji,
+                style: GoogleFonts.dmSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
-            label,
+            data.label,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.dmSans(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
+              fontSize: 10.8,
+              fontWeight: FontWeight.w600,
               color: Colors.white,
+              height: 1.18,
+              letterSpacing: -0.1,
             ),
           ),
         ],
@@ -430,16 +276,503 @@ class _MiniPill extends StatelessWidget {
   }
 }
 
-class _ProfileStatData {
-  const _ProfileStatData({
-    required this.label,
-    required this.value,
-    required this.icon,
+class _StatCardTile extends StatelessWidget {
+  const _StatCardTile({required this.data, required this.onTap});
+
+  final _StatTileData data;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+            height: 68,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.18),
+                  blurRadius: 16,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 0,
+                  left: 10,
+                  right: 10,
+                  child: Container(
+                    height: 18,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.10),
+                          Colors.white.withValues(alpha: 0),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: data.iconColor.withValues(alpha: 0.14),
+                      ),
+                      child: Icon(
+                        data.icon,
+                        size: 20,
+                        color: data.iconColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data.title,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.66),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            data.value,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: Colors.white.withValues(alpha: 0.34),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+  }
+}
+
+class _AmbientGlow extends StatelessWidget {
+  const _AmbientGlow({
+    required this.size,
     required this.color,
   });
 
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: color,
+              blurRadius: size * 0.45,
+              spreadRadius: size * 0.1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BadgesBottomNav extends ConsumerWidget {
+  const _BadgesBottomNav();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUserId = ref.watch(authProvider).user?.id ?? 'u1';
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F1523).withValues(alpha: 0.96),
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.06),
+            width: 0.6,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 68,
+          child: Row(
+            children: [
+              _BottomNavItem(
+                icon: Icons.home_rounded,
+                label: 'Accueil',
+                selected: false,
+                onTap: () => context.go(AppRouter.home),
+              ),
+              _BottomNavItem(
+                icon: Icons.explore_rounded,
+                label: 'Explorer',
+                selected: false,
+                onTap: () => context.go(AppRouter.explore),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => context.go(AppRouter.record),
+                  child: Center(
+                    child: Transform.translate(
+                      offset: const Offset(0, -10),
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB800),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFFB800)
+                                  .withValues(alpha: 0.22),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Color(0xFF0B1020),
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              _BottomNavItem(
+                icon: Icons.notifications_rounded,
+                label: 'Notifs',
+                selected: true,
+                onTap: () => context.go(AppRouter.notifications),
+              ),
+              _BottomNavItem(
+                icon: Icons.person_rounded,
+                label: 'Profil',
+                selected: false,
+                onTap: () => context.go(AppRouter.profilePath(currentUserId)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem extends StatelessWidget {
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
   final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.48),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 9.5,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.48),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BadgeMedalData {
+  const _BadgeMedalData({
+    required this.label,
+    required this.emoji,
+    required this.gradient,
+  });
+
+  final String label;
+  final String emoji;
+  final Gradient gradient;
+}
+
+class _StatTileData {
+  const _StatTileData({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  final String title;
   final String value;
   final IconData icon;
-  final Color color;
+  final Color iconColor;
+}
+
+String _formatCompact(int value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  }
+  if (value >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}K';
+  }
+  return '$value';
+}
+
+void _showBadgeSheet(BuildContext context, _BadgeMedalData data) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF111827),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: 96, height: 96,
+              decoration: BoxDecoration(shape: BoxShape.circle, gradient: data.gradient),
+              child: Center(
+                child: Text(
+                  data.emoji,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              data.label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Badge debloque grace a tes performances recentes.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                color: Colors.white.withValues(alpha: 0.65),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _showAllBadgesSheet(BuildContext context, List<_BadgeMedalData> badges) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF111827),
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Tous tes badges',
+                style: GoogleFonts.dmSans(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: GridView.count(
+                shrinkWrap: true,
+                crossAxisCount: 3,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 12,
+                children: [
+                  for (final b in badges)
+                    Column(
+                      children: [
+                        Container(
+                          width: 60, height: 60,
+                          decoration: BoxDecoration(shape: BoxShape.circle, gradient: b.gradient),
+                          child: Center(
+                            child: Text(
+                              b.emoji,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 19, fontWeight: FontWeight.w800, color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Flexible(
+                          child: Text(
+                            b.label,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11, color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _showStatSheet(BuildContext context, _StatTileData stat) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: const Color(0xFF111827),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: 56, height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: stat.iconColor.withValues(alpha: 0.18),
+              ),
+              child: Icon(stat.icon, color: stat.iconColor, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              stat.value,
+              style: GoogleFonts.dmSans(
+                fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              stat.title,
+              style: GoogleFonts.dmSans(
+                fontSize: 14, color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Detail bientot disponible.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 12, color: Colors.white.withValues(alpha: 0.55),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

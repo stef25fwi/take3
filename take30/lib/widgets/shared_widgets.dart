@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
-import '../services/mock_data.dart';
 import '../theme/app_theme.dart';
 
 class PrimaryButton extends StatelessWidget {
@@ -216,7 +215,7 @@ class SceneCard extends StatelessWidget {
                       const Icon(Icons.favorite, size: 10, color: AppColors.red),
                       const SizedBox(width: 3),
                       Text(
-                        MockData.formatCount(scene.likesCount),
+                        _formatCompact(scene.likesCount),
                         style: const TextStyle(fontSize: 10, color: AppColors.greyLight),
                       ),
                       const SizedBox(width: 8),
@@ -236,6 +235,16 @@ class SceneCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatCompact(int value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  }
+  if (value >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}K';
+  }
+  return '$value';
 }
 
 class CategoryChip extends StatelessWidget {
@@ -453,6 +462,9 @@ class NotifIcon extends StatelessWidget {
       case NotificationType.achievement:
         icon = Icons.emoji_events;
         color = AppColors.yellow;
+      case NotificationType.follow:
+        icon = Icons.person_add_alt_1_rounded;
+        color = AppColors.orange;
       case NotificationType.system:
         icon = Icons.info;
         color = AppColors.grey;

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
-import 'mock_data.dart';
+import 'api_service.dart';
 
 enum UploadState {
   idle,
@@ -61,22 +61,18 @@ class VideoUploadService extends ChangeNotifier {
       }
 
       _setProgress(UploadState.processing, 0.92, 'Traitement...');
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-
-      final scene = SceneModel(
-        id: 'sc_${DateTime.now().millisecondsSinceEpoch}',
+      final scene = await ApiService().uploadScene(
+        videoPath: videoPath,
         title: title,
         category: category,
-        thumbnailUrl: 'https://images.unsplash.com/photo-1542513217-0b0eeea7f7bc?w=400',
-        videoUrl: videoPath,
-        durationSeconds: 28,
-        author: MockData.users.firstWhere(
-          (user) => user.id == authorId,
-          orElse: () => MockData.users.first,
-        ),
-        createdAt: DateTime.now(),
         tags: tags,
       );
+
+      if (scene == null) {
+        throw StateError(
+          'Publication impossible : utilisateur non connecté ou backend indisponible.',
+        );
+      }
 
       _setProgress(UploadState.complete, 1.0, 'Publié !', result: scene);
       return scene;

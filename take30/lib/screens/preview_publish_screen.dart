@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
 import '../theme/app_theme.dart';
 
 class PreviewPublishScreen extends ConsumerStatefulWidget {
@@ -20,6 +19,26 @@ class PreviewPublishScreen extends ConsumerStatefulWidget {
 }
 
 class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
+  SceneModel _fallbackScene(UserModel? user) {
+    final author = user ??
+        const UserModel(
+          id: 'anonymous',
+          username: 'guest',
+          displayName: 'Invité',
+          avatarUrl: '',
+        );
+    return SceneModel(
+      id: 'draft-preview',
+      title: 'Nouvelle scène',
+      category: 'Impro',
+      thumbnailUrl: '',
+      author: author,
+      createdAt: DateTime.now(),
+      tags: const ['take30'],
+      status: 'draft',
+    );
+  }
+
   @override
   void dispose() {
     ref.read(uploadServiceProvider).reset();
@@ -27,7 +46,10 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
   }
 
   Future<void> _publish() async {
-    final sceneSource = widget.scene ?? MockData.scenes[3];
+    final recordingState = ref.read(recordingProvider);
+    final sceneSource = widget.scene ??
+        recordingState.scene ??
+        _fallbackScene(ref.read(authProvider).user);
     final tags = sceneSource.tags.isEmpty ? <String>['take30'] : sceneSource.tags;
 
     final scene = await ref.read(recordingProvider.notifier).publishScene(
@@ -109,7 +131,12 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                   ref.read(recordingProvider.notifier).reset();
-                  context.go(AppRouter.profilePath('u1'));
+                  final currentUserId = ref.read(authProvider).user?.id;
+                  context.go(
+                    currentUserId == null
+                        ? AppRouter.home
+                        : AppRouter.profilePath(currentUserId),
+                  );
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.borderSubtle),
@@ -148,7 +175,10 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
     final uploadService = ref.watch(uploadServiceProvider);
     final uploadProgress = uploadService.progress;
     final isPublishing = uploadService.isUploading;
-    final scene = widget.scene ?? MockData.scenes[3];
+    final recordingState = ref.watch(recordingProvider);
+    final scene = widget.scene ??
+        recordingState.scene ??
+        _fallbackScene(ref.watch(authProvider).user);
     final tags = <String>[
       scene.category,
       scene.durationFormatted,

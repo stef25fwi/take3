@@ -53,6 +53,13 @@ class ScenesRepo {
     return snap.exists ? snap.data() : null;
   }
 
+  Stream<SceneModel?> watchById(String sceneId) {
+    return _refs
+        .sceneDoc(sceneId)
+        .snapshots()
+        .map((snap) => snap.exists ? snap.data() : null);
+  }
+
   /// Crée le doc (compteurs à 0, status published par défaut).
   Future<String> create(SceneModel scene) async {
     final ref = await _refs.scenes.add(scene);

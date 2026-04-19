@@ -10,7 +10,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
-import '../services/mock_data.dart';
 import '../services/camera_service.dart';
 import '../services/permission_service.dart';
 
@@ -37,7 +36,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
   @override
   void initState() {
     super.initState();
-    _scene = widget.scene ?? MockData.scenes.first;
+    _scene = widget.scene;
 
     _pulseCtrl = AnimationController(
       vsync: this,
@@ -76,9 +75,11 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
   Future<void> _toggleRecord() async {
     final notifier = ref.read(recordingProvider.notifier);
     final recordingState = ref.read(recordingProvider);
+    final currentScene = _resolveCurrentScene();
 
     if (!recordingState.isRecording) {
       HapticFeedback.heavyImpact();
+      notifier.setScene(currentScene);
       await notifier.startRecording();
       _pulseCtrl.repeat(reverse: true);
       return;
@@ -93,21 +94,50 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         AppRouter.preview,
         extra: <String, dynamic>{
           'videoPath': path,
-          'scene': _scene,
+          'scene': currentScene,
         },
       );
     }
   }
 
+  SceneModel _resolveCurrentScene() {
+    final availableScenes = ref.read(feedProvider).scenes;
+    if (_scene != null) {
+      return _scene!;
+    }
+    if (availableScenes.isNotEmpty) {
+      return availableScenes.first;
+    }
+    final user = ref.read(authProvider).user;
+    return SceneModel(
+      id: 'draft-record',
+      title: 'Nouvelle scène',
+      category: 'Impro',
+      thumbnailUrl: '',
+      author: user ??
+          const UserModel(
+            id: 'anonymous',
+            username: 'guest',
+            displayName: 'Créateur',
+            avatarUrl: '',
+          ),
+      createdAt: DateTime.now(),
+      status: 'draft',
+      tags: const ['take30'],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final recordingState = ref.watch(recordingProvider);
+    final feedState = ref.watch(feedProvider);
     final cameraService = ref.watch(cameraServiceProvider);
     final elapsed = cameraService.elapsedSeconds;
     final remaining = CameraService.maxRecordingSeconds - elapsed;
     final isRecording =
         cameraService.isRecording || recordingState.isRecording;
-    final currentScene = _scene ?? MockData.scenes.first;
+    final currentScene = _scene ??
+      (feedState.scenes.isNotEmpty ? feedState.scenes.first : _resolveCurrentScene());
     final timerLabel =
         '00:${remaining.clamp(0, 59).toString().padLeft(2, '0')}';
 
@@ -265,7 +295,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => _ScenePickerSheet(
-        currentSceneId: _scene?.id,
+        currentSceneId: _resolveCurrentScene().id,
         onSelect: (scene) {
           setState(() => _scene = scene);
           ref.read(recordingProvider.notifier).setScene(scene);
@@ -740,14 +770,15 @@ class _CameraFallback extends StatelessWidget {
 // Scene Picker Sheet
 // ──────────────────────────────────────────────────────────────────────────────
 
-class _ScenePickerSheet extends StatelessWidget {
+class _ScenePickerSheet extends ConsumerWidget {
   const _ScenePickerSheet({this.currentSceneId, required this.onSelect});
 
   final String? currentSceneId;
   final void Function(SceneModel) onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scenes = ref.watch(feedProvider).scenes;
     return Column(
       children: [
         const SizedBox(height: 12),
@@ -770,78 +801,89 @@ class _ScenePickerSheet extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: MockData.scenes.length,
-            itemBuilder: (_, index) {
-              final scene = MockData.scenes[index];
-              final selected = currentSceneId == scene.id;
-              return GestureDetector(
-                onTap: () => onSelect(scene),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _K.yellow.withValues(alpha: 0.10)
-                        : Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: selected
-                          ? _K.yellow.withValues(alpha: 0.50)
-                          : Colors.white.withValues(alpha: 0.08),
+          child: scenes.isEmpty
+              ? Center(
+                  child: Text(
+                    'Aucune scène disponible. Publie ou seed des scènes pour enregistrer sur un prompt existant.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.62),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: SizedBox(
-                          width: 58,
-                          height: 44,
-                          child: Image.network(
-                            scene.thumbnailUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                Container(color: const Color(0xFF1A2540)),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: scenes.length,
+                  itemBuilder: (_, index) {
+                    final scene = scenes[index];
+                    final selected = currentSceneId == scene.id;
+                    return GestureDetector(
+                      onTap: () => onSelect(scene),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? _K.yellow.withValues(alpha: 0.10)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected
+                                ? _K.yellow.withValues(alpha: 0.50)
+                                : Colors.white.withValues(alpha: 0.08),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              scene.title,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 58,
+                                height: 44,
+                                child: Image.network(
+                                  scene.thumbnailUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      Container(color: const Color(0xFF1A2540)),
+                                ),
                               ),
                             ),
-                            Text(
-                              scene.category,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.45),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    scene.title,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    scene.category,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 12,
+                                      color: Colors.white.withValues(alpha: 0.45),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                            if (selected)
+                              const Icon(
+                                Icons.check_circle,
+                                color: _K.yellow,
+                                size: 18,
+                              ),
                           ],
                         ),
                       ),
-                      if (selected)
-                        const Icon(
-                          Icons.check_circle,
-                          color: _K.yellow,
-                          size: 18,
-                        ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );

@@ -419,17 +419,23 @@ class NotificationModel {
   factory NotificationModel.fromFirestore(
       DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? const <String, dynamic>{};
+    final actor = d['actorDenorm'] as Map<String, dynamic>? ?? const {};
+    final type = _enumFromString(
+      NotificationType.values,
+      d['type'] as String?,
+      NotificationType.system,
+    );
     return NotificationModel(
       id: doc.id,
-      message: d['message'] as String? ?? '',
-      subMessage: d['subMessage'] as String? ?? '',
-      type: _enumFromString(NotificationType.values, d['type'] as String?,
-          NotificationType.system),
+      message: d['message'] as String? ?? d['text'] as String? ?? '',
+      subMessage: d['subMessage'] as String? ??
+          _notificationFallbackSubMessage(type),
+      type: type,
       time: _readDate(d['time']),
       isRead: d['isRead'] as bool? ?? false,
-      avatarUrl: d['avatarUrl'] as String?,
+      avatarUrl: d['avatarUrl'] as String? ?? actor['avatarUrl'] as String?,
       sceneId: d['sceneId'] as String?,
-      userId: d['userId'] as String?,
+      userId: d['userId'] as String? ?? actor['id'] as String?,
     );
   }
 
@@ -445,7 +451,24 @@ class NotificationModel {
       };
 }
 
-enum NotificationType { like, comment, duel, achievement, system }
+String _notificationFallbackSubMessage(NotificationType type) {
+  switch (type) {
+    case NotificationType.like:
+      return 'Ouvre le take pour voir qui a réagi.';
+    case NotificationType.comment:
+      return 'Lis le commentaire et réponds si besoin.';
+    case NotificationType.duel:
+      return 'Va voir la battle en cours.';
+    case NotificationType.achievement:
+      return 'Un nouveau badge ou palier t’attend.';
+    case NotificationType.follow:
+      return 'Découvre son profil ou rends-lui la pareille.';
+    case NotificationType.system:
+      return 'Consulte cette mise à jour.';
+  }
+}
+
+enum NotificationType { like, comment, duel, achievement, follow, system }
 
 // ─── DuelModel ───────────────────────────────────────────────────────────────
 class DuelModel {
