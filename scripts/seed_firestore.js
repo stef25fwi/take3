@@ -28,13 +28,20 @@ function loadJson(name) {
 
 function initAdmin() {
   if (process.env.FIRESTORE_EMULATOR_HOST) {
-    admin.initializeApp({ projectId: "take30" });
+    admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT || "take30" });
     console.log(`🧪 Emulator mode @ ${process.env.FIRESTORE_EMULATOR_HOST}`);
     return;
   }
-  const keyPath = path.join(SEED_DIR, "serviceAccountKey.json");
+
+  const envPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  const localPath = path.join(SEED_DIR, "serviceAccountKey.json");
+  const keyPath = envPath && fs.existsSync(envPath) ? envPath : localPath;
+
   if (!fs.existsSync(keyPath)) {
-    console.error("❌ Missing scripts/seed/serviceAccountKey.json (Firebase Admin SDK).");
+    console.error(
+      "❌ Service account introuvable. Déposez le JSON dans scripts/seed/serviceAccountKey.json " +
+        "ou exposez GOOGLE_APPLICATION_CREDENTIALS."
+    );
     process.exit(1);
   }
   const key = require(keyPath);
@@ -42,7 +49,7 @@ function initAdmin() {
     credential: admin.credential.cert(key),
     projectId: key.project_id,
   });
-  console.log(`☁️  Prod mode @ project=${key.project_id}`);
+  console.log(`☁️  Prod mode @ project=${key.project_id} (key=${path.basename(keyPath)})`);
 }
 
 async function clearCollection(db, colPath) {
