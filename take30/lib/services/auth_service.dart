@@ -37,6 +37,11 @@ class AuthService extends ChangeNotifier {
   final fa.FirebaseAuth _auth = fa.FirebaseAuth.instance;
   final ApiService _api = ApiService();
 
+  static const String _demoEmail = 'demo@take30.app';
+  static const String _demoPassword = 'take30demo';
+  static const String _demoUsername = 'demo_take30';
+  static const String _demoDisplayName = 'Mode Demo';
+
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _error;
@@ -60,14 +65,21 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<UserModel?> _loadOrCreateProfile(fa.User fbUser) async {
+  Future<UserModel?> _loadOrCreateProfile(
+    fa.User fbUser, {
+    String? preferredUsername,
+    String? preferredDisplayName,
+    String? preferredAvatarUrl,
+  }) async {
     final existing = await _api.users.getById(fbUser.uid);
     if (existing != null) return existing;
+    final username = preferredUsername ?? _deriveUsername(fbUser);
     final fallback = UserModel(
       id: fbUser.uid,
-      username: _deriveUsername(fbUser),
-      displayName: fbUser.displayName ?? _deriveUsername(fbUser),
-      avatarUrl: fbUser.photoURL ?? Take30Assets.avatarCurrentUser,
+      username: username,
+      displayName: preferredDisplayName ?? fbUser.displayName ?? username,
+      avatarUrl:
+          preferredAvatarUrl ?? fbUser.photoURL ?? Take30Assets.avatarCurrentUser,
       createdAt: DateTime.now(),
     );
     await _api.users.createProfile(fallback);
@@ -116,6 +128,70 @@ class AuthService extends ChangeNotifier {
     } catch (e) {
       _setLoading(false);
       return AuthResult.failure(e.toString());
+    }
+  }
+
+  Future<AuthResult> loginDemo() async {
+    _setLoading(true);
+    try {
+      final cred = await _signInOrCreateDemoAccount();
+      final user = await _loadOrCreateProfile(
+        cred.user!,
+        preferredUsername: _demoUsername,
+        preferredDisplayName: _demoDisplayName,
+        preferredAvatarUrl: Take30Assets.avatarCurrentUser,
+      );
+      _currentUser = user;
+      _api.setCurrentUser(user);
+      _error = null;
+      _setLoading(false);
+      return AuthResult.success(user);
+    } on fa.FirebaseAuthException catch (e) {
+      _setLoading(false);
+      return AuthResult.failure(_mapAuthError(e));
+    } catch (e) {
+      _setLoading(false);
+      return AuthResult.failure(e.toString());
+    }
+  }
+
+  Future<fa.UserCredential> _signInOrCreateDemoAccount() async {
+    try {
+      return await _auth.signInWithEmailAndPassword(
+        email: _demoEmail,
+        password: _demoPassword,
+      );
+    } on fa.FirebaseAuthException catch (e) {
+      if (e.code != 'user-not-found' &&
+          e.code != 'wrong-password' &&
+          e.code != 'invalid-credential') {
+        rethrow;
+      }
+    }
+
+    try {
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: _demoEmail,
+        password: _demoPassword,
+      );
+      await cred.user?.updateDisplayName(_demoDisplayName);
+      return cred;
+    } on fa.FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        try {
+          return await _auth.signInWithEmailAndPassword(
+            email: _demoEmail,
+            password: _demoPassword,
+          );
+        } on fa.FirebaseAuthException {
+          throw fa.FirebaseAuthException(
+            code: 'demo-account-misconfigured',
+            message:
+                'Le compte démo existe déjà avec un mot de passe différent dans Firebase Auth.',
+          );
+        }
+      }
+      rethrow;
     }
   }
 
@@ -293,6 +369,10 @@ class AuthService extends ChangeNotifier {
         return 'Mot de passe trop faible (min 6 car.)';
       case 'network-request-failed':
         return 'Pas de connexion réseau';
+      case 'operation-not-allowed':
+        return 'Méthode de connexion non activée dans Firebase';
+      case 'demo-account-misconfigured':
+        return 'Le compte démo Firebase existe avec un mot de passe différent';
       default:
         return e.message ?? 'Erreur d\'authentification';
     }

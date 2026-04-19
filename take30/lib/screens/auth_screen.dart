@@ -46,10 +46,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   Future<void> _submit() async {
     final auth = ref.read(authProvider.notifier);
     if (_tabs.index == 0) {
-      await auth.login(
-        _emailCtrl.text.isEmpty ? 'demo@take30.app' : _emailCtrl.text,
-        _passwordCtrl.text,
-      );
+      await auth.login(_emailCtrl.text, _passwordCtrl.text);
     } else {
       await auth.register(
         _usernameCtrl.text.isEmpty ? 'LunaAct' : _usernameCtrl.text,
@@ -57,6 +54,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         _passwordCtrl.text,
       );
     }
+    if (mounted) {
+      final state = ref.read(authProvider);
+      if (state.isAuthenticated) {
+        context.go('/home');
+      }
+    }
+  }
+
+  Future<void> _openDemo() async {
+    await ref.read(authProvider.notifier).loginDemo();
     if (mounted) {
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
@@ -192,11 +199,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               ),
               const SizedBox(height: 14),
               TextButton(
-                onPressed: () {
-                  _emailCtrl.text = 'demo@take30.app';
-                  _passwordCtrl.text = 'demo';
-                  _submit();
-                },
+                onPressed: authState.isLoading ? null : _openDemo,
                 child: Text(
                   'Accès démo →',
                   style: GoogleFonts.dmSans(
