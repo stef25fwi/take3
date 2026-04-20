@@ -26,6 +26,16 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
   bool? _likedOverride;
   int? _likesCountOverride;
 
+  bool _isDemoUser(UserModel? user) {
+    if (user == null) {
+      return false;
+    }
+
+    return user.username == 'demo_take30' ||
+        user.displayName == 'Mode Demo' ||
+        user.email == 'demo@take30.app';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +61,13 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
       _likedOverride = nextLiked;
       _likesCountOverride = nextLiked ? currentCount + 1 : currentCount - 1;
     });
+    if (_isDemoUser(ref.read(authProvider).user)) {
+      ref.read(demoSceneInteractionsStoreProvider).toggleLike(
+        scene,
+        ref.read(demoSceneCommentsProvider(scene.id)),
+      );
+      return;
+    }
     await ref.read(apiServiceProvider).likeScene(scene.id);
   }
 
@@ -68,7 +85,12 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authUser = ref.watch(authProvider).user;
+    final isDemoMode = _isDemoUser(authUser);
     final sceneAsync = ref.watch(sceneProvider(widget.sceneId));
+    final demoComments = isDemoMode
+        ? ref.watch(demoSceneCommentsProvider(widget.sceneId))
+        : const <CommentModel>[];
     final scene = sceneAsync.value ?? widget.scene;
     if (scene == null) {
       return Scaffold(
@@ -96,6 +118,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
 
     final isLiked = _likedOverride ?? scene.isLiked;
     final likesCount = _likesCountOverride ?? scene.likesCount;
+    final commentsCount = isDemoMode ? demoComments.length : scene.commentsCount;
 
     return Scaffold(
       backgroundColor: AppColors.navy,
@@ -128,11 +151,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 220,
-                    child: Image.network(
-                      scene.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
-                    ),
+                    child: _SceneThumbnail(imageUrl: scene.thumbnailUrl),
                   ),
                   Positioned.fill(
                     child: DecoratedBox(
@@ -193,7 +212,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
               children: [
                 const _StatBox(value: '4.8⭐', label: 'note'),
                 _StatBox(value: '${scene.viewsCount}👁️', label: 'vues'),
-                _StatBox(value: '${scene.commentsCount}💬', label: 'commentaires'),
+                _StatBox(value: '$commentsCount💬', label: 'commentaires'),
                 _StatBox(value: '$likesCount❤️', label: 'likes'),
               ],
             ),
@@ -350,6 +369,29 @@ class _StatBox extends StatelessWidget {
   }
 }
 
+class _SceneThumbnail extends StatelessWidget {
+  const _SceneThumbnail({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.startsWith('assets/')) {
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
+      );
+    }
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
+    );
+  }
+}
+
 class _CommentsSheet extends ConsumerStatefulWidget {
   const _CommentsSheet({required this.sceneId});
 
@@ -363,6 +405,16 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
   final TextEditingController _ctrl = TextEditingController();
   bool _isSubmitting = false;
 
+  bool _isDemoUser(UserModel? user) {
+    if (user == null) {
+      return false;
+    }
+
+    return user.username == 'demo_take30' ||
+        user.displayName == 'Mode Demo' ||
+        user.email == 'demo@take30.app';
+  }
+
   @override
   void dispose() {
     _ctrl.dispose();
@@ -374,6 +426,20 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
     if (text.isEmpty) return;
     final user = ref.read(authProvider).user;
     if (user == null) return;
+    if (_isDemoUser(user)) {
+      final scene = ref.read(sceneProvider(widget.sceneId)).value;
+      if (scene != null) {
+        ref.read(demoSceneInteractionsStoreProvider).addComment(
+          scene,
+          user,
+          text,
+          ref.read(demoSceneCommentsProvider(widget.sceneId)),
+        );
+      }
+      _ctrl.clear();
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     await ref.read(apiServiceProvider).comments.add(
           sceneId: widget.sceneId,
@@ -388,7 +454,11 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final commentsAsync = ref.watch(sceneCommentsProvider(widget.sceneId));
+    final authUser = ref.watch(authProvider).user;
+    final isDemoMode = _isDemoUser(authUser);
+    final commentsAsync = isDemoMode
+        ? AsyncValue.data(ref.watch(demoSceneCommentsProvider(widget.sceneId)))
+        : ref.watch(sceneCommentsProvider(widget.sceneId));
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.only(bottom: viewInsets),

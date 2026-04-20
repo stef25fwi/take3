@@ -215,11 +215,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 240,
-                    child: Image.network(
-                      scene.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
-                    ),
+                    child: _PreviewThumbnail(imageUrl: scene.thumbnailUrl),
                   ),
                   Positioned.fill(
                     child: DecoratedBox(
@@ -374,6 +370,33 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PreviewThumbnail extends StatelessWidget {
+  const _PreviewThumbnail({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return Container(color: AppColors.surfaceCard);
+    }
+
+    if (imageUrl.startsWith('assets/')) {
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
+      );
+    }
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(color: AppColors.surfaceCard),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../models/models.dart';
@@ -41,6 +42,7 @@ class AuthService extends ChangeNotifier {
   static const String _demoEmail = 'demo@take30.app';
   static const String _demoUsername = 'demo_take30';
   static const String _demoDisplayName = 'Mode Demo';
+  static const String _demoSessionPrefKey = 'take30.demo_session';
 
   UserModel? _currentUser;
   bool _isLocalDemoSession = false;
@@ -164,6 +166,20 @@ class AuthService extends ChangeNotifier {
     _api.setCurrentUser(user);
   }
 
+  Future<void> _persistDemoSession(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (enabled) {
+      await prefs.setBool(_demoSessionPrefKey, true);
+    } else {
+      await prefs.remove(_demoSessionPrefKey);
+    }
+  }
+
+  Future<bool> _hasPersistedDemoSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_demoSessionPrefKey) ?? false;
+  }
+
   String _deriveUsername(fa.User fbUser) {
     final email = fbUser.email;
     if (email != null && email.contains('@')) {
@@ -254,6 +270,7 @@ class AuthService extends ChangeNotifier {
     _setLoading(true);
     final user = _buildLocalDemoUser();
     _setSessionUser(user, isLocalDemo: true);
+    await _persistDemoSession(true);
     _error = null;
     _setLoading(false);
     return AuthResult.success(user);
@@ -390,6 +407,7 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     _setLoading(true);
     _isLocalDemoSession = false;
+    await _persistDemoSession(false);
     try {
       final uid = _auth.currentUser?.uid;
       if (uid != null && !kIsWeb) {
@@ -410,10 +428,18 @@ class AuthService extends ChangeNotifier {
 
   Future<void> checkPersistedAuth() async {
     final fbUser = _auth.currentUser;
-    if (fbUser == null) return;
-    final user = await _api.users.getById(fbUser.uid) ??
-        _buildFallbackProfile(fbUser);
-    _setSessionUser(user);
+    if (fbUser != null) {
+      final user = await _api.users.getById(fbUser.uid) ??
+          _buildFallbackProfile(fbUser);
+      _setSessionUser(user);
+      await _persistDemoSession(false);
+      notifyListeners();
+      return;
+    }
+
+    if (await _hasPersistedDemoSession()) {
+      _setSessionUser(_buildLocalDemoUser(), isLocalDemo: true);
+    }
     notifyListeners();
   }
 

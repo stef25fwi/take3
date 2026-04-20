@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -163,17 +166,407 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
   (ref) => AuthNotifier(ref.read(authServiceProvider)),
 );
 
+const String _demoPublishedScenesPrefKey = 'take30.demo_published_scenes';
+const String _demoSceneInteractionsPrefKey = 'take30.demo_scene_interactions';
+
+Map<String, dynamic> _demoUserToJson(UserModel user) => {
+      'id': user.id,
+      'username': user.username,
+      'displayName': user.displayName,
+      'avatarUrl': user.avatarUrl,
+      'email': user.email,
+      'bio': user.bio,
+      'isVerified': user.isVerified,
+      'scenesCount': user.scenesCount,
+      'followersCount': user.followersCount,
+      'likesCount': user.likesCount,
+      'totalViews': user.totalViews,
+      'approvalRate': user.approvalRate,
+      'sharesCount': user.sharesCount,
+      'isFollowing': user.isFollowing,
+      'isAdmin': user.isAdmin,
+      'createdAt': user.createdAt?.toIso8601String(),
+      'lastActiveAt': user.lastActiveAt?.toIso8601String(),
+      'fcmTokens': user.fcmTokens,
+    };
+
+UserModel _demoUserFromJson(Map<String, dynamic> json) => UserModel(
+      id: json['id'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      displayName: json['displayName'] as String? ?? '',
+      avatarUrl: json['avatarUrl'] as String? ?? '',
+      email: json['email'] as String?,
+      bio: json['bio'] as String? ?? '',
+      isVerified: json['isVerified'] as bool? ?? false,
+      scenesCount: (json['scenesCount'] as num?)?.toInt() ?? 0,
+      followersCount: (json['followersCount'] as num?)?.toInt() ?? 0,
+      likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+      totalViews: (json['totalViews'] as num?)?.toInt() ?? 0,
+      approvalRate: (json['approvalRate'] as num?)?.toDouble() ?? 0,
+      sharesCount: (json['sharesCount'] as num?)?.toInt() ?? 0,
+      isFollowing: json['isFollowing'] as bool? ?? false,
+      isAdmin: json['isAdmin'] as bool? ?? false,
+      createdAt: json['createdAt'] is String
+          ? DateTime.tryParse(json['createdAt'] as String)
+          : null,
+      lastActiveAt: json['lastActiveAt'] is String
+          ? DateTime.tryParse(json['lastActiveAt'] as String)
+          : null,
+      fcmTokens: (json['fcmTokens'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+    );
+
+Map<String, dynamic> _demoCommentToJson(CommentModel comment) => {
+      'id': comment.id,
+      'sceneId': comment.sceneId,
+      'authorId': comment.authorId,
+      'authorDenorm': comment.authorDenorm.toMap(),
+      'text': comment.text,
+      'createdAt': comment.createdAt.toIso8601String(),
+      'likesCount': comment.likesCount,
+    };
+
+CommentModel _demoCommentFromJson(Map<String, dynamic> json) => CommentModel(
+      id: json['id'] as String? ?? '',
+      sceneId: json['sceneId'] as String? ?? '',
+      authorId: json['authorId'] as String? ?? '',
+      authorDenorm: UserStub.fromMap(
+        (json['authorDenorm'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
+      text: json['text'] as String? ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _demoSceneToJson(SceneModel scene) => {
+      'id': scene.id,
+      'title': scene.title,
+      'category': scene.category,
+      'thumbnailUrl': scene.thumbnailUrl,
+      'videoUrl': scene.videoUrl,
+      'durationSeconds': scene.durationSeconds,
+      'likesCount': scene.likesCount,
+      'commentsCount': scene.commentsCount,
+      'sharesCount': scene.sharesCount,
+      'viewsCount': scene.viewsCount,
+      'author': _demoUserToJson(scene.author),
+      'createdAt': scene.createdAt.toIso8601String(),
+      'isLiked': scene.isLiked,
+      'tags': scene.tags,
+      'status': scene.status,
+    };
+
+SceneModel _demoSceneFromJson(Map<String, dynamic> json) => SceneModel(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+      thumbnailUrl: json['thumbnailUrl'] as String? ?? '',
+      videoUrl: json['videoUrl'] as String?,
+      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 30,
+      likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+      commentsCount: (json['commentsCount'] as num?)?.toInt() ?? 0,
+      sharesCount: (json['sharesCount'] as num?)?.toInt() ?? 0,
+      viewsCount: (json['viewsCount'] as num?)?.toInt() ?? 0,
+      author: _demoUserFromJson(
+        (json['author'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      isLiked: json['isLiked'] as bool? ?? false,
+      tags: (json['tags'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+      status: json['status'] as String? ?? 'published',
+    );
+
+Map<String, dynamic> _demoInteractionToJson(DemoSceneInteractionState state) => {
+      'isLiked': state.isLiked,
+      'likesCount': state.likesCount,
+      'commentsCount': state.commentsCount,
+      'comments': [for (final comment in state.comments) _demoCommentToJson(comment)],
+    };
+
+DemoSceneInteractionState _demoInteractionFromJson(Map<String, dynamic> json) =>
+    DemoSceneInteractionState(
+      isLiked: json['isLiked'] as bool? ?? false,
+      likesCount: (json['likesCount'] as num?)?.toInt() ?? 0,
+      commentsCount: (json['commentsCount'] as num?)?.toInt() ?? 0,
+      comments: [
+        for (final comment in json['comments'] as List<dynamic>? ?? const [])
+          _demoCommentFromJson((comment as Map).cast<String, dynamic>()),
+      ],
+    );
+
+class DemoPublishedScenesStore extends ChangeNotifier {
+  DemoPublishedScenesStore() {
+    _restore();
+  }
+
+  List<SceneModel> _scenes = const [];
+
+  List<SceneModel> get scenes => _scenes;
+
+  void add(SceneModel scene) {
+    _scenes = [
+      scene,
+      for (final existing in _scenes)
+        if (existing.id != scene.id) existing,
+    ];
+    _persist();
+    notifyListeners();
+  }
+
+  void clear() {
+    if (_scenes.isEmpty) {
+      return;
+    }
+    _scenes = const [];
+    _persist();
+    notifyListeners();
+  }
+
+  Future<void> _restore() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_demoPublishedScenesPrefKey);
+    if (raw == null || raw.isEmpty) {
+      return;
+    }
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    _scenes = [
+      for (final item in decoded) _demoSceneFromJson((item as Map).cast<String, dynamic>()),
+    ];
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_scenes.isEmpty) {
+      await prefs.remove(_demoPublishedScenesPrefKey);
+      return;
+    }
+    await prefs.setString(
+      _demoPublishedScenesPrefKey,
+      jsonEncode([for (final scene in _scenes) _demoSceneToJson(scene)]),
+    );
+  }
+}
+
+class DemoSceneInteractionState {
+  const DemoSceneInteractionState({
+    required this.isLiked,
+    required this.likesCount,
+    required this.commentsCount,
+    required this.comments,
+  });
+
+  final bool isLiked;
+  final int likesCount;
+  final int commentsCount;
+  final List<CommentModel> comments;
+
+  DemoSceneInteractionState copyWith({
+    bool? isLiked,
+    int? likesCount,
+    int? commentsCount,
+    List<CommentModel>? comments,
+  }) {
+    return DemoSceneInteractionState(
+      isLiked: isLiked ?? this.isLiked,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      comments: comments ?? this.comments,
+    );
+  }
+}
+
+class DemoSceneInteractionsStore extends ChangeNotifier {
+  DemoSceneInteractionsStore() {
+    _restore();
+  }
+
+  final Map<String, DemoSceneInteractionState> _states = {};
+
+  void clear() {
+    if (_states.isEmpty) {
+      return;
+    }
+    _states.clear();
+    _persist();
+    notifyListeners();
+  }
+
+  DemoSceneInteractionState _ensure(
+    SceneModel scene,
+    List<CommentModel> initialComments,
+  ) {
+    return _states.putIfAbsent(
+      scene.id,
+      () => DemoSceneInteractionState(
+        isLiked: scene.isLiked,
+        likesCount: scene.likesCount,
+        commentsCount: scene.commentsCount,
+        comments: List<CommentModel>.from(initialComments),
+      ),
+    );
+  }
+
+  SceneModel bindScene(SceneModel scene, List<CommentModel> initialComments) {
+    final state = _ensure(scene, initialComments);
+    return _applyDemoInteractionToScene(scene, state);
+  }
+
+  List<CommentModel> commentsFor(SceneModel scene, List<CommentModel> initialComments) {
+    final state = _ensure(scene, initialComments);
+    return state.comments;
+  }
+
+  void toggleLike(SceneModel scene, List<CommentModel> initialComments) {
+    final state = _ensure(scene, initialComments);
+    final nextLiked = !state.isLiked;
+    _states[scene.id] = state.copyWith(
+      isLiked: nextLiked,
+      likesCount: nextLiked ? state.likesCount + 1 : state.likesCount - 1,
+    );
+    _persist();
+    notifyListeners();
+  }
+
+  void addComment(
+    SceneModel scene,
+    UserModel author,
+    String text,
+    List<CommentModel> initialComments,
+  ) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+
+    final state = _ensure(scene, initialComments);
+    _states[scene.id] = state.copyWith(
+      commentsCount: state.commentsCount + 1,
+      comments: [
+        ...state.comments,
+        CommentModel(
+          id: 'comment_demo_local_${DateTime.now().microsecondsSinceEpoch}',
+          sceneId: scene.id,
+          authorId: author.id,
+          authorDenorm: author.toStub(),
+          text: trimmed,
+          createdAt: DateTime.now(),
+        ),
+      ],
+    );
+    _persist();
+    notifyListeners();
+  }
+
+  Future<void> _restore() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_demoSceneInteractionsPrefKey);
+    if (raw == null || raw.isEmpty) {
+      return;
+    }
+    final decoded = (jsonDecode(raw) as Map).cast<String, dynamic>();
+    _states
+      ..clear()
+      ..addAll({
+        for (final entry in decoded.entries)
+          entry.key: _demoInteractionFromJson(
+            (entry.value as Map).cast<String, dynamic>(),
+          ),
+      });
+    notifyListeners();
+  }
+
+  Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_states.isEmpty) {
+      await prefs.remove(_demoSceneInteractionsPrefKey);
+      return;
+    }
+    await prefs.setString(
+      _demoSceneInteractionsPrefKey,
+      jsonEncode({
+        for (final entry in _states.entries)
+          entry.key: _demoInteractionToJson(entry.value),
+      }),
+    );
+  }
+}
+
+SceneModel _applyDemoInteractionToScene(
+  SceneModel scene,
+  DemoSceneInteractionState state,
+) {
+  return SceneModel(
+    id: scene.id,
+    title: scene.title,
+    category: scene.category,
+    thumbnailUrl: scene.thumbnailUrl,
+    videoUrl: scene.videoUrl,
+    durationSeconds: scene.durationSeconds,
+    likesCount: state.likesCount,
+    commentsCount: state.commentsCount,
+    sharesCount: scene.sharesCount,
+    viewsCount: scene.viewsCount,
+    author: scene.author,
+    createdAt: scene.createdAt,
+    isLiked: state.isLiked,
+    tags: scene.tags,
+    status: scene.status,
+  );
+}
+
+final demoPublishedScenesStoreProvider =
+    ChangeNotifierProvider<DemoPublishedScenesStore>((ref) {
+  final store = DemoPublishedScenesStore();
+  ref.listen<UserModel?>(
+    authProvider.select((state) => state.user),
+    (_, next) {
+      if (!_isDemoUser(next)) {
+        store.clear();
+      }
+    },
+  );
+  return store;
+});
+
+final demoSceneInteractionsStoreProvider =
+    ChangeNotifierProvider<DemoSceneInteractionsStore>((ref) {
+  final store = DemoSceneInteractionsStore();
+  ref.listen<UserModel?>(
+    authProvider.select((state) => state.user),
+    (_, next) {
+      if (!_isDemoUser(next)) {
+        store.clear();
+      }
+    },
+  );
+  return store;
+});
+
 class FeedNotifier extends StateNotifier<FeedState> {
   static const String _demoEmail = 'demo@take30.app';
   static const String _demoUsername = 'demo_take30';
   static const String _demoDisplayName = 'Mode Demo';
 
-  FeedNotifier(this._api, this._haptics) : super(const FeedState()) {
+  FeedNotifier(
+    this._api,
+    this._haptics,
+    this._demoPublishedScenesStore,
+    this._demoSceneInteractionsStore,
+  )
+      : super(const FeedState()) {
+    _demoPublishedScenesStore.addListener(_handleDemoPublishedScenesChanged);
+    _demoSceneInteractionsStore.addListener(_handleDemoSceneInteractionsChanged);
     loadFeed();
   }
 
   final ApiService _api;
   final HapticsService _haptics;
+  final DemoPublishedScenesStore _demoPublishedScenesStore;
+  final DemoSceneInteractionsStore _demoSceneInteractionsStore;
 
   Future<void> loadFeed({bool refresh = false}) async {
     if (_isDemoMode) {
@@ -232,83 +625,149 @@ class FeedNotifier extends StateNotifier<FeedState> {
   }
 
   List<SceneModel> _buildDemoFeed() {
-    final now = DateTime.now();
-    final currentUser = _api.currentUser ??
-        UserModel(
-          id: 'demo_local',
-          username: _demoUsername,
-          displayName: _demoDisplayName,
-          avatarUrl: Take30Assets.avatarCurrentUser,
-          email: _demoEmail,
-          isVerified: true,
-          scenesCount: 3,
-          likesCount: 128,
-          createdAt: now,
-        );
-
-    final guestA = UserModel(
-      id: 'u_demo_feed_a',
-      username: 'LunaScene',
-      displayName: 'Luna Scene',
-      avatarUrl: 'assets/avatars/avatar_ia_female_alt.webp',
-      isVerified: true,
-      createdAt: now.subtract(const Duration(days: 3)),
+    return _buildDemoFeedScenes(
+      _api.currentUser,
+      _demoPublishedScenesStore.scenes,
+      _demoSceneInteractionsStore,
     );
-
-    final guestB = UserModel(
-      id: 'u_demo_feed_b',
-      username: 'MaxShot',
-      displayName: 'Max Shot',
-      avatarUrl: 'assets/avatars/avatar_ia_male_lead.webp',
-      isVerified: true,
-      createdAt: now.subtract(const Duration(days: 4)),
-    );
-
-    return [
-      SceneModel(
-        id: 's_demo_feed_1',
-        title: 'Clash émotionnel en 30 secondes',
-        category: 'drama',
-        thumbnailUrl: 'assets/scenes/battle_player_a.png',
-        durationSeconds: 30,
-        likesCount: 184,
-        commentsCount: 23,
-        sharesCount: 9,
-        viewsCount: 3200,
-        author: guestA,
-        createdAt: now.subtract(const Duration(hours: 2)),
-        tags: const ['demo', 'drama', 'battle'],
-      ),
-      SceneModel(
-        id: 's_demo_feed_2',
-        title: 'Réplique culte, version face cam',
-        category: 'comedy',
-        thumbnailUrl: 'assets/scenes/battle_player_b.png',
-        durationSeconds: 30,
-        likesCount: 172,
-        commentsCount: 19,
-        sharesCount: 11,
-        viewsCount: 2980,
-        author: guestB,
-        createdAt: now.subtract(const Duration(hours: 3)),
-        tags: const ['demo', 'comedy', 'viral'],
-      ),
-      SceneModel(
-        id: 's_demo_feed_3',
-        title: 'Ton premier take peut déjà percer',
-        category: 'spotlight',
-        thumbnailUrl: 'assets/avatars/avatar_ia_female_lead.webp',
-        durationSeconds: 30,
-        likesCount: 96,
-        commentsCount: 12,
-        sharesCount: 5,
-        viewsCount: 1540,
-        author: currentUser,
-        createdAt: now.subtract(const Duration(minutes: 40)),
-        tags: const ['demo', 'starter', 'spotlight'],
-      ),
-    ];
   }
+
+  void _handleDemoPublishedScenesChanged() {
+    if (!_isDemoMode) {
+      return;
+    }
+
+    state = FeedState(
+      isLoading: false,
+      scenes: _buildDemoFeed(),
+    );
+  }
+
+  void _handleDemoSceneInteractionsChanged() {
+    if (!_isDemoMode) {
+      return;
+    }
+
+    state = FeedState(
+      isLoading: false,
+      scenes: _buildDemoFeed(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _demoPublishedScenesStore.removeListener(_handleDemoPublishedScenesChanged);
+    _demoSceneInteractionsStore
+        .removeListener(_handleDemoSceneInteractionsChanged);
+    super.dispose();
+  }
+}
+
+List<SceneModel> _mergeDemoScenes(
+  List<SceneModel> priorityScenes,
+  List<SceneModel> fallbackScenes,
+) {
+  final deduped = <String, SceneModel>{};
+  for (final scene in [...priorityScenes, ...fallbackScenes]) {
+    deduped[scene.id] = scene;
+  }
+  return deduped.values.toList();
+}
+
+List<SceneModel> _buildDemoFeedScenes(
+  UserModel? currentUser,
+  List<SceneModel> publishedScenes,
+  DemoSceneInteractionsStore? interactionsStore,
+) {
+  final now = DateTime.now();
+  final resolvedCurrentUser = currentUser ??
+      UserModel(
+        id: 'demo_local',
+        username: 'demo_take30',
+        displayName: 'Mode Demo',
+        avatarUrl: Take30Assets.avatarCurrentUser,
+        email: 'demo@take30.app',
+        isVerified: true,
+        scenesCount: 3,
+        likesCount: 128,
+        createdAt: now,
+      );
+
+  final guestA = UserModel(
+    id: 'u_demo_feed_a',
+    username: 'LunaScene',
+    displayName: 'Luna Scene',
+    avatarUrl: 'assets/avatars/avatar_ia_female_alt.webp',
+    isVerified: true,
+    createdAt: now.subtract(const Duration(days: 3)),
+  );
+
+  final guestB = UserModel(
+    id: 'u_demo_feed_b',
+    username: 'MaxShot',
+    displayName: 'Max Shot',
+    avatarUrl: 'assets/avatars/avatar_ia_male_lead.webp',
+    isVerified: true,
+    createdAt: now.subtract(const Duration(days: 4)),
+  );
+
+  final baseScenes = [
+    SceneModel(
+      id: 's_demo_feed_1',
+      title: 'Clash émotionnel en 30 secondes',
+      category: 'drama',
+      thumbnailUrl: 'assets/scenes/battle_player_a.png',
+      durationSeconds: 30,
+      likesCount: 184,
+      commentsCount: 23,
+      sharesCount: 9,
+      viewsCount: 3200,
+      author: guestA,
+      createdAt: now.subtract(const Duration(hours: 2)),
+      tags: const ['demo', 'drama', 'battle'],
+    ),
+    SceneModel(
+      id: 's_demo_feed_2',
+      title: 'Réplique culte, version face cam',
+      category: 'comedy',
+      thumbnailUrl: 'assets/scenes/battle_player_b.png',
+      durationSeconds: 30,
+      likesCount: 172,
+      commentsCount: 19,
+      sharesCount: 11,
+      viewsCount: 2980,
+      author: guestB,
+      createdAt: now.subtract(const Duration(hours: 3)),
+      tags: const ['demo', 'comedy', 'viral'],
+    ),
+    SceneModel(
+      id: 's_demo_feed_3',
+      title: 'Ton premier take peut déjà percer',
+      category: 'spotlight',
+      thumbnailUrl: 'assets/avatars/avatar_ia_female_lead.webp',
+      durationSeconds: 30,
+      likesCount: 96,
+      commentsCount: 12,
+      sharesCount: 5,
+      viewsCount: 1540,
+      author: resolvedCurrentUser,
+      createdAt: now.subtract(const Duration(minutes: 40)),
+      tags: const ['demo', 'starter', 'spotlight'],
+    ),
+  ];
+
+  final mergedScenes = _mergeDemoScenes(publishedScenes, baseScenes);
+  if (interactionsStore == null) {
+    return mergedScenes;
+  }
+
+  return [
+    for (final scene in mergedScenes)
+      interactionsStore.bindScene(
+        scene,
+        _buildDemoSceneComments(scene.id, currentUser, publishedScenes),
+      ),
+  ];
 }
 
 class FeedState {
@@ -336,34 +795,176 @@ class FeedState {
 }
 
 final feedProvider = StateNotifierProvider<FeedNotifier, FeedState>(
-  (ref) => FeedNotifier(ref.read(apiServiceProvider), ref.read(hapticsProvider)),
+  (ref) => FeedNotifier(
+    ref.read(apiServiceProvider),
+    ref.read(hapticsProvider),
+    ref.read(demoPublishedScenesStoreProvider),
+    ref.read(demoSceneInteractionsStoreProvider),
+  ),
 );
 
-final sceneProvider = StreamProvider.family<SceneModel?, String>((ref, sceneId) {
+List<SceneModel> _buildDemoSceneCatalog(
+  UserModel? currentUser,
+  List<SceneModel> publishedScenes,
+  DemoSceneInteractionsStore? interactionsStore,
+) {
+  final users = <UserModel>[
+    _buildDemoProfileUser(currentUser?.id ?? 'demo_local', currentUser),
+    _buildDemoProfileUser('u_demo_feed_a', currentUser),
+    _buildDemoProfileUser('u_demo_feed_b', currentUser),
+    _buildDemoProfileUser('u_rank_week_1', currentUser),
+    _buildDemoProfileUser('u_rank_week_3', currentUser),
+    _buildDemoProfileUser('u_rank_month_1', currentUser),
+    _buildDemoProfileUser('u_rank_month_3', currentUser),
+    _buildDemoProfileUser('u_rank_global_1', currentUser),
+    _buildDemoProfileUser('u_rank_global_3', currentUser),
+  ];
+
+  final scenes = <SceneModel>[
+    ..._buildDemoFeedScenes(
+      currentUser,
+      publishedScenes,
+      interactionsStore,
+    ),
+    for (final user in users)
+      ..._buildDemoProfileScenes(user, publishedScenes, interactionsStore),
+  ];
+
+  return _mergeDemoScenes(const [], scenes);
+}
+
+SceneModel? _findDemoScene(
+  String sceneId,
+  UserModel? currentUser,
+  List<SceneModel> publishedScenes,
+  DemoSceneInteractionsStore? interactionsStore,
+) {
+  for (final scene in _buildDemoSceneCatalog(
+    currentUser,
+    publishedScenes,
+    interactionsStore,
+  )) {
+    if (scene.id == sceneId) {
+      return scene;
+    }
+  }
+  return null;
+}
+
+List<CommentModel> _buildDemoSceneComments(
+  String sceneId,
+  UserModel? currentUser,
+  List<SceneModel> publishedScenes,
+) {
+  final now = DateTime.now();
+  final scene = _findDemoScene(sceneId, currentUser, publishedScenes, null);
+  final current = _buildDemoProfileUser(currentUser?.id ?? 'demo_local', currentUser);
+  final peer = scene?.author ?? _buildDemoProfileUser('u_demo_feed_a', currentUser);
+
+  return [
+    CommentModel(
+      id: 'comment_demo_1_$sceneId',
+      sceneId: sceneId,
+      authorId: peer.id,
+      authorDenorm: peer.toStub(),
+      text: 'Très bonne énergie dès la première seconde.',
+      createdAt: now.subtract(const Duration(minutes: 18)),
+      likesCount: 7,
+    ),
+    CommentModel(
+      id: 'comment_demo_2_$sceneId',
+      sceneId: sceneId,
+      authorId: current.id,
+      authorDenorm: current.toStub(),
+      text: 'Merci. Je teste ici le parcours complet en mode démo.',
+      createdAt: now.subtract(const Duration(minutes: 9)),
+      likesCount: 2,
+    ),
+  ];
+}
+
+final sceneProvider = StreamProvider.family<SceneModel?, String>((ref, sceneId) async* {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  if (_isDemoUser(authUser)) {
+    final publishedScenes = ref.watch(demoPublishedScenesStoreProvider).scenes;
+    final interactionsStore = ref.watch(demoSceneInteractionsStoreProvider);
+    yield _findDemoScene(
+      sceneId,
+      authUser,
+      publishedScenes,
+      interactionsStore,
+    );
+    return;
+  }
+
   final api = ref.watch(apiServiceProvider);
-  return api.scenes.watchById(sceneId);
+  yield* api.scenes.watchById(sceneId);
 });
 
 final sceneCommentsProvider =
-    StreamProvider.family<List<CommentModel>, String>((ref, sceneId) {
+    StreamProvider.family<List<CommentModel>, String>((ref, sceneId) async* {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  if (_isDemoUser(authUser)) {
+    final publishedScenes = ref.watch(demoPublishedScenesStoreProvider).scenes;
+    final interactionsStore = ref.watch(demoSceneInteractionsStoreProvider);
+    final scene = _findDemoScene(
+      sceneId,
+      authUser,
+      publishedScenes,
+      interactionsStore,
+    );
+    if (scene == null) {
+      yield const <CommentModel>[];
+      return;
+    }
+    yield interactionsStore.commentsFor(
+      scene,
+      _buildDemoSceneComments(sceneId, authUser, publishedScenes),
+    );
+    return;
+  }
+
   final api = ref.watch(apiServiceProvider);
-  return api.comments.watch(sceneId);
+  yield* api.comments.watch(sceneId);
+});
+
+final demoSceneCommentsProvider = Provider.family<List<CommentModel>, String>((ref, sceneId) {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  final publishedScenes = ref.watch(demoPublishedScenesStoreProvider).scenes;
+  final interactionsStore = ref.watch(demoSceneInteractionsStoreProvider);
+  final scene = _findDemoScene(
+    sceneId,
+    authUser,
+    publishedScenes,
+    interactionsStore,
+  );
+  if (scene == null) {
+    return const <CommentModel>[];
+  }
+  return interactionsStore.commentsFor(
+    scene,
+    _buildDemoSceneComments(sceneId, authUser, publishedScenes),
+  );
 });
 
 class RecordingNotifier extends StateNotifier<RecordingState> {
   RecordingNotifier(
+    this._api,
     this._camera,
     this._upload,
     this._haptics,
     this._notifications,
     this._permissions,
+    this._demoPublishedScenesStore,
   ) : super(const RecordingState());
 
+  final ApiService _api;
   final CameraService _camera;
   final VideoUploadService _upload;
   final HapticsService _haptics;
   final NotificationService _notifications;
   final PermissionService _permissions;
+  final DemoPublishedScenesStore _demoPublishedScenesStore;
 
   Future<bool> initCamera(BuildContext context) async {
     final granted = await _permissions.requestWithExplanation(
@@ -424,8 +1025,38 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
     required String category,
     required List<String> tags,
   }) async {
-    if (state.recordedPath == null) {
+    final isDemoMode = _isDemoUser(_api.currentUser);
+    if (state.recordedPath == null && !isDemoMode) {
       return null;
+    }
+
+    if (isDemoMode) {
+      final author = _api.currentUser ??
+          _buildDemoProfileUser('demo_local', _api.currentUser);
+      final localScene = SceneModel(
+        id: 'scene_demo_publish_${DateTime.now().microsecondsSinceEpoch}',
+        title: title,
+        category: category,
+        thumbnailUrl:
+            state.scene?.thumbnailUrl.isNotEmpty == true
+                ? state.scene!.thumbnailUrl
+                : 'assets/scenes/battle_player_a.png',
+        videoUrl: state.recordedPath,
+        durationSeconds: state.elapsed > 0 ? state.elapsed : 30,
+        likesCount: 0,
+        commentsCount: 0,
+        sharesCount: 0,
+        viewsCount: 0,
+        author: author,
+        createdAt: DateTime.now(),
+        tags: tags,
+        status: 'published',
+      );
+
+      _demoPublishedScenesStore.add(localScene);
+      await _haptics.success();
+      await _notifications.showPublishSuccessNotification(sceneTitle: title);
+      return localScene;
     }
 
     final scene = await _upload.uploadScene(
@@ -485,11 +1116,13 @@ class RecordingState {
 
 final recordingProvider = StateNotifierProvider<RecordingNotifier, RecordingState>(
   (ref) => RecordingNotifier(
+    ref.read(apiServiceProvider),
     ref.read(cameraServiceProvider),
     ref.read(uploadServiceProvider),
     ref.read(hapticsProvider),
     ref.read(notifServiceProvider),
     ref.read(permissionProvider),
+    ref.read(demoPublishedScenesStoreProvider),
   ),
 );
 
@@ -1232,7 +1865,11 @@ UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
   }
 }
 
-List<SceneModel> _buildDemoProfileScenes(UserModel user) {
+List<SceneModel> _buildDemoProfileScenes(
+  UserModel user,
+  List<SceneModel> publishedScenes,
+  DemoSceneInteractionsStore? interactionsStore,
+) {
   final now = DateTime.now();
 
   SceneModel buildScene({
@@ -1263,9 +1900,11 @@ List<SceneModel> _buildDemoProfileScenes(UserModel user) {
     );
   }
 
+  late final List<SceneModel> baseScenes;
+
   switch (user.username) {
     case 'LunaScene':
-      return [
+      baseScenes = [
         buildScene(
           id: 'scene_profile_luna_1',
           title: 'Face-à-face sous tension',
@@ -1292,7 +1931,7 @@ List<SceneModel> _buildDemoProfileScenes(UserModel user) {
         ),
       ];
     case 'MaxShot':
-      return [
+      baseScenes = [
         buildScene(
           id: 'scene_profile_max_1',
           title: 'Réplique sèche, effet immédiat',
@@ -1319,7 +1958,7 @@ List<SceneModel> _buildDemoProfileScenes(UserModel user) {
         ),
       ];
     case 'demo_take30':
-      return [
+      baseScenes = [
         buildScene(
           id: 'scene_profile_demo_1',
           title: 'Premier take instantané',
@@ -1358,7 +1997,7 @@ List<SceneModel> _buildDemoProfileScenes(UserModel user) {
         ),
       ];
     default:
-      return [
+      baseScenes = [
         buildScene(
           id: 'scene_profile_generic_1',
           title: 'Performance démo premium',
@@ -1385,26 +2024,94 @@ List<SceneModel> _buildDemoProfileScenes(UserModel user) {
         ),
       ];
   }
+
+  final authoredPublishedScenes = publishedScenes
+      .where((scene) => scene.author.id == user.id)
+      .toList();
+  final mergedScenes = _mergeDemoScenes(authoredPublishedScenes, baseScenes);
+  if (interactionsStore == null) {
+    return mergedScenes;
+  }
+
+  return [
+    for (final scene in mergedScenes)
+      interactionsStore.bindScene(
+        scene,
+        _buildDemoSceneComments(scene.id, user, publishedScenes),
+      ),
+  ];
+}
+
+UserModel _applyDemoPublishedSceneStats(
+  UserModel user,
+  List<SceneModel> publishedScenes,
+) {
+  final authoredCount = publishedScenes
+      .where((scene) => scene.author.id == user.id)
+      .length;
+  if (authoredCount == 0) {
+    return user;
+  }
+
+  return UserModel(
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    avatarUrl: user.avatarUrl,
+    email: user.email,
+    bio: user.bio,
+    isVerified: user.isVerified,
+    scenesCount: user.scenesCount + authoredCount,
+    followersCount: user.followersCount,
+    likesCount: user.likesCount,
+    totalViews: user.totalViews,
+    approvalRate: user.approvalRate,
+    sharesCount: user.sharesCount,
+    badges: user.badges,
+    isFollowing: user.isFollowing,
+    isAdmin: user.isAdmin,
+    createdAt: user.createdAt,
+    lastActiveAt: user.lastActiveAt,
+    fcmTokens: user.fcmTokens,
+  );
 }
 
 class ProfileNotifier extends StateNotifier<ProfileState> {
-  ProfileNotifier(this._api, this._haptics, this._share, this.userId)
+  ProfileNotifier(
+    this._api,
+    this._haptics,
+    this._share,
+    this._demoPublishedScenesStore,
+    this._demoSceneInteractionsStore,
+    this.userId,
+  )
       : super(const ProfileState()) {
+    _demoPublishedScenesStore.addListener(_handleDemoPublishedScenesChanged);
+    _demoSceneInteractionsStore.addListener(_handleDemoSceneInteractionsChanged);
     load();
   }
 
   final ApiService _api;
   final HapticsService _haptics;
   final ShareService _share;
+  final DemoPublishedScenesStore _demoPublishedScenesStore;
+  final DemoSceneInteractionsStore _demoSceneInteractionsStore;
   final String userId;
 
   Future<void> load() async {
     if (_isDemoUser(_api.currentUser)) {
-      final user = _buildDemoProfileUser(userId, _api.currentUser);
+      final user = _applyDemoPublishedSceneStats(
+        _buildDemoProfileUser(userId, _api.currentUser),
+        _demoPublishedScenesStore.scenes,
+      );
       state = state.copyWith(
         isLoading: false,
         user: user,
-        scenes: _buildDemoProfileScenes(user),
+        scenes: _buildDemoProfileScenes(
+          user,
+          _demoPublishedScenesStore.scenes,
+          _demoSceneInteractionsStore,
+        ),
       );
       return;
     }
@@ -1445,6 +2152,26 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
     await _share.shareProfile(state.user!);
   }
+
+  void _handleDemoPublishedScenesChanged() {
+    if (_isDemoUser(_api.currentUser)) {
+      load();
+    }
+  }
+
+  void _handleDemoSceneInteractionsChanged() {
+    if (_isDemoUser(_api.currentUser)) {
+      load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _demoPublishedScenesStore.removeListener(_handleDemoPublishedScenesChanged);
+    _demoSceneInteractionsStore
+        .removeListener(_handleDemoSceneInteractionsChanged);
+    super.dispose();
+  }
 }
 
 class ProfileState {
@@ -1476,8 +2203,83 @@ final profileProvider = StateNotifierProvider.family<ProfileNotifier, ProfileSta
     ref.read(apiServiceProvider),
     ref.read(hapticsProvider),
     ref.read(shareServiceProvider),
+    ref.read(demoPublishedScenesStoreProvider),
+    ref.read(demoSceneInteractionsStoreProvider),
     userId,
   ),
 );
+
+class DemoChatMessage {
+  const DemoChatMessage({
+    required this.id,
+    required this.text,
+    required this.sentAt,
+    required this.isFromCurrentUser,
+  });
+
+  final String id;
+  final String text;
+  final DateTime sentAt;
+  final bool isFromCurrentUser;
+}
+
+List<DemoChatMessage> _buildDemoMessages({
+  required UserModel currentUser,
+  required UserModel peerUser,
+}) {
+  final now = DateTime.now();
+  return [
+    DemoChatMessage(
+      id: 'msg_demo_1_${peerUser.id}',
+      text: 'Ton dernier take a vraiment une bonne intensité.',
+      sentAt: now.subtract(const Duration(minutes: 14)),
+      isFromCurrentUser: false,
+    ),
+    DemoChatMessage(
+      id: 'msg_demo_2_${peerUser.id}',
+      text: 'Merci. Je teste le mode démo pour voir le rendu complet.',
+      sentAt: now.subtract(const Duration(minutes: 11)),
+      isFromCurrentUser: true,
+    ),
+    DemoChatMessage(
+      id: 'msg_demo_3_${peerUser.id}',
+      text: 'Continue, ton prochain passage peut clairement monter au classement.',
+      sentAt: now.subtract(const Duration(minutes: 7)),
+      isFromCurrentUser: false,
+    ),
+  ];
+}
+
+class DemoMessagesNotifier extends StateNotifier<List<DemoChatMessage>> {
+  DemoMessagesNotifier({required UserModel currentUser, required UserModel peerUser})
+      : super(_buildDemoMessages(currentUser: currentUser, peerUser: peerUser));
+
+  void send(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+
+    state = [
+      ...state,
+      DemoChatMessage(
+        id: 'msg_demo_local_${DateTime.now().microsecondsSinceEpoch}',
+        text: trimmed,
+        sentAt: DateTime.now(),
+        isFromCurrentUser: true,
+      ),
+    ];
+  }
+}
+
+final demoMessagesProvider = StateNotifierProvider.family<
+    DemoMessagesNotifier,
+    List<DemoChatMessage>,
+    String>((ref, userId) {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  final currentUser = _buildDemoProfileUser(authUser?.id ?? 'demo_local', authUser);
+  final peerUser = _buildDemoProfileUser(userId, authUser);
+  return DemoMessagesNotifier(currentUser: currentUser, peerUser: peerUser);
+});
 
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
