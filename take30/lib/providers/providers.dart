@@ -29,6 +29,7 @@ final permissionProvider = Provider<PermissionService>((ref) => PermissionServic
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier(this._auth) : super(const AuthState()) {
+    _auth.addListener(_syncFromService);
     _init();
   }
 
@@ -36,10 +37,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _init() async {
     await _auth.checkPersistedAuth();
-    final user = _auth.currentUser;
-    if (user != null) {
-      state = state.copyWith(user: user, isAuthenticated: true);
-    }
+    _syncFromService();
+  }
+
+  void _syncFromService() {
+    state = AuthState(
+      isLoading: _auth.isLoading,
+      isAuthenticated: _auth.isAuthenticated,
+      user: _auth.currentUser,
+      error: _auth.error,
+    );
   }
 
   Future<void> login(String identifier, String password) async {
@@ -131,6 +138,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_syncFromService);
+    super.dispose();
   }
 }
 
@@ -1377,17 +1390,25 @@ class DuelNotifier extends StateNotifier<DuelState> {
   final HapticsService _haptics;
 
   Future<void> load() async {
+    if (_isDemoMode) {
+      state = state.copyWith(
+        isLoading: false,
+        duel: _buildDemoDuel(),
+      );
+      return;
+    }
+
     state = state.copyWith(isLoading: true);
     try {
       final duel = await _api.getCurrentDuel();
       state = state.copyWith(
         isLoading: false,
-        duel: duel ?? (_isDemoMode ? _buildDemoDuel() : null),
+        duel: duel,
       );
     } catch (_) {
       state = state.copyWith(
         isLoading: false,
-        duel: _isDemoMode ? _buildDemoDuel() : null,
+        duel: null,
       );
     }
   }
@@ -1497,10 +1518,17 @@ class DuelState {
 }
 
 final duelProvider = StateNotifierProvider<DuelNotifier, DuelState>(
-  (ref) => DuelNotifier(
-    ref.read(apiServiceProvider),
-    ref.read(hapticsProvider),
-  ),
+  (ref) {
+    final notifier = DuelNotifier(
+      ref.read(apiServiceProvider),
+      ref.read(hapticsProvider),
+    );
+    ref.listen<UserModel?>(
+      authProvider.select((state) => state.user),
+      (_, __) => notifier.load(),
+    );
+    return notifier;
+  },
 );
 
 class DemoNotificationsNotifier extends StateNotifier<List<NotificationModel>> {
@@ -2199,14 +2227,21 @@ class ProfileState {
 }
 
 final profileProvider = StateNotifierProvider.family<ProfileNotifier, ProfileState, String>(
-  (ref, userId) => ProfileNotifier(
-    ref.read(apiServiceProvider),
-    ref.read(hapticsProvider),
-    ref.read(shareServiceProvider),
-    ref.read(demoPublishedScenesStoreProvider),
-    ref.read(demoSceneInteractionsStoreProvider),
-    userId,
-  ),
+  (ref, userId) {
+    final notifier = ProfileNotifier(
+      ref.read(apiServiceProvider),
+      ref.read(hapticsProvider),
+      ref.read(shareServiceProvider),
+      ref.read(demoPublishedScenesStoreProvider),
+      ref.read(demoSceneInteractionsStoreProvider),
+      userId,
+    );
+    ref.listen<UserModel?>(
+      authProvider.select((state) => state.user),
+      (_, __) => notifier.load(),
+    );
+    return notifier;
+  },
 );
 
 class DemoChatMessage {

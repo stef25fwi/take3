@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -13,11 +16,16 @@ class NotificationService {
 
   factory NotificationService() => _instance;
 
+  final fa.FirebaseAuth _auth = fa.FirebaseAuth.instance;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final ApiService _api = ApiService();
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
+  bool _initialized = false;
+  bool _remoteBindingsInitialized = false;
+  bool _localNotificationsInitialized = false;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'take30_high_importance',
@@ -27,48 +35,90 @@ class NotificationService {
   );
 
   Future<void> initialize() async {
-    if (kIsWeb) {
-      try {
-        await _messaging.requestPermission(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-        final token = await _messaging.getToken();
-        debugPrint('FCM token web : $token');
-        await _syncToken(token);
-
-        _messaging.onTokenRefresh.listen((newToken) async {
-          debugPrint('FCM token web rafraîchi : $newToken');
-          await _syncToken(newToken);
-        });
-
-        FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
-      } catch (error, stackTrace) {
-        debugPrint('Notification init web skipped: $error');
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stackTrace,
-            library: 'notification_service',
-            context: ErrorDescription('while initializing web notifications'),
-          ),
-        );
-      }
+    if (_initialized) {
       return;
     }
 
-    // Demande la permission (iOS + Android 13+)
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    debugPrint('FCM permission : ${settings.authorizationStatus}');
+    _initialized = true;
+    _auth.authStateChanges().listen((user) {
+      if (user == null) {
+        return;
+      }
+      unawaited(_initializeForAuthenticatedUser());
+    });
 
-    // Init notifications locales pour affichage foreground Android
+    if (_auth.currentUser != null) {
+      await _initializeForAuthenticatedUser();
+    }
+  }
+
+  Future<void> _initializeForAuthenticatedUser() async {
+    try {
+      await _ensureRemoteNotificationsReady();
+    } catch (error, stackTrace) {
+      debugPrint('Notification init skipped: $error');
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'notification_service',
+          context: ErrorDescription(
+            'while initializing authenticated notifications',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _ensureRemoteNotificationsReady() async {
+    if (!kIsWeb) {
+      await _ensureLocalNotificationsInitialized();
+    }
+
+    if (!_remoteBindingsInitialized) {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint(
+        kIsWeb
+            ? 'FCM permission web : ${settings.authorizationStatus}'
+            : 'FCM permission : ${settings.authorizationStatus}',
+      );
+
+      _messaging.onTokenRefresh.listen((newToken) async {
+        debugPrint(
+          kIsWeb
+              ? 'FCM token web rafraîchi : $newToken'
+              : 'FCM token rafraîchi : $newToken',
+        );
+        await _syncToken(newToken);
+      });
+
+      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+
+      if (!kIsWeb) {
+        final initial = await _messaging.getInitialMessage();
+        if (initial != null) {
+          _onMessageOpenedApp(initial);
+        }
+      }
+
+      _remoteBindingsInitialized = true;
+    }
+
+    final token = await _messaging.getToken();
+    debugPrint(kIsWeb ? 'FCM token web : $token' : 'FCM token : $token');
+    await _syncToken(token);
+  }
+
+  Future<void> _ensureLocalNotificationsInitialized() async {
+    if (_localNotificationsInitialized) {
+      return;
+    }
+
     await _localNotifications
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -79,26 +129,7 @@ class NotificationService {
     await _localNotifications.initialize(
       const InitializationSettings(android: androidInit, iOS: iosInit),
     );
-
-    // Token FCM
-    final token = await _messaging.getToken();
-    debugPrint('FCM token : $token');
-    await _syncToken(token);
-
-    _messaging.onTokenRefresh.listen((newToken) async {
-      debugPrint('FCM token rafraîchi : $newToken');
-      await _syncToken(newToken);
-    });
-
-    // Push reçu en foreground → notification locale
-    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-
-    // App ouverte depuis une notification (background → foreground)
-    FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
-
-    // App lancée depuis une notification terminée
-    final initial = await _messaging.getInitialMessage();
-    if (initial != null) _onMessageOpenedApp(initial);
+    _localNotificationsInitialized = true;
   }
 
   Future<void> _syncToken(String? token) async {
@@ -176,6 +207,8 @@ class NotificationService {
       debugPrint('Publication réussie : $sceneTitle');
       return;
     }
+
+    await _ensureLocalNotificationsInitialized();
 
     await _localNotifications.show(
       sceneTitle.hashCode,
