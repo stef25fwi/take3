@@ -58,12 +58,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
       final isAuthenticated = authService.isAuthenticated;
       final isAdmin = authService.currentUser?.isAdmin ?? false;
-      final isPublicRoute = location == AppRouter.splash ||
-          location == AppRouter.onboarding ||
-          location == AppRouter.auth;
 
       if (location == '/') {
-        return isAuthenticated ? AppRouter.home : AppRouter.splash;
+        return AppRouter.splash;
       }
 
       if (location == AppRouter.admin) {
@@ -74,10 +71,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AppRouter.home;
         }
         return null;
-      }
-
-      if (isAuthenticated && isPublicRoute) {
-        return AppRouter.home;
       }
 
       return null;
