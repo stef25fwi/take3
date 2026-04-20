@@ -11,6 +11,7 @@ import '../services/notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/share_service.dart';
 import '../services/upload_service.dart';
+import '../utils/assets.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) => AuthService());
@@ -163,6 +164,10 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
 );
 
 class FeedNotifier extends StateNotifier<FeedState> {
+  static const String _demoEmail = 'demo@take30.app';
+  static const String _demoUsername = 'demo_take30';
+  static const String _demoDisplayName = 'Mode Demo';
+
   FeedNotifier(this._api, this._haptics) : super(const FeedState()) {
     loadFeed();
   }
@@ -171,6 +176,14 @@ class FeedNotifier extends StateNotifier<FeedState> {
   final HapticsService _haptics;
 
   Future<void> loadFeed({bool refresh = false}) async {
+    if (_isDemoMode) {
+      state = FeedState(
+        isLoading: false,
+        scenes: _buildDemoFeed(),
+      );
+      return;
+    }
+
     if (refresh) {
       state = const FeedState(isLoading: true);
     } else {
@@ -197,11 +210,104 @@ class FeedNotifier extends StateNotifier<FeedState> {
       return scene;
     }).toList();
     state = state.copyWith(scenes: scenes);
+    if (_isDemoMode) {
+      return;
+    }
     await _api.likeScene(sceneId);
   }
 
   void refresh() {
     loadFeed(refresh: true);
+  }
+
+  bool get _isDemoMode {
+    final user = _api.currentUser;
+    if (user == null) {
+      return false;
+    }
+
+    return user.username == _demoUsername ||
+        user.displayName == _demoDisplayName ||
+        user.email == _demoEmail;
+  }
+
+  List<SceneModel> _buildDemoFeed() {
+    final now = DateTime.now();
+    final currentUser = _api.currentUser ??
+        UserModel(
+          id: 'demo_local',
+          username: _demoUsername,
+          displayName: _demoDisplayName,
+          avatarUrl: Take30Assets.avatarCurrentUser,
+          email: _demoEmail,
+          isVerified: true,
+          scenesCount: 3,
+          likesCount: 128,
+          createdAt: now,
+        );
+
+    final guestA = UserModel(
+      id: 'u_demo_feed_a',
+      username: 'LunaScene',
+      displayName: 'Luna Scene',
+      avatarUrl: 'assets/avatars/avatar_ia_female_alt.webp',
+      isVerified: true,
+      createdAt: now.subtract(const Duration(days: 3)),
+    );
+
+    final guestB = UserModel(
+      id: 'u_demo_feed_b',
+      username: 'MaxShot',
+      displayName: 'Max Shot',
+      avatarUrl: 'assets/avatars/avatar_ia_male_lead.webp',
+      isVerified: true,
+      createdAt: now.subtract(const Duration(days: 4)),
+    );
+
+    return [
+      SceneModel(
+        id: 's_demo_feed_1',
+        title: 'Clash émotionnel en 30 secondes',
+        category: 'drama',
+        thumbnailUrl: 'assets/scenes/battle_player_a.png',
+        durationSeconds: 30,
+        likesCount: 184,
+        commentsCount: 23,
+        sharesCount: 9,
+        viewsCount: 3200,
+        author: guestA,
+        createdAt: now.subtract(const Duration(hours: 2)),
+        tags: const ['demo', 'drama', 'battle'],
+      ),
+      SceneModel(
+        id: 's_demo_feed_2',
+        title: 'Réplique culte, version face cam',
+        category: 'comedy',
+        thumbnailUrl: 'assets/scenes/battle_player_b.png',
+        durationSeconds: 30,
+        likesCount: 172,
+        commentsCount: 19,
+        sharesCount: 11,
+        viewsCount: 2980,
+        author: guestB,
+        createdAt: now.subtract(const Duration(hours: 3)),
+        tags: const ['demo', 'comedy', 'viral'],
+      ),
+      SceneModel(
+        id: 's_demo_feed_3',
+        title: 'Ton premier take peut déjà percer',
+        category: 'spotlight',
+        thumbnailUrl: 'assets/avatars/avatar_ia_female_lead.webp',
+        durationSeconds: 30,
+        likesCount: 96,
+        commentsCount: 12,
+        sharesCount: 5,
+        viewsCount: 1540,
+        author: currentUser,
+        createdAt: now.subtract(const Duration(minutes: 40)),
+        tags: const ['demo', 'starter', 'spotlight'],
+      ),
+    ];
   }
 }
 
@@ -397,6 +503,16 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
 
   Future<void> load(String period) async {
     await _haptics.selection();
+
+    if (_isDemoUser(_api.currentUser)) {
+      state = state.copyWith(
+        isLoading: false,
+        period: period,
+        entries: _buildDemoLeaderboard(period),
+      );
+      return;
+    }
+
     state = state.copyWith(isLoading: true, period: period);
     try {
       final entries = await _api.getLeaderboard(period);
@@ -404,6 +520,185 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
     } catch (_) {
       state = state.copyWith(isLoading: false);
     }
+  }
+
+  List<LeaderboardEntry> _buildDemoLeaderboard(String period) {
+    final currentUser = _api.currentUser ??
+        UserModel(
+          id: 'demo_local',
+          username: 'demo_take30',
+          displayName: 'Mode Demo',
+          avatarUrl: Take30Assets.avatarCurrentUser,
+          email: 'demo@take30.app',
+          isVerified: true,
+          followersCount: 124,
+          createdAt: DateTime.now(),
+        );
+
+    final topThree = switch (period) {
+      'day' => [
+            const LeaderboardEntry(
+            rank: 1,
+            user: UserModel(
+              id: 'u_rank_day_1',
+              username: 'LunaScene',
+              displayName: 'Luna Scene',
+              avatarUrl: 'assets/avatars/avatar_ia_female_alt.webp',
+              isVerified: true,
+              followersCount: 1820,
+            ),
+            score: 9820,
+            scoreLabel: '9.8K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 2,
+            user: UserModel(
+              id: 'u_rank_day_2',
+              username: 'ModeDemo',
+              displayName: 'Mode Demo',
+              avatarUrl: Take30Assets.avatarCurrentUser,
+              email: 'demo@take30.app',
+              isVerified: true,
+              followersCount: 124,
+            ),
+            score: 8640,
+            scoreLabel: '8.6K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 3,
+            user: UserModel(
+              id: 'u_rank_day_3',
+              username: 'MaxShot',
+              displayName: 'Max Shot',
+              avatarUrl: 'assets/avatars/avatar_ia_male_lead.webp',
+              isVerified: true,
+              followersCount: 1540,
+            ),
+            score: 7990,
+            scoreLabel: '8.0K pts',
+          ),
+        ],
+      'week' => [
+          const LeaderboardEntry(
+            rank: 1,
+            user: UserModel(
+              id: 'u_rank_week_1',
+              username: 'NoraAct',
+              displayName: 'Nora Act',
+              avatarUrl: 'assets/avatars/avatar_ia_female_lead.webp',
+              isVerified: true,
+              followersCount: 4200,
+            ),
+            score: 32400,
+            scoreLabel: '32.4K pts',
+          ),
+          LeaderboardEntry(
+            rank: 2,
+            user: currentUser,
+            score: 28750,
+            scoreLabel: '28.8K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 3,
+            user: UserModel(
+              id: 'u_rank_week_3',
+              username: 'LeoFrame',
+              displayName: 'Leo Frame',
+              avatarUrl: 'assets/avatars/avatar_ia_male_lead.webp',
+              isVerified: true,
+              followersCount: 3610,
+            ),
+            score: 25110,
+            scoreLabel: '25.1K pts',
+          ),
+        ],
+      'month' => [
+          const LeaderboardEntry(
+            rank: 1,
+            user: UserModel(
+              id: 'u_rank_month_1',
+              username: 'StarLuna',
+              displayName: 'Star Luna',
+              avatarUrl: 'assets/avatars/avatar_ia_female_alt.webp',
+              isVerified: true,
+              followersCount: 9200,
+            ),
+            score: 118000,
+            scoreLabel: '118K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 2,
+            user: UserModel(
+              id: 'u_rank_month_2',
+              username: 'ModeDemo',
+              displayName: 'Mode Demo',
+              avatarUrl: Take30Assets.avatarCurrentUser,
+              email: 'demo@take30.app',
+              isVerified: true,
+              followersCount: 124,
+            ),
+            score: 109500,
+            scoreLabel: '109.5K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 3,
+            user: UserModel(
+              id: 'u_rank_month_3',
+              username: 'KaiLine',
+              displayName: 'Kai Line',
+              avatarUrl: 'assets/avatars/avatar_ia_male_lead.webp',
+              isVerified: true,
+              followersCount: 8100,
+            ),
+            score: 104200,
+            scoreLabel: '104.2K pts',
+          ),
+        ],
+      _ => [
+          const LeaderboardEntry(
+            rank: 1,
+            user: UserModel(
+              id: 'u_rank_global_1',
+              username: 'IrisPrime',
+              displayName: 'Iris Prime',
+              avatarUrl: 'assets/avatars/avatar_ia_female_lead.webp',
+              isVerified: true,
+              followersCount: 18400,
+            ),
+            score: 250000,
+            scoreLabel: '250K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 2,
+            user: UserModel(
+              id: 'u_rank_global_2',
+              username: 'ModeDemo',
+              displayName: 'Mode Demo',
+              avatarUrl: Take30Assets.avatarCurrentUser,
+              email: 'demo@take30.app',
+              isVerified: true,
+              followersCount: 124,
+            ),
+            score: 231400,
+            scoreLabel: '231.4K pts',
+          ),
+          const LeaderboardEntry(
+            rank: 3,
+            user: UserModel(
+              id: 'u_rank_global_3',
+              username: 'NovaClip',
+              displayName: 'Nova Clip',
+              avatarUrl: 'assets/avatars/avatar_ia_female_alt.webp',
+              isVerified: true,
+              followersCount: 16100,
+            ),
+            score: 226900,
+            scoreLabel: '226.9K pts',
+          ),
+        ],
+    };
+
+    return topThree;
   }
 }
 
@@ -575,7 +870,96 @@ final duelProvider = StateNotifierProvider<DuelNotifier, DuelState>(
   ),
 );
 
-final notificationsProvider =
+class DemoNotificationsNotifier extends StateNotifier<List<NotificationModel>> {
+  DemoNotificationsNotifier() : super(const []);
+
+  void resetForUser(UserModel? user) {
+    state = _isDemoUser(user) ? _buildDemoNotifications() : const [];
+  }
+
+  void markRead(String notificationId) {
+    state = [
+      for (final notification in state)
+        if (notification.id == notificationId)
+          NotificationModel(
+            id: notification.id,
+            message: notification.message,
+            subMessage: notification.subMessage,
+            type: notification.type,
+            time: notification.time,
+            isRead: true,
+            avatarUrl: notification.avatarUrl,
+            sceneId: notification.sceneId,
+            userId: notification.userId,
+          )
+        else
+          notification,
+    ];
+  }
+
+  void markAllRead() {
+    state = [
+      for (final notification in state)
+        NotificationModel(
+          id: notification.id,
+          message: notification.message,
+          subMessage: notification.subMessage,
+          type: notification.type,
+          time: notification.time,
+          isRead: true,
+          avatarUrl: notification.avatarUrl,
+          sceneId: notification.sceneId,
+          userId: notification.userId,
+        ),
+    ];
+  }
+}
+
+List<NotificationModel> _buildDemoNotifications() {
+  final now = DateTime.now();
+  return [
+    NotificationModel(
+      id: 'n_demo_duel',
+      message: 'Ta battle démo est prête',
+      subMessage: 'Vote maintenant pour voir le duel Take 60 en action.',
+      type: NotificationType.duel,
+      time: now.subtract(const Duration(minutes: 2)),
+      avatarUrl: 'assets/scenes/battle_player_a.png',
+    ),
+    NotificationModel(
+      id: 'n_demo_badge',
+      message: 'Un badge premium t\'attend',
+      subMessage: 'Découvre tes récompenses et stats dans l\'espace badges.',
+      type: NotificationType.achievement,
+      time: now.subtract(const Duration(minutes: 18)),
+      isRead: true,
+      avatarUrl: Take30Assets.avatarCurrentUser,
+    ),
+    NotificationModel(
+      id: 'n_demo_system',
+      message: 'Mode démo activé',
+      subMessage: 'Explore l\'application instantanément sans attendre le réseau.',
+      type: NotificationType.system,
+      time: now.subtract(const Duration(minutes: 35)),
+      avatarUrl: Take30Assets.avatarCurrentUser,
+    ),
+  ];
+}
+
+final demoNotificationsProvider =
+    StateNotifierProvider<DemoNotificationsNotifier, List<NotificationModel>>(
+  (ref) {
+    final notifier = DemoNotificationsNotifier();
+    notifier.resetForUser(ref.read(authProvider).user);
+    ref.listen<UserModel?>(
+      authProvider.select((state) => state.user),
+      (_, next) => notifier.resetForUser(next),
+    );
+    return notifier;
+  },
+);
+
+final _liveNotificationsProvider =
     StreamProvider<List<NotificationModel>>((ref) async* {
   final api = ref.watch(apiServiceProvider);
   final uid = api.currentUid;
@@ -584,6 +968,14 @@ final notificationsProvider =
     return;
   }
   yield* api.notifications.watchForUser(uid);
+});
+
+final notificationsProvider = Provider<AsyncValue<List<NotificationModel>>>((ref) {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  if (_isDemoUser(authUser)) {
+    return AsyncValue.data(ref.watch(demoNotificationsProvider));
+  }
+  return ref.watch(_liveNotificationsProvider);
 });
 
 final unreadCountProvider = Provider<int>((ref) {
@@ -595,11 +987,405 @@ final unreadCountProvider = Provider<int>((ref) {
   );
 });
 
+bool _isDemoUser(UserModel? user) {
+  if (user == null) {
+    return false;
+  }
+
+  return user.username == 'demo_take30' ||
+      user.displayName == 'Mode Demo' ||
+      user.email == 'demo@take30.app';
+}
+
+DailyChallengeModel _buildDemoDailyChallenge() {
+  final now = DateTime.now();
+  return DailyChallengeModel(
+    id: 'daily_demo_local',
+    sceneTitle: 'Confrontation sous pression',
+    quote: 'Tu n\'as plus d\'excuse. Regarde-moi et dis enfin la vérité.',
+    maxSeconds: 30,
+    thumbnailUrl: 'assets/scenes/daily_challenge_spotlight.svg',
+    rules: const [
+      '30 secondes max',
+      'Une intention forte dès la première seconde',
+      'Publie ta vidéo pour entrer dans le classement',
+    ],
+    expiresAt: now.add(const Duration(hours: 12)),
+    participantsCount: 128,
+  );
+}
+
 final dailyChallengeProvider =
     StreamProvider<DailyChallengeModel?>((ref) async* {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  if (_isDemoUser(authUser)) {
+    yield _buildDemoDailyChallenge();
+    return;
+  }
+
   final api = ref.watch(apiServiceProvider);
   yield* api.dailyChallenge.watchToday();
 });
+
+UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
+  final now = DateTime.now();
+
+  UserModel buildUser({
+    required String id,
+    required String username,
+    required String displayName,
+    required String avatarUrl,
+    String? email,
+    required String bio,
+    required int scenesCount,
+    required int followersCount,
+    required int likesCount,
+    required int totalViews,
+    required double approvalRate,
+    required int sharesCount,
+    bool isFollowing = false,
+  }) {
+    return UserModel(
+      id: id,
+      username: username,
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+      email: email,
+      bio: bio,
+      isVerified: true,
+      scenesCount: scenesCount,
+      followersCount: followersCount,
+      likesCount: likesCount,
+      totalViews: totalViews,
+      approvalRate: approvalRate,
+      sharesCount: sharesCount,
+      isFollowing: isFollowing,
+      createdAt: now.subtract(const Duration(days: 5)),
+      lastActiveAt: now.subtract(const Duration(minutes: 8)),
+    );
+  }
+
+  if (currentUser != null && _isDemoUser(currentUser) && currentUser.id == userId) {
+    return buildUser(
+      id: currentUser.id,
+      username: currentUser.username,
+      displayName: currentUser.displayName,
+      avatarUrl: currentUser.avatarUrl,
+      email: currentUser.email,
+      bio: 'Tu explores Take 30 en mode démo avec un profil instantané.',
+      scenesCount: 3,
+      followersCount: 124,
+      likesCount: 418,
+      totalViews: 12600,
+      approvalRate: 92,
+      sharesCount: 18,
+    );
+  }
+
+  switch (userId) {
+    case 'u_demo_feed_a':
+    case 'u_rank_day_1':
+      return buildUser(
+        id: userId,
+        username: 'LunaScene',
+        displayName: 'Luna Scene',
+        avatarUrl: Take30Assets.avatarIaFemaleAlt,
+        bio: 'Spécialiste des répliques tendues et des regards qui claquent.',
+        scenesCount: 6,
+        followersCount: 1820,
+        likesCount: 9420,
+        totalViews: 58400,
+        approvalRate: 96,
+        sharesCount: 210,
+      );
+    case 'u_demo_feed_b':
+    case 'u_rank_day_3':
+      return buildUser(
+        id: userId,
+        username: 'MaxShot',
+        displayName: 'Max Shot',
+        avatarUrl: Take30Assets.avatarIaMaleLead,
+        bio: 'Punchlines rapides, énergie caméra et timing comédie.',
+        scenesCount: 5,
+        followersCount: 1540,
+        likesCount: 7210,
+        totalViews: 47100,
+        approvalRate: 93,
+        sharesCount: 154,
+      );
+    case 'u_rank_week_1':
+      return buildUser(
+        id: userId,
+        username: 'NoraAct',
+        displayName: 'Nora Act',
+        avatarUrl: Take30Assets.avatarIaFemaleLead,
+        bio: 'Jeu intense, précision émotionnelle, zéro temps mort.',
+        scenesCount: 8,
+        followersCount: 4200,
+        likesCount: 18300,
+        totalViews: 99400,
+        approvalRate: 97,
+        sharesCount: 332,
+      );
+    case 'u_rank_week_3':
+      return buildUser(
+        id: userId,
+        username: 'LeoFrame',
+        displayName: 'Leo Frame',
+        avatarUrl: Take30Assets.avatarIaMaleLead,
+        bio: 'Cadre, respiration, montée en tension: chaque seconde compte.',
+        scenesCount: 7,
+        followersCount: 3610,
+        likesCount: 15980,
+        totalViews: 86100,
+        approvalRate: 95,
+        sharesCount: 284,
+      );
+    case 'u_rank_month_1':
+      return buildUser(
+        id: userId,
+        username: 'StarLuna',
+        displayName: 'Star Luna',
+        avatarUrl: Take30Assets.avatarIaFemaleAlt,
+        bio: 'Talent régulier, présence premium et takes ultra mémorables.',
+        scenesCount: 12,
+        followersCount: 9200,
+        likesCount: 42800,
+        totalViews: 188000,
+        approvalRate: 98,
+        sharesCount: 610,
+      );
+    case 'u_rank_month_3':
+      return buildUser(
+        id: userId,
+        username: 'KaiLine',
+        displayName: 'Kai Line',
+        avatarUrl: Take30Assets.avatarIaMaleLead,
+        bio: 'Interprétation propre, rythme sec, impact immédiat.',
+        scenesCount: 10,
+        followersCount: 8100,
+        likesCount: 36600,
+        totalViews: 164000,
+        approvalRate: 96,
+        sharesCount: 540,
+      );
+    case 'u_rank_global_1':
+      return buildUser(
+        id: userId,
+        username: 'IrisPrime',
+        displayName: 'Iris Prime',
+        avatarUrl: Take30Assets.avatarIaFemaleLead,
+        bio: 'Top créatrice Take 30, connue pour ses scènes ultra nettes.',
+        scenesCount: 18,
+        followersCount: 18400,
+        likesCount: 76200,
+        totalViews: 326000,
+        approvalRate: 99,
+        sharesCount: 980,
+      );
+    case 'u_rank_global_3':
+      return buildUser(
+        id: userId,
+        username: 'NovaClip',
+        displayName: 'Nova Clip',
+        avatarUrl: Take30Assets.avatarIaFemaleAlt,
+        bio: 'Scènes nettes, placement précis et finition premium.',
+        scenesCount: 17,
+        followersCount: 16100,
+        likesCount: 68800,
+        totalViews: 301000,
+        approvalRate: 98,
+        sharesCount: 904,
+      );
+    case 'u_rank_day_2':
+    case 'u_rank_month_2':
+    case 'u_rank_global_2':
+    case 'demo_local':
+      return buildUser(
+        id: userId,
+        username: 'demo_take30',
+        displayName: 'Mode Demo',
+        avatarUrl: Take30Assets.avatarCurrentUser,
+        email: 'demo@take30.app',
+        bio: 'Profil démo instantané pour parcourir Take 30 sans attendre.',
+        scenesCount: 3,
+        followersCount: 124,
+        likesCount: 418,
+        totalViews: 12600,
+        approvalRate: 92,
+        sharesCount: 18,
+      );
+    default:
+      return buildUser(
+        id: userId,
+        username: 'TalentTake30',
+        displayName: 'Talent Take 30',
+        avatarUrl: Take30Assets.avatarCurrentUser,
+        bio: 'Profil de démonstration généré localement.',
+        scenesCount: 3,
+        followersCount: 320,
+        likesCount: 1180,
+        totalViews: 8400,
+        approvalRate: 90,
+        sharesCount: 42,
+      );
+  }
+}
+
+List<SceneModel> _buildDemoProfileScenes(UserModel user) {
+  final now = DateTime.now();
+
+  SceneModel buildScene({
+    required String id,
+    required String title,
+    required String category,
+    required String thumbnailUrl,
+    required Duration age,
+    required int likesCount,
+    required int commentsCount,
+    required int sharesCount,
+    required int viewsCount,
+    List<String> tags = const [],
+  }) {
+    return SceneModel(
+      id: id,
+      title: title,
+      category: category,
+      thumbnailUrl: thumbnailUrl,
+      durationSeconds: 30,
+      likesCount: likesCount,
+      commentsCount: commentsCount,
+      sharesCount: sharesCount,
+      viewsCount: viewsCount,
+      author: user,
+      createdAt: now.subtract(age),
+      tags: tags,
+    );
+  }
+
+  switch (user.username) {
+    case 'LunaScene':
+      return [
+        buildScene(
+          id: 'scene_profile_luna_1',
+          title: 'Face-à-face sous tension',
+          category: 'drama',
+          thumbnailUrl: 'assets/scenes/battle_player_a.png',
+          age: const Duration(hours: 3),
+          likesCount: 248,
+          commentsCount: 31,
+          sharesCount: 14,
+          viewsCount: 4120,
+          tags: const ['demo', 'drama'],
+        ),
+        buildScene(
+          id: 'scene_profile_luna_2',
+          title: 'Le regard qui change tout',
+          category: 'emotion',
+          thumbnailUrl: Take30Assets.avatarIaFemaleAlt,
+          age: const Duration(days: 1),
+          likesCount: 193,
+          commentsCount: 22,
+          sharesCount: 9,
+          viewsCount: 3380,
+          tags: const ['demo', 'emotion'],
+        ),
+      ];
+    case 'MaxShot':
+      return [
+        buildScene(
+          id: 'scene_profile_max_1',
+          title: 'Réplique sèche, effet immédiat',
+          category: 'comedy',
+          thumbnailUrl: 'assets/scenes/battle_player_b.png',
+          age: const Duration(hours: 5),
+          likesCount: 221,
+          commentsCount: 17,
+          sharesCount: 16,
+          viewsCount: 3960,
+          tags: const ['demo', 'comedy'],
+        ),
+        buildScene(
+          id: 'scene_profile_max_2',
+          title: 'One-liner caméra frontale',
+          category: 'punchline',
+          thumbnailUrl: Take30Assets.avatarIaMaleLead,
+          age: const Duration(days: 1),
+          likesCount: 174,
+          commentsCount: 14,
+          sharesCount: 10,
+          viewsCount: 2870,
+          tags: const ['demo', 'viral'],
+        ),
+      ];
+    case 'demo_take30':
+      return [
+        buildScene(
+          id: 'scene_profile_demo_1',
+          title: 'Premier take instantané',
+          category: 'starter',
+          thumbnailUrl: Take30Assets.avatarCurrentUser,
+          age: const Duration(minutes: 42),
+          likesCount: 96,
+          commentsCount: 12,
+          sharesCount: 5,
+          viewsCount: 1540,
+          tags: const ['demo', 'starter'],
+        ),
+        buildScene(
+          id: 'scene_profile_demo_2',
+          title: 'Monologue express en 30 secondes',
+          category: 'acting',
+          thumbnailUrl: 'assets/scenes/battle_player_a.png',
+          age: const Duration(hours: 6),
+          likesCount: 82,
+          commentsCount: 8,
+          sharesCount: 4,
+          viewsCount: 1190,
+          tags: const ['demo', 'acting'],
+        ),
+        buildScene(
+          id: 'scene_profile_demo_3',
+          title: 'Take premium, rendu immédiat',
+          category: 'spotlight',
+          thumbnailUrl: 'assets/scenes/battle_player_b.png',
+          age: const Duration(days: 1),
+          likesCount: 140,
+          commentsCount: 16,
+          sharesCount: 6,
+          viewsCount: 2040,
+          tags: const ['demo', 'spotlight'],
+        ),
+      ];
+    default:
+      return [
+        buildScene(
+          id: 'scene_profile_generic_1',
+          title: 'Performance démo premium',
+          category: 'showcase',
+          thumbnailUrl: 'assets/scenes/battle_player_a.png',
+          age: const Duration(hours: 8),
+          likesCount: 118,
+          commentsCount: 13,
+          sharesCount: 6,
+          viewsCount: 1860,
+          tags: const ['demo'],
+        ),
+        buildScene(
+          id: 'scene_profile_generic_2',
+          title: 'Extrait à fort impact',
+          category: 'showcase',
+          thumbnailUrl: 'assets/scenes/battle_player_b.png',
+          age: const Duration(days: 1),
+          likesCount: 101,
+          commentsCount: 11,
+          sharesCount: 5,
+          viewsCount: 1680,
+          tags: const ['demo'],
+        ),
+      ];
+  }
+}
 
 class ProfileNotifier extends StateNotifier<ProfileState> {
   ProfileNotifier(this._api, this._haptics, this._share, this.userId)
@@ -613,6 +1399,16 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
   final String userId;
 
   Future<void> load() async {
+    if (_isDemoUser(_api.currentUser)) {
+      final user = _buildDemoProfileUser(userId, _api.currentUser);
+      state = state.copyWith(
+        isLoading: false,
+        user: user,
+        scenes: _buildDemoProfileScenes(user),
+      );
+      return;
+    }
+
     state = state.copyWith(isLoading: true);
     try {
       final user = await _api.getProfile(userId);
@@ -636,6 +1432,9 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
           : state.user!.followersCount + 1,
     );
     state = state.copyWith(user: updated);
+    if (_isDemoUser(_api.currentUser)) {
+      return;
+    }
     await _api.followUser(userId);
   }
 

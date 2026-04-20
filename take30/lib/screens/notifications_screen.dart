@@ -14,6 +14,16 @@ import '../widgets/shared_widgets.dart';
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
+  bool _isDemoUser(UserModel? user) {
+    if (user == null) {
+      return false;
+    }
+
+    return user.username == 'demo_take30' ||
+        user.displayName == 'Mode Demo' ||
+        user.email == 'demo@take30.app';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationsAsync = ref.watch(notificationsProvider);
@@ -115,7 +125,13 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   Future<void> _markAllRead(WidgetRef ref) async {
-    final uid = ref.read(authProvider).user?.id;
+    final user = ref.read(authProvider).user;
+    if (_isDemoUser(user)) {
+      ref.read(demoNotificationsProvider.notifier).markAllRead();
+      return;
+    }
+
+    final uid = user?.id;
     if (uid == null) return;
     await ref.read(apiServiceProvider).notifications.markAllRead(uid);
   }
@@ -125,12 +141,19 @@ class NotificationsScreen extends ConsumerWidget {
     WidgetRef ref,
     NotificationModel notification,
   ) async {
-    final uid = ref.read(authProvider).user?.id;
-    if (uid != null && !notification.isRead) {
+    final user = ref.read(authProvider).user;
+    if (_isDemoUser(user)) {
+      if (!notification.isRead) {
+        ref.read(demoNotificationsProvider.notifier).markRead(notification.id);
+      }
+    } else {
+      final uid = user?.id;
+      if (uid != null && !notification.isRead) {
       await ref.read(apiServiceProvider).notifications.markRead(
             uid,
             notification.id,
           );
+      }
     }
     if (!context.mounted) return;
 

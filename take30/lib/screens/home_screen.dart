@@ -553,13 +553,7 @@ class _FeaturedTakeCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.network(
-                scene.thumbnailUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.surfaceCard,
-                ),
-              ),
+              _buildThumbnail(),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -668,6 +662,26 @@ class _FeaturedTakeCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildThumbnail() {
+    if (scene.thumbnailUrl.startsWith('assets/')) {
+      return Image.asset(
+        scene.thumbnailUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: AppColors.surfaceCard,
+        ),
+      );
+    }
+
+    return Image.network(
+      scene.thumbnailUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Container(
+        color: AppColors.surfaceCard,
       ),
     );
   }

@@ -39,29 +39,31 @@ class AuthService extends ChangeNotifier {
   final ApiService _api = ApiService();
 
   static const String _demoEmail = 'demo@take30.app';
-  static const String _demoPassword = 'take30demo';
   static const String _demoUsername = 'demo_take30';
   static const String _demoDisplayName = 'Mode Demo';
 
   UserModel? _currentUser;
+  bool _isLocalDemoSession = false;
   bool _isLoading = false;
   String? _error;
 
   UserModel? get currentUser => _currentUser;
-  bool get isAuthenticated => _auth.currentUser != null;
+  bool get isAuthenticated => _isLocalDemoSession || _auth.currentUser != null;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   Future<void> _onAuthStateChanged(fa.User? fbUser) async {
     if (fbUser == null) {
-      _currentUser = null;
-      _api.setCurrentUser(null);
+      if (_isLocalDemoSession && _currentUser != null) {
+        notifyListeners();
+        return;
+      }
+      _setSessionUser(null);
       notifyListeners();
       return;
     }
     final profile = await _loadOrCreateProfile(fbUser);
-    _currentUser = profile;
-    _api.setCurrentUser(profile);
+    _setSessionUser(profile);
     await _syncFcmToken(fbUser.uid);
     notifyListeners();
   }
@@ -144,6 +146,24 @@ class AuthService extends ChangeNotifier {
     );
   }
 
+  UserModel _buildLocalDemoUser() {
+    return UserModel(
+      id: 'demo_local',
+      username: _demoUsername,
+      displayName: _demoDisplayName,
+      avatarUrl: Take30Assets.avatarCurrentUser,
+      email: _demoEmail,
+      isVerified: true,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  void _setSessionUser(UserModel? user, {bool isLocalDemo = false}) {
+    _isLocalDemoSession = isLocalDemo && user != null;
+    _currentUser = user;
+    _api.setCurrentUser(user);
+  }
+
   String _deriveUsername(fa.User fbUser) {
     final email = fbUser.email;
     if (email != null && email.contains('@')) {
@@ -175,8 +195,7 @@ class AuthService extends ChangeNotifier {
         password: password,
       );
       final user = await _loadOrCreateProfile(cred.user!);
-      _currentUser = user;
-      _api.setCurrentUser(user);
+      _setSessionUser(user);
       _error = null;
       _setLoading(false);
       return AuthResult.success(user);
@@ -218,8 +237,7 @@ class AuthService extends ChangeNotifier {
         password: password,
       );
       final user = await _loadOrCreateProfile(cred.user!);
-      _currentUser = user;
-      _api.setCurrentUser(user);
+      _setSessionUser(user);
       _error = null;
       _setLoading(false);
       return AuthResult.success(user);
@@ -234,66 +252,11 @@ class AuthService extends ChangeNotifier {
 
   Future<AuthResult> loginDemo() async {
     _setLoading(true);
-    try {
-      final cred = await _signInOrCreateDemoAccount();
-      final user = await _loadOrCreateProfile(
-        cred.user!,
-        preferredUsername: _demoUsername,
-        preferredDisplayName: _demoDisplayName,
-        preferredAvatarUrl: Take30Assets.avatarCurrentUser,
-      );
-      _currentUser = user;
-      _api.setCurrentUser(user);
-      _error = null;
-      _setLoading(false);
-      return AuthResult.success(user);
-    } on fa.FirebaseAuthException catch (e) {
-      _setLoading(false);
-      return AuthResult.failure(_mapAuthError(e));
-    } catch (e) {
-      _setLoading(false);
-      return AuthResult.failure(e.toString());
-    }
-  }
-
-  Future<fa.UserCredential> _signInOrCreateDemoAccount() async {
-    try {
-      return await _auth.signInWithEmailAndPassword(
-        email: _demoEmail,
-        password: _demoPassword,
-      );
-    } on fa.FirebaseAuthException catch (e) {
-      if (e.code != 'user-not-found' &&
-          e.code != 'wrong-password' &&
-          e.code != 'invalid-credential') {
-        rethrow;
-      }
-    }
-
-    try {
-      final cred = await _auth.createUserWithEmailAndPassword(
-        email: _demoEmail,
-        password: _demoPassword,
-      );
-      await cred.user?.updateDisplayName(_demoDisplayName);
-      return cred;
-    } on fa.FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        try {
-          return await _auth.signInWithEmailAndPassword(
-            email: _demoEmail,
-            password: _demoPassword,
-          );
-        } on fa.FirebaseAuthException {
-          throw fa.FirebaseAuthException(
-            code: 'demo-account-misconfigured',
-            message:
-                'Le compte démo existe déjà avec un mot de passe différent dans Firebase Auth.',
-          );
-        }
-      }
-      rethrow;
-    }
+    final user = _buildLocalDemoUser();
+    _setSessionUser(user, isLocalDemo: true);
+    _error = null;
+    _setLoading(false);
+    return AuthResult.success(user);
   }
 
   Future<AuthResult> registerWithEmail({
@@ -326,8 +289,7 @@ class AuthService extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       await _api.users.createProfile(user);
-      _currentUser = user;
-      _api.setCurrentUser(user);
+      _setSessionUser(user);
       _error = null;
       _setLoading(false);
       return AuthResult.success(user);
@@ -351,8 +313,7 @@ class AuthService extends ChangeNotifier {
         provider.setCustomParameters({'prompt': 'select_account'});
         final cred = await _auth.signInWithPopup(provider);
         final user = await _loadOrCreateProfile(cred.user!);
-        _currentUser = user;
-        _api.setCurrentUser(user);
+        _setSessionUser(user);
         _error = null;
         _setLoading(false);
         return AuthResult.success(user);
@@ -371,8 +332,7 @@ class AuthService extends ChangeNotifier {
       }
       final cred = await _auth.signInWithCredential(credential);
       final user = await _loadOrCreateProfile(cred.user!);
-      _currentUser = user;
-      _api.setCurrentUser(user);
+      _setSessionUser(user);
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
@@ -403,8 +363,7 @@ class AuthService extends ChangeNotifier {
       );
       final cred = await _auth.signInWithCredential(oauth);
       final user = await _loadOrCreateProfile(cred.user!);
-      _currentUser = user;
-      _api.setCurrentUser(user);
+      _setSessionUser(user);
       _setLoading(false);
       return AuthResult.success(user);
     } on fa.FirebaseAuthException catch (e) {
@@ -430,6 +389,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> logout() async {
     _setLoading(true);
+    _isLocalDemoSession = false;
     try {
       final uid = _auth.currentUser?.uid;
       if (uid != null && !kIsWeb) {
@@ -443,8 +403,7 @@ class AuthService extends ChangeNotifier {
     try {
       if (!kIsWeb) await GoogleSignIn().signOut();
     } catch (_) {}
-    _currentUser = null;
-    _api.setCurrentUser(null);
+    _setSessionUser(null);
     _error = null;
     _setLoading(false);
   }
@@ -454,8 +413,7 @@ class AuthService extends ChangeNotifier {
     if (fbUser == null) return;
     final user = await _api.users.getById(fbUser.uid) ??
         _buildFallbackProfile(fbUser);
-    _currentUser = user;
-    _api.setCurrentUser(user);
+    _setSessionUser(user);
     notifyListeners();
   }
 
@@ -495,8 +453,6 @@ class AuthService extends ChangeNotifier {
         return 'Un compte existe déjà avec ce même email via une autre méthode de connexion';
       case 'operation-not-allowed':
         return 'Méthode de connexion non activée dans Firebase';
-      case 'demo-account-misconfigured':
-        return 'Le compte démo Firebase existe avec un mot de passe différent';
       default:
         return e.message ?? 'Erreur d\'authentification';
     }
