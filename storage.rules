@@ -5,27 +5,31 @@ service firebase.storage {
 
     function isSignedIn() { return request.auth != null; }
     function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isMp4(name) { return name.matches('.*\\.mp4$'); }
+    function isJpg(name) { return name.matches('.*\\.jpg$'); }
 
     // Vidéos de scènes : owner only, <= 50 MB, video/*
-    match /scenes/{uid}/{sceneId}.mp4 {
+    match /scenes/{uid}/{fileName} {
       allow read: if true;
       allow write: if isSelf(uid)
+        && isMp4(fileName)
         && request.resource.size < 50 * 1024 * 1024
         && request.resource.contentType.matches('video/.*');
     }
 
     // Thumbnails : owner only, <= 2 MB, image/*
-    match /thumbnails/{uid}/{sceneId}.jpg {
+    match /thumbnails/{uid}/{fileName} {
       allow read: if true;
       allow write: if isSelf(uid)
+        && isJpg(fileName)
         && request.resource.size < 2 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
 
     // Avatars : owner only, <= 2 MB, image/*
-    match /avatars/{uid}.jpg {
+    match /avatars/{fileName} {
       allow read: if true;
-      allow write: if isSelf(uid)
+      allow write: if fileName.matches('^' + request.auth.uid + '\\.jpg$')
         && request.resource.size < 2 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }

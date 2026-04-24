@@ -47,6 +47,21 @@ class UsersRepo {
     }
   }
 
+  Future<UserModel?> getByEmail(String email) async {
+    try {
+      final q = await _refs.users
+          .where('email', isEqualTo: email.trim())
+          .limit(1)
+          .get();
+      return q.docs.isEmpty ? null : q.docs.first.data();
+    } on FirebaseException catch (error) {
+      if (_isOfflineReadError(error)) {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
   /// Création initiale à la 1re connexion : écrit `users/{uid}` en vérifiant
   /// l'unicité du username en transaction.
   Future<void> createProfile(UserModel user) async {

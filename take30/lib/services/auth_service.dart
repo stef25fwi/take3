@@ -113,6 +113,40 @@ class AuthService extends ChangeNotifier {
       }
       return existing;
     }
+    if (email != null && email.isNotEmpty) {
+      final existingByEmail = await _api.users.getByEmail(email);
+      if (existingByEmail != null) {
+        final migrated = UserModel(
+          id: fbUser.uid,
+          username: existingByEmail.username,
+          displayName: existingByEmail.displayName,
+          avatarUrl: existingByEmail.avatarUrl,
+          email: email,
+          bio: existingByEmail.bio,
+          isVerified: existingByEmail.isVerified,
+          scenesCount: existingByEmail.scenesCount,
+          followersCount: existingByEmail.followersCount,
+          likesCount: existingByEmail.likesCount,
+          totalViews: existingByEmail.totalViews,
+          approvalRate: existingByEmail.approvalRate,
+          sharesCount: existingByEmail.sharesCount,
+          badges: existingByEmail.badges,
+          isFollowing: existingByEmail.isFollowing,
+          isAdmin: existingByEmail.isAdmin,
+          createdAt: existingByEmail.createdAt,
+          lastActiveAt: existingByEmail.lastActiveAt,
+          fcmTokens: existingByEmail.fcmTokens,
+        );
+        try {
+          await _api.users.createProfile(migrated);
+        } on FirebaseException catch (error) {
+          if (!_isOfflineFirestoreError(error)) {
+            rethrow;
+          }
+        }
+        return migrated;
+      }
+    }
     final fallback = _buildFallbackProfile(
       fbUser,
       preferredUsername: preferredUsername,
@@ -429,7 +463,7 @@ class AuthService extends ChangeNotifier {
   Future<void> checkPersistedAuth() async {
     final fbUser = _auth.currentUser;
     if (fbUser != null) {
-      final user = await _api.users.getById(fbUser.uid) ??
+      final user = await _loadOrCreateProfile(fbUser) ??
           _buildFallbackProfile(fbUser);
       _setSessionUser(user);
       await _persistDemoSession(false);

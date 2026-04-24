@@ -1,5 +1,24 @@
 [
   {
+    "id": "admin_take60",
+    "username": "take60_admin",
+    "displayName": "Take 60 Admin",
+    "avatarUrl": "https://i.pravatar.cc/150?u=take60-admin",
+    "email": "admin@take60.local",
+    "authPassword": "Take60Admin2026!",
+    "bio": "Administration Take 60",
+    "isVerified": true,
+    "isAdmin": true,
+    "scenesCount": 0,
+    "followersCount": 0,
+    "followingCount": 0,
+    "likesCount": 0,
+    "totalViews": 0,
+    "approvalRate": 100,
+    "sharesCount": 0,
+    "fcmTokens": []
+  },
+  {
     "id": "u_luna",
     "username": "LunaAct",
     "displayName": "Luna",

@@ -7,6 +7,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentCreated, onDocumentDeleted, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
@@ -16,8 +17,7 @@ admin.initializeApp();
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 50 });
 
-const db = admin.firestore();
-const FieldValue = admin.firestore.FieldValue;
+const db = getFirestore();
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 

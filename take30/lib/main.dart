@@ -27,9 +27,21 @@ const bool _kUseFirebaseEmulators = bool.fromEnvironment(
   defaultValue: false,
 );
 
+String _emulatorHost() {
+  if (!kIsWeb) {
+    return 'localhost';
+  }
+
+  final host = Uri.base.host;
+  if (host.isEmpty || host == '0.0.0.0') {
+    return 'localhost';
+  }
+  return host;
+}
+
 Future<void> _maybeConnectEmulators() async {
   if (!_kUseFirebaseEmulators) return;
-  const host = 'localhost';
+  final host = _emulatorHost();
   try {
     FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
     await FirebaseAuth.instance.useAuthEmulator(host, 9099);

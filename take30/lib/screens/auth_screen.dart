@@ -8,9 +8,14 @@ import '../theme/app_theme.dart';
 import '../widgets/take30_logo.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({super.key, this.initialTab = 'login'});
+  const AuthScreen({
+    super.key,
+    this.initialTab = 'login',
+    this.redirectTo,
+  });
 
   final String initialTab;
+  final String? redirectTo;
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
@@ -58,7 +63,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (mounted) {
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
-        context.go('/home');
+        context.go(_destinationAfterAuth(state));
       }
     }
   }
@@ -68,7 +73,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (mounted) {
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
-        context.go('/home');
+        context.go(_destinationAfterAuth(state));
       }
     }
   }
@@ -78,7 +83,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (mounted) {
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
-        context.go('/home');
+        context.go(_destinationAfterAuth(state));
       }
     }
   }
@@ -88,9 +93,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (mounted) {
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
-        context.go('/home');
+        context.go(_destinationAfterAuth(state));
       }
     }
+  }
+
+  String _destinationAfterAuth(AuthState state) {
+    final requestedPath = widget.redirectTo;
+    if (requestedPath != null && requestedPath.startsWith('/')) {
+      return requestedPath;
+    }
+    if (state.user?.isAdmin ?? false) {
+      return '/admin';
+    }
+    return '/home';
   }
 
   @override

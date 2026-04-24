@@ -19,6 +19,7 @@ const admin = require("firebase-admin");
 
 const SEED_DIR = path.join(__dirname, "seed");
 const FORCE = process.argv.includes("--force");
+const AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST;
 
 function loadJson(name) {
   const file = path.join(SEED_DIR, `${name}.json`);
@@ -71,11 +72,52 @@ async function upsert(db, colPath, items, idField = "id") {
       const existing = await ref.get();
       if (existing.exists) continue;
     }
-    const { [idField]: _, ...payload } = item;
+    const { [idField]: _, authPassword: __, ...payload } = item;
     await ref.set(payload);
     written++;
   }
   console.log(`✅ ${colPath}: ${written} docs written`);
+}
+
+async function syncAuthUsers(users) {
+  let written = 0;
+  for (const user of users) {
+    const email = typeof user.email === "string" ? user.email.trim() : "";
+    const password = typeof user.authPassword === "string" ? user.authPassword : "";
+    const uid = typeof user.id === "string" ? user.id : "";
+    if (!email || !password || !uid) {
+      continue;
+    }
+
+    const payload = {
+      uid,
+      email,
+      password,
+      displayName: user.displayName || user.username || uid,
+      emailVerified: true,
+      disabled: false,
+    };
+
+    try {
+      await admin.auth().updateUser(uid, payload);
+    } catch (error) {
+      if (error?.code === "auth/user-not-found") {
+        await admin.auth().createUser(payload);
+      } else {
+        throw error;
+      }
+    }
+
+    if (user.isAdmin) {
+      await admin.auth().setCustomUserClaims(uid, { admin: true });
+    } else {
+      await admin.auth().setCustomUserClaims(uid, null);
+    }
+    written++;
+  }
+
+  const target = AUTH_EMULATOR_HOST ? `auth emulator @ ${AUTH_EMULATOR_HOST}` : "Firebase Auth";
+  console.log(`🔐 ${target}: ${written} user(s) synced`);
 }
 
 async function main() {
@@ -100,6 +142,7 @@ async function main() {
 
   await upsert(db, "categories", categories);
   await upsert(db, "users", users);
+  await syncAuthUsers(users);
   await upsert(db, "scenes", scenes);
 
   // Badges sont imbriqués sous users/{uid}/badges
