@@ -269,7 +269,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               TextButton(
                 onPressed: authState.isLoading
                     ? null
-                    : () => context.go(AppRouter.admin),
+                    : () => context.go(AppRouter.adminAccess),
                 child: Text(
                   'Accès admin →',
                   style: GoogleFonts.dmSans(

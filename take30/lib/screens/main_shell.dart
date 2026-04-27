@@ -56,7 +56,7 @@ class MainShell extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 58,
+            height: 64,
             child: Row(
               children: [
                 _Tab(
@@ -83,10 +83,10 @@ class MainShell extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Transform.translate(
-                          offset: const Offset(0, -8),
+                          offset: const Offset(0, -10),
                           child: SizedBox(
-                            width: 44,
-                            height: 44,
+                            width: 56,
+                            height: 56,
                             child: Image.asset(
                               '../take 30 images IA/record.png',
                               fit: BoxFit.contain,

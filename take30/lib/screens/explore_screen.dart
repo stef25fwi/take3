@@ -381,8 +381,16 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = data.darkIcon ? const Color(0xFF0B1020) : Colors.white;
-    final textColor = data.darkIcon ? const Color(0xFF0B1020) : Colors.white;
+    const accentText = Color(0xFF0B1020);
+    const tileGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFFFFE27A),
+        Color(0xFFFFC62E),
+        Color(0xFFFFB800),
+      ],
+    );
 
     return GestureDetector(
       onTap: onTap,
@@ -390,18 +398,18 @@ class _CategoryTile extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         height: 66,
         decoration: BoxDecoration(
-          color: data.color,
+          gradient: tileGradient,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected
-                ? Colors.white.withValues(alpha: 0.80)
-                : Colors.white.withValues(alpha: data.darkIcon ? 0.10 : 0.18),
+                ? accentText
+                : accentText.withValues(alpha: 0.18),
             width: selected ? 1.4 : 0.8,
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: data.color.withValues(alpha: 0.25),
+                    color: const Color(0xFFFFB800).withValues(alpha: 0.30),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
@@ -412,7 +420,7 @@ class _CategoryTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(data.icon, size: 19, color: iconColor),
+            Icon(data.icon, size: 19, color: accentText),
             Text(
               data.label,
               maxLines: 1,
@@ -420,7 +428,7 @@ class _CategoryTile extends StatelessWidget {
               style: GoogleFonts.dmSans(
                 fontSize: data.label == 'Comédie' ? 9.6 : 10.2,
                 fontWeight: FontWeight.w700,
-                color: textColor,
+                color: accentText,
                 letterSpacing: -0.1,
               ),
             ),

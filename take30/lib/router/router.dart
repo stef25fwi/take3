@@ -26,6 +26,7 @@ class AppRouter {
   static const splash = '/splash';
   static const onboarding = '/onboarding';
   static const auth = '/auth';
+  static const adminAccess = '/admin-access';
   static const home = '/home';
   static const explore = '/explore';
   static const record = '/record';
@@ -96,6 +97,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final redirect = state.uri.queryParameters['redirect'];
           return AuthScreen(initialTab: tab, redirectTo: redirect);
         },
+      ),
+      GoRoute(
+        path: AppRouter.adminAccess,
+        builder: (_, __) => const AdminAccessGate(),
       ),
       GoRoute(
         path: AppRouter.admin,
