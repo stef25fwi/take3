@@ -72,7 +72,9 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
               ),
               const SizedBox(height: 10),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppThemeTokens.pageHorizontalPadding,
+                ),
                 child: _RankingTabs(
                   selected: _period,
                   onChanged: (p) {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart' show PermissionStatus;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
@@ -998,6 +999,36 @@ final demoSceneCommentsProvider = Provider.family<List<CommentModel>, String>((r
   );
 });
 
+class CameraInitResult {
+  const CameraInitResult._({
+    required this.isReady,
+    this.needsSettings = false,
+    this.missingPermissions = const <AppPermission>[],
+  });
+
+  const CameraInitResult.ready() : this._(isReady: true);
+
+  const CameraInitResult.denied({
+    required bool needsSettings,
+    required List<AppPermission> missingPermissions,
+  }) : this._(
+         isReady: false,
+         needsSettings: needsSettings,
+         missingPermissions: missingPermissions,
+       );
+
+  const CameraInitResult.unavailable() : this._(isReady: false);
+
+  final bool isReady;
+  final bool needsSettings;
+  final List<AppPermission> missingPermissions;
+}
+
+bool _needsPermissionSettings(PermissionStatus status) {
+  return status == PermissionStatus.permanentlyDenied ||
+      status == PermissionStatus.restricted;
+}
+
 class RecordingNotifier extends StateNotifier<RecordingState> {
   RecordingNotifier(
     this._api,
@@ -1017,31 +1048,44 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
   final PermissionService _permissions;
   final DemoPublishedScenesStore _demoPublishedScenesStore;
 
-  Future<bool> initCamera(BuildContext context) async {
-    final granted = await _permissions.requestWithExplanation(
+  Future<CameraInitResult> initCamera(BuildContext context) async {
+    final cameraGranted = await _permissions.requestWithExplanation(
       context,
       AppPermission.camera,
       title: 'Caméra requise',
       message: 'Take 60 a besoin de ta caméra pour enregistrer tes performances.',
     );
-    if (!granted) {
-      return false;
+    if (!cameraGranted) {
+      final cameraStatus = await _permissions.status(AppPermission.camera);
+      return CameraInitResult.denied(
+        needsSettings: _needsPermissionSettings(cameraStatus),
+        missingPermissions: const [AppPermission.camera],
+      );
     }
 
     if (!context.mounted) {
-      return false;
+      return const CameraInitResult.unavailable();
     }
 
-    await _permissions.requestWithExplanation(
+    final microphoneGranted = await _permissions.requestWithExplanation(
       context,
       AppPermission.microphone,
       title: 'Micro requis',
       message: 'Take 60 a besoin du microphone pour capturer le son.',
     );
+    if (!microphoneGranted) {
+      final microphoneStatus = await _permissions.status(AppPermission.microphone);
+      return CameraInitResult.denied(
+        needsSettings: _needsPermissionSettings(microphoneStatus),
+        missingPermissions: const [AppPermission.microphone],
+      );
+    }
 
     final ready = await _camera.initialize();
     state = state.copyWith(cameraReady: ready);
-    return ready;
+    return ready
+        ? const CameraInitResult.ready()
+        : const CameraInitResult.unavailable();
   }
 
   Future<void> startRecording() async {

@@ -382,15 +382,7 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const accentText = Color(0xFF0B1020);
-    const tileGradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [
-        Color(0xFFFFE27A),
-        Color(0xFFFFC62E),
-        Color(0xFFFFB800),
-      ],
-    );
+    const tileColor = Color(0xFFFFC62E);
 
     return GestureDetector(
       onTap: onTap,
@@ -398,7 +390,7 @@ class _CategoryTile extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         height: 66,
         decoration: BoxDecoration(
-          gradient: tileGradient,
+          color: tileColor,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected
@@ -409,7 +401,7 @@ class _CategoryTile extends StatelessWidget {
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFFB800).withValues(alpha: 0.30),
+                    color: tileColor.withValues(alpha: 0.30),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),

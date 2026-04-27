@@ -1119,7 +1119,7 @@ class _AddScenePageState extends State<AddScenePage> {
               Expanded(
                 child: ListView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
                     _section(
                       '1) Informations générales',
@@ -1387,7 +1387,7 @@ class _AddScenePageState extends State<AddScenePage> {
         ),
       ),
       bottomSheet: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: Colors.grey.shade200)),

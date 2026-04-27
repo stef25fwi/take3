@@ -57,20 +57,75 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
   }
 
   Future<void> _initCamera() async {
-    final ready =
+    final result =
         await ref.read(recordingProvider.notifier).initCamera(context);
     if (mounted) setState(() => _cameraInitializing = false);
-    if (!ready && mounted) {
+    if (!mounted || result.isReady) {
+      return;
+    }
+
+    if (result.needsSettings) {
+      await _showPermissionsSettingsDialog(result.missingPermissions);
+      return;
+    }
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Caméra non disponible — vérifier les permissions',
+            'Caméra ou micro non disponibles — vérifier les permissions',
             style: GoogleFonts.dmSans(color: Colors.white),
           ),
           backgroundColor: _K.red,
+          action: SnackBarAction(
+            label: 'Réglages',
+            textColor: Colors.white,
+            onPressed: () {
+              PermissionService().openSettings();
+            },
+          ),
         ),
       );
     }
+  }
+
+  Future<void> _showPermissionsSettingsDialog(
+    List<AppPermission> missingPermissions,
+  ) async {
+    final labels = missingPermissions
+        .map(
+          (permission) => switch (permission) {
+            AppPermission.camera => 'caméra',
+            AppPermission.microphone => 'microphone',
+            _ => 'autorisation',
+          },
+        )
+        .join(' et ');
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Autorisation requise'),
+          content: Text(
+            'L’accès au $labels a été refusé de façon permanente. Ouvre les réglages système pour autoriser Take 60.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Plus tard'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                PermissionService().openSettings();
+              },
+              child: const Text('Ouvrir les réglages'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _toggleRecord() async {

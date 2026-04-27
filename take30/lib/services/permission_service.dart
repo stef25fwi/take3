@@ -17,8 +17,12 @@ class PermissionService {
 
   factory PermissionService() => _instance;
 
+  Future<PermissionStatus> status(AppPermission permission) {
+    return _permissionFor(permission).status;
+  }
+
   Future<bool> isGranted(AppPermission permission) async {
-    final status = await _permissionFor(permission).status;
+    final status = await this.status(permission);
     return status.isGranted;
   }
 
