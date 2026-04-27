@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../router/router.dart';
+import '../theme/app_theme.dart';
 
 class DailyChallengeScreen extends StatelessWidget {
   const DailyChallengeScreen({super.key});
@@ -39,18 +40,10 @@ class DailyChallengeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundBottom,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              backgroundTop,
-              Color(0xFF0D1524),
-              backgroundBottom,
-            ],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
         ),
         child: Stack(
           children: [
@@ -127,7 +120,7 @@ class _DailyChallengeHeader extends StatelessWidget {
         Text(
           'Défi du jour',
           style: GoogleFonts.dmSans(
-            color: Colors.white,
+            color: AppThemeTokens.primaryText(context),
             fontSize: 23,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.45,
@@ -147,10 +140,10 @@ class _DailyChallengeCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: DailyChallengeScreen.surface,
+        color: AppThemeTokens.surface(context),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: DailyChallengeScreen.surfaceBorder,
+          color: AppThemeTokens.border(context),
         ),
         boxShadow: const [
           BoxShadow(
@@ -190,7 +183,7 @@ class _DailyChallengeCard extends StatelessWidget {
             Text(
               DailyChallengeScreen.sceneTitle,
               style: GoogleFonts.dmSans(
-                color: Colors.white,
+                color: AppThemeTokens.primaryText(context),
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.55,
@@ -201,7 +194,7 @@ class _DailyChallengeCard extends StatelessWidget {
             Text(
               DailyChallengeScreen.challengeQuote,
               style: GoogleFonts.dmSans(
-                color: Colors.white,
+                color: AppThemeTokens.primaryText(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 height: 1.24,
@@ -212,7 +205,7 @@ class _DailyChallengeCard extends StatelessWidget {
             Text(
               'Conditions',
               style: GoogleFonts.dmSans(
-                color: const Color.fromRGBO(255, 255, 255, 0.58),
+                color: AppThemeTokens.secondaryText(context),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
+import '../theme/app_theme.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
@@ -106,14 +107,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     final visibleNew = newEntries.map(_entryForScene).where(_matches).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1020),
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1020), Color(0xFF111827)],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
         ),
         child: Stack(
           children: [
@@ -272,10 +269,10 @@ class _ExplorerSearchBar extends StatelessWidget {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: const Color.fromRGBO(23, 29, 44, 0.84),
+            color: AppThemeTokens.surface(context),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.09),
+              color: AppThemeTokens.border(context),
             ),
             boxShadow: const [
               BoxShadow(
@@ -290,7 +287,7 @@ class _ExplorerSearchBar extends StatelessWidget {
               Icon(
                 Icons.search_rounded,
                 size: 18,
-                color: Colors.white.withValues(alpha: 0.58),
+                color: AppThemeTokens.secondaryText(context),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -300,9 +297,9 @@ class _ExplorerSearchBar extends StatelessWidget {
                   style: GoogleFonts.dmSans(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppThemeTokens.primaryText(context),
                   ),
-                  cursorColor: Colors.white,
+                  cursorColor: Theme.of(context).colorScheme.primary,
                   decoration: InputDecoration(
                     isCollapsed: true,
                     border: InputBorder.none,
@@ -310,7 +307,7 @@ class _ExplorerSearchBar extends StatelessWidget {
                     hintStyle: GoogleFonts.dmSans(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.50),
+                      color: AppThemeTokens.tertiaryText(context),
                     ),
                   ),
                 ),
@@ -359,7 +356,7 @@ class _SectionTitle extends StatelessWidget {
       style: GoogleFonts.dmSans(
         fontSize: 18,
         fontWeight: FontWeight.w700,
-        color: Colors.white,
+        color: AppThemeTokens.primaryText(context),
         letterSpacing: -0.35,
       ),
     );
@@ -656,16 +653,16 @@ class _EmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: AppThemeTokens.surface(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppThemeTokens.border(context)),
       ),
       child: Text(
         label,
         style: GoogleFonts.dmSans(
           fontSize: 12.5,
           fontWeight: FontWeight.w500,
-          color: Colors.white.withValues(alpha: 0.60),
+          color: AppThemeTokens.secondaryText(context),
         ),
       ),
     );

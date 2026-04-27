@@ -42,13 +42,16 @@ class MainShell extends ConsumerWidget {
     final index = _indexForLocation(context);
     final currentUserId =
         ref.watch(authProvider.select((s) => s.user?.id)) ?? 'u1';
+    final selectedColor = Theme.of(context).colorScheme.primary;
+    final inactiveColor = AppThemeTokens.tertiaryText(context);
+
     return Scaffold(
-      backgroundColor: AppColors.navy,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.navBackground,
-          border: Border(top: BorderSide(color: AppColors.borderSubtle, width: 0.5)),
+        decoration: BoxDecoration(
+          color: AppThemeTokens.surface(context),
+          border: Border(top: BorderSide(color: AppThemeTokens.border(context), width: 0.5)),
         ),
         child: SafeArea(
           top: false,
@@ -60,12 +63,16 @@ class MainShell extends ConsumerWidget {
                   icon: Icons.home_rounded,
                   label: 'Accueil',
                   selected: index == 0,
+                  activeColor: selectedColor,
+                  inactiveColor: inactiveColor,
                   onTap: () => _go(context, 0, currentUserId),
                 ),
                 _Tab(
                   icon: Icons.explore_rounded,
                   label: 'Explorer',
                   selected: index == 1,
+                  activeColor: selectedColor,
+                  inactiveColor: inactiveColor,
                   onTap: () => _go(context, 1, currentUserId),
                 ),
                 Expanded(
@@ -77,26 +84,12 @@ class MainShell extends ConsumerWidget {
                       children: [
                         Transform.translate(
                           offset: const Offset(0, -8),
-                          child: Container(
+                          child: SizedBox(
                             width: 44,
                             height: 44,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFF4D4F), Color(0xFFFF6B6B)],
-                              ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFF4D4F).withValues(alpha: 0.35),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.fiber_manual_record,
-                              color: AppColors.white,
-                              size: 18,
+                            child: Image.asset(
+                              '../take 30 images IA/record.png',
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
@@ -104,7 +97,7 @@ class MainShell extends ConsumerWidget {
                           'Record',
                           style: GoogleFonts.dmSans(
                             fontSize: 10,
-                            color: index == 2 ? NavIconStates.active : NavIconStates.inactive,
+                            color: index == 2 ? selectedColor : inactiveColor,
                             fontWeight: index == 2 ? FontWeight.w600 : FontWeight.w400,
                           ),
                         ),
@@ -116,12 +109,16 @@ class MainShell extends ConsumerWidget {
                   icon: Icons.sports_mma_outlined,
                   label: 'Battle',
                   selected: index == 3,
+                  activeColor: selectedColor,
+                  inactiveColor: inactiveColor,
                   onTap: () => _go(context, 3, currentUserId),
                 ),
                 _Tab(
                   icon: Icons.person_outline_rounded,
                   label: 'Profil',
                   selected: index == 4,
+                  activeColor: selectedColor,
+                  inactiveColor: inactiveColor,
                   onTap: () => _go(context, 4, currentUserId),
                 ),
               ],
@@ -138,17 +135,21 @@ class _Tab extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.selected,
+    required this.activeColor,
+    required this.inactiveColor,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
+  final Color activeColor;
+  final Color inactiveColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? NavIconStates.active : NavIconStates.inactive;
+    final color = selected ? activeColor : inactiveColor;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,

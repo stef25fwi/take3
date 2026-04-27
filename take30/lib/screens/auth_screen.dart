@@ -114,12 +114,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.navy,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
+      backgroundColor: AppThemeTokens.pageBackground(context),
+      body: Container(
+        decoration: BoxDecoration(gradient: AppThemeTokens.pageGradient(context)),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
               const SizedBox(height: 12),
               const Align(
                 alignment: Alignment.topCenter,
@@ -131,14 +133,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 style: GoogleFonts.dmSans(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.white,
+                  color: AppThemeTokens.primaryText(context),
                 ),
               ),
               const SizedBox(height: 36),
               Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
+                  color: AppThemeTokens.surfaceMuted(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: TabBar(
@@ -149,7 +151,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   ),
                   indicatorSize: TabBarIndicatorSize.tab,
                   labelColor: AppColors.navy,
-                  unselectedLabelColor: AppColors.grey,
+                  unselectedLabelColor: AppThemeTokens.tertiaryText(context),
                   labelStyle: GoogleFonts.dmSans(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
@@ -265,11 +267,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 onPressed: () => context.go('/onboarding'),
                 child: Text(
                   '← Retour',
-                  style: GoogleFonts.dmSans(color: AppColors.grey, fontSize: 14),
+                  style: GoogleFonts.dmSans(
+                    color: AppThemeTokens.secondaryText(context),
+                    fontSize: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -292,7 +298,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           style: GoogleFonts.dmSans(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppColors.greyLight,
+            color: AppThemeTokens.secondaryText(context),
           ),
         ),
         const SizedBox(height: 7),
@@ -300,15 +306,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           controller: ctrl,
           obscureText: isPassword && _obscure,
           keyboardType: type,
-          style: const TextStyle(color: AppColors.white),
+          style: TextStyle(color: AppThemeTokens.primaryText(context)),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: AppColors.grey, size: 20),
+            prefixIcon: Icon(
+              icon,
+              color: AppThemeTokens.tertiaryText(context),
+              size: 20,
+            ),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
                       _obscure ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.grey,
+                      color: AppThemeTokens.tertiaryText(context),
                       size: 20,
                     ),
                     onPressed: () => setState(() => _obscure = !_obscure),
@@ -339,17 +349,17 @@ class _SocialAuthButton extends StatelessWidget {
       height: 52,
       child: OutlinedButton.icon(
         onPressed: onTap,
-        icon: Icon(icon, color: AppColors.white, size: 22),
+        icon: Icon(icon, color: AppThemeTokens.primaryText(context), size: 22),
         label: Text(
           label,
           style: GoogleFonts.dmSans(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: AppColors.white,
+            color: AppThemeTokens.primaryText(context),
           ),
         ),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.borderSubtle),
+          side: BorderSide(color: AppThemeTokens.border(context)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),

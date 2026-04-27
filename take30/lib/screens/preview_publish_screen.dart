@@ -78,7 +78,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
   void _showSuccessSheet(SceneModel scene) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.surfaceCard,
+      backgroundColor: AppThemeTokens.surface(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -95,7 +95,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
               style: GoogleFonts.dmSans(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.white,
+                color: AppThemeTokens.primaryText(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -139,7 +139,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                   );
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.borderSubtle),
+                  side: BorderSide(color: AppThemeTokens.border(context)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(
@@ -147,7 +147,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                   style: GoogleFonts.dmSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.white,
+                    color: AppThemeTokens.primaryText(context),
                   ),
                 ),
               ),
@@ -186,12 +186,16 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: PreviewTheme.background,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       appBar: AppBar(
-        backgroundColor: PreviewTheme.appBarBg,
+        backgroundColor: AppThemeTokens.pageBackground(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: AppThemeTokens.primaryText(context),
+            size: 20,
+          ),
           onPressed: isPublishing ? null : () => context.go(AppRouter.record),
         ),
         title: Text(
@@ -199,7 +203,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
           style: GoogleFonts.dmSans(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: AppColors.white,
+            color: AppThemeTokens.primaryText(context),
           ),
         ),
       ),
@@ -236,7 +240,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
               style: GoogleFonts.dmSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppColors.white,
+                color: AppThemeTokens.primaryText(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -289,9 +293,9 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
+                color: AppThemeTokens.surface(context),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderSubtle),
+                border: Border.all(color: AppThemeTokens.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,7 +305,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.white,
+                      color: AppThemeTokens.primaryText(context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -323,7 +327,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                   child: OutlinedButton(
                     onPressed: isPublishing ? null : () => context.go(AppRouter.record),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.borderSubtle),
+                      side: BorderSide(color: AppThemeTokens.border(context)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -332,7 +336,7 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
                       style: GoogleFonts.dmSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.white,
+                        color: AppThemeTokens.primaryText(context),
                       ),
                     ),
                   ),

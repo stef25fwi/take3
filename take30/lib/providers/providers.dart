@@ -17,6 +17,9 @@ import '../services/upload_service.dart';
 import '../utils/assets.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('sharedPreferencesProvider must be overridden in main().');
+});
 final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) => AuthService());
 final cameraServiceProvider = ChangeNotifierProvider<CameraService>((ref) => CameraService());
 final uploadServiceProvider = ChangeNotifierProvider<VideoUploadService>((ref) => VideoUploadService());
@@ -26,6 +29,41 @@ final shareServiceProvider = Provider<ShareService>((ref) => ShareService());
 final hapticsProvider = Provider<HapticsService>((ref) => HapticsService());
 final connectivityProvider = ChangeNotifierProvider<ConnectivityService>((ref) => ConnectivityService());
 final permissionProvider = Provider<PermissionService>((ref) => PermissionService());
+
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  ThemeModeNotifier(this._prefs) : super(initialModeFromPrefs(_prefs));
+
+  static const String _storageKey = 'take30.theme_mode';
+
+  final SharedPreferences _prefs;
+
+  static ThemeMode initialModeFromPrefs(SharedPreferences prefs) {
+    final storedMode = prefs.getString(_storageKey);
+    if (storedMode == ThemeMode.light.name) {
+      return ThemeMode.light;
+    }
+    return ThemeMode.dark;
+  }
+
+  bool get isDark => state == ThemeMode.dark;
+
+  Future<void> setMode(ThemeMode mode) async {
+    final resolvedMode = mode == ThemeMode.light ? ThemeMode.light : ThemeMode.dark;
+    if (state == resolvedMode) {
+      return;
+    }
+    state = resolvedMode;
+    await _prefs.setString(_storageKey, resolvedMode.name);
+  }
+
+  Future<void> toggle() {
+    return setMode(isDark ? ThemeMode.light : ThemeMode.dark);
+  }
+}
+
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>(
+  (ref) => ThemeModeNotifier(ref.read(sharedPreferencesProvider)),
+);
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier(this._auth) : super(const AuthState()) {

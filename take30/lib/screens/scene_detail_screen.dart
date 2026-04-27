@@ -94,12 +94,16 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
     final scene = sceneAsync.value ?? widget.scene;
     if (scene == null) {
       return Scaffold(
-        backgroundColor: AppColors.navy,
+        backgroundColor: AppThemeTokens.pageBackground(context),
         appBar: AppBar(
-          backgroundColor: AppColors.navy,
+          backgroundColor: AppThemeTokens.pageBackground(context),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: AppColors.white, size: 20),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: AppThemeTokens.primaryText(context),
+              size: 20,
+            ),
             onPressed: _onBack,
           ),
         ),
@@ -107,10 +111,10 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: AppColors.yellow),
               )
-            : const Center(
+            : Center(
                 child: Text(
                   'Scène introuvable',
-                  style: TextStyle(color: AppColors.white),
+                  style: TextStyle(color: AppThemeTokens.primaryText(context)),
                 ),
               ),
       );
@@ -121,12 +125,16 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
     final commentsCount = isDemoMode ? demoComments.length : scene.commentsCount;
 
     return Scaffold(
-      backgroundColor: AppColors.navy,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       appBar: AppBar(
-        backgroundColor: AppColors.navy,
+        backgroundColor: AppThemeTokens.pageBackground(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: AppThemeTokens.primaryText(context),
+            size: 20,
+          ),
           onPressed: _onBack,
         ),
         title: Text(
@@ -134,7 +142,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
           style: GoogleFonts.dmSans(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppColors.white,
+            color: AppThemeTokens.primaryText(context),
           ),
         ),
         centerTitle: true,
@@ -178,7 +186,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
               style: GoogleFonts.dmSans(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppColors.white,
+                color: AppThemeTokens.primaryText(context),
               ),
             ),
             const SizedBox(height: 4),
@@ -221,9 +229,9 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
+                color: AppThemeTokens.surface(context),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderSubtle),
+                border: Border.all(color: AppThemeTokens.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +241,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.white,
+                      color: AppThemeTokens.primaryText(context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -268,7 +276,9 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                       style: GoogleFonts.dmSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: isLiked ? AppColors.red : AppColors.white,
+                        color: isLiked
+                            ? AppColors.red
+                            : AppThemeTokens.primaryText(context),
                       ),
                     ),
                   ),
@@ -340,9 +350,9 @@ class _StatBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppThemeTokens.surfaceMuted(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderSubtle),
+        border: Border.all(color: AppThemeTokens.border(context)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -352,7 +362,7 @@ class _StatBox extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppColors.white,
+              color: AppThemeTokens.primaryText(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -485,7 +495,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                   style: GoogleFonts.dmSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.white,
+                    color: AppThemeTokens.primaryText(context),
                   ),
                 ),
               ),
@@ -515,9 +525,9 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
+                            color: AppThemeTokens.surfaceMuted(context),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderSubtle),
+                            border: Border.all(color: AppThemeTokens.border(context)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,7 +545,7 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                                 c.text,
                                 style: GoogleFonts.dmSans(
                                   fontSize: 13,
-                                  color: AppColors.white,
+                                  color: AppThemeTokens.primaryText(context),
                                 ),
                               ),
                             ],
@@ -562,7 +572,10 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                   Expanded(
                     child: TextField(
                       controller: _ctrl,
-                      style: GoogleFonts.dmSans(color: AppColors.white, fontSize: 13),
+                      style: GoogleFonts.dmSans(
+                        color: AppThemeTokens.primaryText(context),
+                        fontSize: 13,
+                      ),
                       decoration: InputDecoration(
                         hintText: "Ecris un commentaire...",
                         hintStyle: GoogleFonts.dmSans(
@@ -570,14 +583,14 @@ class _CommentsSheetState extends ConsumerState<_CommentsSheet> {
                           fontSize: 13,
                         ),
                         filled: true,
-                        fillColor: AppColors.surfaceLight,
+                        fillColor: AppThemeTokens.surfaceMuted(context),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.borderSubtle),
+                          borderSide: BorderSide(color: AppThemeTokens.border(context)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.borderSubtle),
+                          borderSide: BorderSide(color: AppThemeTokens.border(context)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

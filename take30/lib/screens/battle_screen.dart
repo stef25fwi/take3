@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ class BattleScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(duelProvider);
     return Scaffold(
-      backgroundColor: _P.bgDeep,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: state.isLoading
           ? const Center(
               child: CircularProgressIndicator(color: _P.gold),
@@ -31,7 +32,7 @@ class BattleScreen extends ConsumerWidget {
                   child: Text(
                     'Aucune battle disponible',
                     style: GoogleFonts.dmSans(
-                      color: _P.textWhite,
+                      color: AppThemeTokens.primaryText(context),
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -99,20 +100,23 @@ class _BattleBodyState extends State<_BattleBody> {
     final cardW = (cardAreaW - cardGap) / 2;
     // Card height: proportional, targeting ~46% of screen
     final cardH = (mq.size.height * 0.46).clamp(260.0, 400.0);
+    final isDark = AppThemeTokens.isDark(context);
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF070B1A),
-            Color(0xFF0A1023),
-            Color(0xFF0E1222),
-            Color(0xFF070B1A),
-          ],
-          stops: [0.0, 0.3, 0.6, 1.0],
-        ),
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF070B1A),
+                  Color(0xFF0A1023),
+                  Color(0xFF0E1222),
+                  Color(0xFF070B1A),
+                ],
+                stops: [0.0, 0.3, 0.6, 1.0],
+              )
+            : AppThemeTokens.pageGradient(context),
       ),
       child: Stack(
         children: [
@@ -187,7 +191,7 @@ class _BattleBodyState extends State<_BattleBody> {
                   'Qui a le mieux joué ?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.dmSans(
-                    color: _P.textWhite,
+                    color: AppThemeTokens.primaryText(context),
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
@@ -722,8 +726,6 @@ class _AmbientGlow extends StatelessWidget {
 
 class _P {
   // Backgrounds
-  static const bgDeep = Color(0xFF070B1A);
-
   // Accent
   static const cyan = Color(0xFF47D7FF);
   static const gold = Color(0xFFF2B33A);

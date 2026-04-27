@@ -93,7 +93,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppThemeTokens.primaryText(context),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -101,7 +101,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     user == null ? 'Profil indisponible.' : '@${user.username}',
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.66),
+                      color: AppThemeTokens.secondaryText(context),
                     ),
                   ),
                 ],
@@ -116,10 +116,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppThemeTokens.surface(context),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: AppThemeTokens.border(context),
                 ),
               ),
               child: Column(
@@ -130,7 +130,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppThemeTokens.primaryText(context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -139,7 +139,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
                       height: 1.45,
-                      color: Colors.white.withValues(alpha: 0.68),
+                      color: AppThemeTokens.secondaryText(context),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -166,16 +166,16 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           onSubmitted: (_) => _sendDemoMessage(),
                           style: GoogleFonts.dmSans(
                             fontSize: 14,
-                            color: Colors.white,
+                            color: AppThemeTokens.primaryText(context),
                           ),
                           decoration: InputDecoration(
                             hintText: 'Écrire un message démo...',
                             hintStyle: GoogleFonts.dmSans(
                               fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.4),
+                              color: AppThemeTokens.tertiaryText(context),
                             ),
                             filled: true,
-                            fillColor: Colors.white.withValues(alpha: 0.04),
+                            fillColor: AppThemeTokens.surfaceMuted(context),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 14,
@@ -183,13 +183,13 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(18),
                               borderSide: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: AppThemeTokens.border(context),
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(18),
                               borderSide: BorderSide(
-                                color: Colors.white.withValues(alpha: 0.08),
+                                color: AppThemeTokens.border(context),
                               ),
                             ),
                             focusedBorder: const OutlineInputBorder(
@@ -231,10 +231,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppThemeTokens.surface(context),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: AppThemeTokens.border(context),
               ),
             ),
             child: Column(
@@ -245,7 +245,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   style: GoogleFonts.dmSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppThemeTokens.primaryText(context),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -254,7 +254,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   style: GoogleFonts.dmSans(
                     fontSize: 13,
                     height: 1.5,
-                    color: Colors.white.withValues(alpha: 0.68),
+                    color: AppThemeTokens.secondaryText(context),
                   ),
                 ),
               ],
@@ -287,13 +287,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.navy,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      backgroundColor: AppThemeTokens.pageBackground(context),
+      body: Container(
+        decoration: BoxDecoration(gradient: AppThemeTokens.pageGradient(context)),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Row(
                 children: [
                   IconButton(
@@ -304,9 +306,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         context.go(AppRouter.profilePath(widget.userId));
                       }
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
+                      color: AppThemeTokens.primaryText(context),
                       size: 18,
                     ),
                   ),
@@ -316,14 +318,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppThemeTokens.primaryText(context),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 22),
               ...contentWidgets,
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -340,10 +343,10 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final bubbleColor = message.isFromCurrentUser
         ? AppColors.yellow
-        : Colors.white.withValues(alpha: 0.08);
+      : AppThemeTokens.surfaceMuted(context);
     final textColor = message.isFromCurrentUser
         ? AppColors.navy
-        : Colors.white;
+      : AppThemeTokens.primaryText(context);
 
     return Align(
       alignment:
@@ -357,7 +360,7 @@ class _MessageBubble extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
             border: message.isFromCurrentUser
                 ? null
-                : Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                : Border.all(color: AppThemeTokens.border(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

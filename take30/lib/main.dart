@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 import 'providers/providers.dart';
@@ -59,6 +60,8 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await _maybeConnectEmulators();
+  final prefs = await SharedPreferences.getInstance();
+  final initialThemeMode = ThemeModeNotifier.initialModeFromPrefs(prefs);
 
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -69,18 +72,19 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-    statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor: AppColors.dark,
-    systemNavigationBarIconBrightness: Brightness.light,
-  ));
+  AppTheme.syncSystemUiForMode(initialThemeMode);
 
   await NotificationService().initialize();
   await ConnectivityService().initialize();
 
-  runApp(const ProviderScope(child: Take30App()));
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const Take30App(),
+    ),
+  );
 }
 
 class Take30App extends ConsumerWidget {
@@ -90,11 +94,16 @@ class Take30App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final isOnline = ref.watch(connectivityProvider).isOnline;
+    final themeMode = ref.watch(themeModeProvider);
+
+    AppTheme.syncSystemUiForMode(themeMode);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Take 60',
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       routerConfig: router,
       builder: (context, child) => Column(
         children: [

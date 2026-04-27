@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
+import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -24,19 +25,23 @@ class ProfileScreen extends ConsumerWidget {
     final user = profileState.user ??
         (authUser?.id == userId ? authUser : null);
     final scenes = profileState.scenes;
+    final pageBackground = AppThemeTokens.pageBackground(context);
+    final primaryText = AppThemeTokens.primaryText(context);
 
     if (user == null && profileState.isLoading) {
-      return const Scaffold(
-        backgroundColor: _C.navy,
+      return Scaffold(
+        backgroundColor: pageBackground,
         body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       );
     }
 
     if (user == null) {
       return Scaffold(
-        backgroundColor: _C.navy,
+        backgroundColor: pageBackground,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -46,7 +51,7 @@ class ProfileScreen extends ConsumerWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: primaryText,
                 ),
               ),
             ),
@@ -56,7 +61,7 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: _C.navy,
+      backgroundColor: pageBackground,
       body: _ProfileBody(userId: userId, user: user, scenes: scenes),
     );
   }
@@ -109,16 +114,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
     final liveUser =
         ref.watch(profileProvider(widget.userId)).user ?? widget.user;
     final sceneCount = widget.scenes.length > 6 ? 6 : widget.scenes.length;
+    final themeMode = ref.watch(themeModeProvider);
+    final isDarkMode = themeMode == ThemeMode.dark;
+    final isDemoProfile = _isDemoProfile(liveUser);
+
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF0B1020),
-            Color(0xFF111827),
-          ],
-        ),
+      decoration: BoxDecoration(
+        gradient: AppThemeTokens.pageGradient(context),
       ),
       child: SafeArea(
         bottom: false,
@@ -154,6 +156,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                   .shareProfile();
                             },
                           ),
+                          if (isDemoProfile) ...[
+                            const SizedBox(height: 14),
+                            _ThemeToggleCard(
+                              isDarkMode: isDarkMode,
+                              onChanged: (value) {
+                                ref.read(themeModeProvider.notifier).setMode(
+                                      value ? ThemeMode.dark : ThemeMode.light,
+                                    );
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 16),
                         ],
                       ),
@@ -232,6 +245,10 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = AppThemeTokens.primaryText(context);
+    final popupColor = AppThemeTokens.chromeSurface(context);
+    final textColor = AppThemeTokens.primaryText(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
@@ -246,13 +263,13 @@ class _TopBar extends StatelessWidget {
               }
             },
             behavior: HitTestBehavior.opaque,
-            child: const SizedBox(
+            child: SizedBox(
               width: 44,
               height: 44,
               child: Center(
                 child: Icon(
                   Icons.chevron_left_rounded,
-                  color: Color(0xFFD0D5E0),
+                  color: iconColor,
                   size: 28,
                 ),
               ),
@@ -264,25 +281,25 @@ class _TopBar extends StatelessWidget {
               GestureDetector(
                 onTap: () => context.go(AppRouter.explore),
                 behavior: HitTestBehavior.opaque,
-                child: const SizedBox(
+                child: SizedBox(
                   width: 44,
                   height: 44,
                   child: Center(
                     child: Icon(
                       Icons.search_rounded,
-                      color: Colors.white,
+                      color: iconColor,
                       size: 22,
                     ),
                   ),
                 ),
               ),
               PopupMenuButton<String>(
-                icon: const Icon(
+                icon: Icon(
                   Icons.more_vert_rounded,
-                  color: Colors.white,
+                  color: iconColor,
                   size: 22,
                 ),
-                color: const Color(0xFF1A2540),
+                color: popupColor,
                 onSelected: (value) {
                   switch (value) {
                     case 'leaderboard':
@@ -298,14 +315,14 @@ class _TopBar extends StatelessWidget {
                     value: 'leaderboard',
                     child: Text(
                       'Voir le classement',
-                      style: GoogleFonts.dmSans(color: Colors.white),
+                      style: GoogleFonts.dmSans(color: textColor),
                     ),
                   ),
                   PopupMenuItem(
                     value: 'badges',
                     child: Text(
                       'Badges & stats',
-                      style: GoogleFonts.dmSans(color: Colors.white),
+                      style: GoogleFonts.dmSans(color: textColor),
                     ),
                   ),
                   PopupMenuItem(
@@ -357,7 +374,7 @@ class _IdentityBloc extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: AppThemeTokens.primaryText(context),
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -386,7 +403,7 @@ class _IdentityBloc extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.65),
+                  color: AppThemeTokens.secondaryText(context),
                 ),
               ),
             ],
@@ -515,7 +532,7 @@ class _StatColumn extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize: 21,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppThemeTokens.primaryText(context),
             letterSpacing: -0.3,
           ),
         ),
@@ -525,7 +542,7 @@ class _StatColumn extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.55),
+            color: AppThemeTokens.secondaryText(context),
           ),
         ),
       ],
@@ -563,12 +580,12 @@ class _ActionButtons extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: isFollowing
-                    ? Colors.white.withValues(alpha: 0.08)
+                    ? AppThemeTokens.softAction(context)
                     : _C.purple,
                 borderRadius: BorderRadius.circular(14),
                 border: isFollowing
                     ? Border.all(
-                        color: Colors.white.withValues(alpha: 0.12))
+                        color: AppThemeTokens.softBorder(context))
                     : null,
               ),
               child: Center(
@@ -577,7 +594,9 @@ class _ActionButtons extends StatelessWidget {
                   style: GoogleFonts.dmSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: isFollowing
+                        ? AppThemeTokens.primaryText(context)
+                        : Colors.white,
                   ),
                 ),
               ),
@@ -592,10 +611,10 @@ class _ActionButtons extends StatelessWidget {
             child: Container(
               height: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
+                color: AppThemeTokens.softAction(context),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.10),
+                  color: AppThemeTokens.softBorder(context),
                 ),
               ),
               child: Center(
@@ -604,7 +623,7 @@ class _ActionButtons extends StatelessWidget {
                   style: GoogleFonts.dmSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppThemeTokens.primaryText(context),
                   ),
                 ),
               ),
@@ -618,15 +637,15 @@ class _ActionButtons extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: AppThemeTokens.softAction(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.10),
+                color: AppThemeTokens.softBorder(context),
               ),
             ),
             child: Icon(
               Icons.ios_share_rounded,
-              color: Colors.white.withValues(alpha: 0.70),
+              color: AppThemeTokens.secondaryText(context),
               size: 20,
             ),
           ),
@@ -654,21 +673,21 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: const Color(0xFF0E1525),
+      color: AppThemeTokens.pageBackgroundAlt(context),
       child: Column(
         children: [
           Expanded(
             child: TabBar(
               controller: tabController,
-              indicatorColor: Colors.white,
+              indicatorColor: Theme.of(context).colorScheme.primary,
               indicatorWeight: 2.0,
               indicatorSize: TabBarIndicatorSize.label,
-              labelColor: Colors.white,
+              labelColor: AppThemeTokens.primaryText(context),
               labelStyle: GoogleFonts.dmSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
-              unselectedLabelColor: Colors.white.withValues(alpha: 0.45),
+              unselectedLabelColor: AppThemeTokens.tertiaryText(context),
               unselectedLabelStyle: GoogleFonts.dmSans(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -683,7 +702,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
           ),
           Container(
             height: 0.5,
-            color: Colors.white.withValues(alpha: 0.08),
+            color: AppThemeTokens.border(context),
           ),
         ],
       ),
@@ -778,12 +797,90 @@ class _PerformanceCard extends StatelessWidget {
   }
 }
 
+class _ThemeToggleCard extends StatelessWidget {
+  const _ThemeToggleCard({
+    required this.isDarkMode,
+    required this.onChanged,
+  });
+
+  final bool isDarkMode;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppThemeTokens.surface(context),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppThemeTokens.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.18)
+                : const Color(0x120B1020),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppThemeTokens.surfaceMuted(context),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Thème clair / sombre',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppThemeTokens.primaryText(context),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isDarkMode
+                      ? 'Ambiance cinéma premium activée'
+                      : 'Mode clair lumineux activé',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppThemeTokens.secondaryText(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: isDarkMode,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Palette
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _C {
-  static const navy = Color(0xFF0B1020);
   static const purple = Color(0xFF6C5CE7);
 }
 
@@ -795,4 +892,10 @@ String _fmtK(int n) {
   if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
   if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
   return n.toString();
+}
+
+bool _isDemoProfile(UserModel user) {
+  return user.id == 'demo_local' ||
+      user.email == 'demo@take30.app' ||
+      user.username == 'demo_take30';
 }

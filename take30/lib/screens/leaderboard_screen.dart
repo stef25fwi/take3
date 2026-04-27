@@ -53,18 +53,10 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
     final entries = ref.watch(leaderboardProvider).entries;
 
     return Scaffold(
-      backgroundColor: AppColors.navy,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppColors.navy,
-              Color(0xFF0F1523),
-              Color(0xFF111827),
-            ],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
         ),
         child: SafeArea(
           child: Column(
@@ -131,15 +123,18 @@ class _RankingHeader extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios,
-                color: AppColors.white, size: 18),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: AppThemeTokens.primaryText(context),
+              size: 18,
+            ),
             onPressed: onBack,
           ),
           const SizedBox(width: 4),
           Text(
             'Classement',
             style: GoogleFonts.dmSans(
-              color: AppColors.white,
+              color: AppThemeTokens.primaryText(context),
               fontSize: 18,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
@@ -163,10 +158,10 @@ class _RankingTabs extends StatelessWidget {
       height: 38,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(255, 255, 255, 0.05),
+        color: AppThemeTokens.surfaceMuted(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color.fromRGBO(255, 255, 255, 0.06),
+          color: AppThemeTokens.border(context),
           width: 1,
         ),
       ),
@@ -182,7 +177,7 @@ class _RankingTabs extends StatelessWidget {
                   curve: Curves.easeOut,
                   decoration: BoxDecoration(
                     color: tab.id == selected
-                        ? const Color.fromRGBO(255, 255, 255, 0.10)
+                        ? AppThemeTokens.surfaceOverlay(context)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(11),
                   ),
@@ -191,8 +186,8 @@ class _RankingTabs extends StatelessWidget {
                     tab.label,
                     style: GoogleFonts.dmSans(
                       color: tab.id == selected
-                          ? AppColors.white
-                          : const Color.fromRGBO(255, 255, 255, 0.72),
+                        ? AppThemeTokens.primaryText(context)
+                        : AppThemeTokens.secondaryText(context),
                       fontSize: 12,
                       fontWeight: tab.id == selected
                           ? FontWeight.w700
@@ -259,7 +254,7 @@ class _RankingRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
-                      color: AppColors.white,
+                      color: AppThemeTokens.primaryText(context),
                       fontSize: 15.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.15,
@@ -271,16 +266,16 @@ class _RankingRow extends StatelessWidget {
                       Text(
                         followersLabel,
                         style: GoogleFonts.dmSans(
-                          color: const Color.fromRGBO(255, 255, 255, 0.58),
+                          color: AppThemeTokens.secondaryText(context),
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.people_alt_outlined,
                         size: 11,
-                        color: Color.fromRGBO(255, 255, 255, 0.45),
+                        color: AppThemeTokens.tertiaryText(context),
                       ),
                     ],
                   ),
@@ -291,7 +286,7 @@ class _RankingRow extends StatelessWidget {
             Text(
               scoreText,
               style: GoogleFonts.dmSans(
-                color: AppColors.white,
+                color: AppThemeTokens.primaryText(context),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.1,

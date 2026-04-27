@@ -30,14 +30,10 @@ class NotificationsScreen extends ConsumerWidget {
     final unreadCount = ref.watch(unreadCountProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.navy,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1020), Color(0xFF111827)],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
         ),
         child: Stack(
           children: [
@@ -207,13 +203,13 @@ class _NotificationsTopBar extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: AppThemeTokens.softAction(context),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(color: AppThemeTokens.softBorder(context)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.chevron_left_rounded,
-              color: Colors.white,
+              color: AppThemeTokens.primaryText(context),
               size: 26,
             ),
           ),
@@ -228,7 +224,7 @@ class _NotificationsTopBar extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppThemeTokens.primaryText(context),
                   letterSpacing: -0.45,
                 ),
               ),
@@ -240,7 +236,7 @@ class _NotificationsTopBar extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.60),
+                  color: AppThemeTokens.secondaryText(context),
                 ),
               ),
             ],
@@ -254,7 +250,7 @@ class _NotificationsTopBar extends StatelessWidget {
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
               color: onMarkAllRead == null
-                  ? Colors.white.withValues(alpha: 0.30)
+                  ? AppThemeTokens.tertiaryText(context)
                   : AppColors.yellow,
             ),
           ),
@@ -285,9 +281,9 @@ class _NotificationsSummaryCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.045),
+            color: AppThemeTokens.surface(context),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: AppThemeTokens.border(context)),
           ),
           child: Row(
             children: [
@@ -314,7 +310,7 @@ class _NotificationsSummaryCard extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: AppThemeTokens.primaryText(context),
                         letterSpacing: -0.2,
                       ),
                     ),
@@ -324,7 +320,7 @@ class _NotificationsSummaryCard extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.58),
+                        color: AppThemeTokens.secondaryText(context),
                       ),
                     ),
                   ],
@@ -356,13 +352,13 @@ class _NotificationCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: unread
-                ? Colors.white.withValues(alpha: 0.060)
-                : Colors.white.withValues(alpha: 0.040),
+                ? AppThemeTokens.surfaceMuted(context)
+                : AppThemeTokens.surface(context),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: unread
                   ? const Color.fromRGBO(255, 184, 0, 0.22)
-                  : Colors.white.withValues(alpha: 0.08),
+                  : AppThemeTokens.border(context),
             ),
             boxShadow: const [
               BoxShadow(
@@ -405,7 +401,7 @@ class _NotificationCard extends StatelessWidget {
                           style: GoogleFonts.dmSans(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: AppThemeTokens.primaryText(context),
                             letterSpacing: -0.1,
                           ),
                         ),
@@ -417,7 +413,7 @@ class _NotificationCard extends StatelessWidget {
                               fontSize: 12.5,
                               fontWeight: FontWeight.w500,
                               height: 1.42,
-                              color: Colors.white.withValues(alpha: 0.68),
+                              color: AppThemeTokens.secondaryText(context),
                             ),
                           ),
                         ],
@@ -427,7 +423,7 @@ class _NotificationCard extends StatelessWidget {
                           style: GoogleFonts.dmSans(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white.withValues(alpha: 0.44),
+                            color: AppThemeTokens.tertiaryText(context),
                           ),
                         ),
                       ],
@@ -484,9 +480,9 @@ class _NotificationEmptyState extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: AppThemeTokens.surface(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          border: Border.all(color: AppThemeTokens.border(context)),
         ),
         child: Text(
           label,
@@ -494,7 +490,7 @@ class _NotificationEmptyState extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.66),
+            color: AppThemeTokens.secondaryText(context),
           ),
         ),
       ),

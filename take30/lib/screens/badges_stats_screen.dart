@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
 import '../router/router.dart';
+import '../theme/app_theme.dart';
 
 class BadgesStatsScreen extends ConsumerWidget {
   const BadgesStatsScreen({super.key});
@@ -80,14 +81,10 @@ class BadgesStatsScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1020),
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1020), Color(0xFF111827)],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
         ),
         child: Stack(
           children: [
@@ -126,7 +123,7 @@ class BadgesStatsScreen extends ConsumerWidget {
                                 style: GoogleFonts.dmSans(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: AppThemeTokens.primaryText(context),
                                   letterSpacing: -0.5,
                                 ),
                               ),
@@ -138,7 +135,7 @@ class BadgesStatsScreen extends ConsumerWidget {
                                   style: GoogleFonts.dmSans(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white.withValues(alpha: 0.72),
+                                    color: AppThemeTokens.secondaryText(context),
                                   ),
                                 ),
                               ),
@@ -167,7 +164,7 @@ class BadgesStatsScreen extends ConsumerWidget {
                             style: GoogleFonts.dmSans(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: AppThemeTokens.primaryText(context),
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -292,10 +289,10 @@ class _StatCardTile extends StatelessWidget {
             height: 68,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppThemeTokens.surface(context),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: AppThemeTokens.border(context),
               ),
               boxShadow: const [
                 BoxShadow(
@@ -352,7 +349,7 @@ class _StatCardTile extends StatelessWidget {
                             style: GoogleFonts.dmSans(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.66),
+                              color: AppThemeTokens.secondaryText(context),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -361,7 +358,7 @@ class _StatCardTile extends StatelessWidget {
                             style: GoogleFonts.dmSans(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: AppThemeTokens.primaryText(context),
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -371,7 +368,7 @@ class _StatCardTile extends StatelessWidget {
                     Icon(
                       Icons.chevron_right_rounded,
                       size: 20,
-                      color: Colors.white.withValues(alpha: 0.34),
+                      color: AppThemeTokens.tertiaryText(context),
                     ),
                   ],
                 ),

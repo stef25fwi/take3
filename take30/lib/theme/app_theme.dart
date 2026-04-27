@@ -232,6 +232,16 @@ class AppTextStyles {
 }
 
 class AppTheme {
+  static const Color _lightBackground = Color(0xFFF7F8FC);
+  static const Color _lightBackgroundAlt = Color(0xFFF1F4FA);
+  static const Color _lightSurface = Color(0xFFFFFFFF);
+  static const Color _lightSurfaceMuted = Color(0xFFF5F7FB);
+  static const Color _lightSurfaceOverlay = Color(0xFFEFF3FA);
+  static const Color _lightBorder = Color(0xFFDCE2EE);
+  static const Color _lightText = Color(0xFF0D1220);
+  static const Color _lightTextSoft = Color(0xFF5F6B84);
+  static const Color _lightTextMuted = Color(0xFF8E97A8);
+
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.yellow,
@@ -272,7 +282,249 @@ class AppTheme {
     );
   }
 
-  static ThemeData get lightTheme => darkTheme;
+  static ThemeData get lightTheme {
+    const colorScheme = ColorScheme.light(
+      primary: AppColors.yellow,
+      onPrimary: AppColors.navy,
+      secondary: AppColors.purple,
+      onSecondary: AppColors.white,
+      tertiary: AppColors.cyan,
+      surface: _lightSurface,
+      onSurface: _lightText,
+      error: AppColors.red,
+      onError: AppColors.white,
+      outline: _lightBorder,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: _lightBackground,
+      primaryColor: AppColors.yellow,
+      colorScheme: colorScheme,
+      textTheme: GoogleFonts.dmSansTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: _lightText,
+            letterSpacing: -1.0,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: _lightText,
+            letterSpacing: -0.8,
+          ),
+          displaySmall: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: _lightText,
+            letterSpacing: -0.5,
+          ),
+          headlineLarge: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: _lightText,
+            letterSpacing: -0.3,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: _lightText,
+          ),
+          headlineSmall: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: _lightText,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: _lightText,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: _lightText,
+          ),
+          titleSmall: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _lightText,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: _lightText,
+            height: 1.5,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: _lightTextSoft,
+            height: 1.45,
+          ),
+          bodySmall: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: _lightTextMuted,
+          ),
+          labelLarge: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navy,
+          ),
+          labelMedium: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _lightTextSoft,
+          ),
+          labelSmall: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            color: _lightTextMuted,
+          ),
+        ),
+      ).apply(
+        bodyColor: _lightText,
+        displayColor: _lightText,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: _lightText, size: 22),
+        actionsIconTheme: const IconThemeData(color: _lightText, size: 22),
+        titleTextStyle: GoogleFonts.dmSans(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: _lightText,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: _lightSurface,
+        selectedItemColor: AppColors.yellow,
+        unselectedItemColor: _lightTextMuted,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.yellow,
+          foregroundColor: AppColors.navy,
+          disabledBackgroundColor: _lightSurfaceOverlay,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          minimumSize: const Size(double.infinity, 52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: GoogleFonts.dmSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.1,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _lightText,
+          side: const BorderSide(color: _lightBorder, width: 1.5),
+          minimumSize: const Size(double.infinity, 52),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: GoogleFonts.dmSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.purple,
+          textStyle: GoogleFonts.dmSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: _lightSurface,
+        elevation: 0,
+        shadowColor: const Color(0x140B1020),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: _lightBorder, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: _lightSurface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _lightBorder, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _lightBorder, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.yellow, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.red, width: 1.5),
+        ),
+        hintStyle: GoogleFonts.dmSans(fontSize: 14, color: _lightTextMuted),
+        labelStyle: GoogleFonts.dmSans(fontSize: 13, color: _lightTextSoft),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        prefixIconColor: _lightTextMuted,
+        suffixIconColor: _lightTextMuted,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: _lightBorder,
+        thickness: 0.5,
+        space: 0,
+      ),
+      iconTheme: const IconThemeData(color: _lightText, size: 22),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.yellow;
+          }
+          return _lightSurface;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.yellow.withValues(alpha: 0.35);
+          }
+          return _lightBorder;
+        }),
+      ),
+    );
+  }
+
+  static SystemUiOverlayStyle systemUiOverlayStyleFor(ThemeMode mode) {
+    final isLight = mode == ThemeMode.light;
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
+      statusBarBrightness: isLight ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor: isLight ? _lightSurface : AppColors.dark,
+      systemNavigationBarIconBrightness:
+          isLight ? Brightness.dark : Brightness.light,
+    );
+  }
+
+  static void syncSystemUiForMode(ThemeMode mode) {
+    SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyleFor(mode));
+  }
 
   static TextTheme _buildTextTheme() {
     return GoogleFonts.dmSansTextTheme(
@@ -491,6 +743,89 @@ class SplashTheme {
   static const Color homePill = SplashScreenTheme.homePill;
   static const Color glowColor = SplashScreenTheme.glow;
   static const double glowOpacity = SplashScreenTheme.glowOpacity;
+}
+
+class AppThemeTokens {
+  static bool isDark(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark;
+  }
+
+  static Color pageBackground(BuildContext context) {
+    return isDark(context) ? AppColors.navy : AppTheme._lightBackground;
+  }
+
+  static Color pageBackgroundAlt(BuildContext context) {
+    return isDark(context) ? AppColors.dark : AppTheme._lightBackgroundAlt;
+  }
+
+  static LinearGradient pageGradient(BuildContext context) {
+    if (isDark(context)) {
+      return const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF0B1020),
+          Color(0xFF111827),
+        ],
+      );
+    }
+    return const LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Color(0xFFFFFFFF),
+        Color(0xFFF3F6FC),
+      ],
+    );
+  }
+
+  static Color surface(BuildContext context) {
+    return isDark(context) ? AppColors.surfaceCard : AppTheme._lightSurface;
+  }
+
+  static Color surfaceMuted(BuildContext context) {
+    return isDark(context)
+        ? AppColors.surfaceElevated
+        : AppTheme._lightSurfaceMuted;
+  }
+
+  static Color surfaceOverlay(BuildContext context) {
+    return isDark(context)
+        ? AppColors.surfaceOverlay
+        : AppTheme._lightSurfaceOverlay;
+  }
+
+  static Color border(BuildContext context) {
+    return isDark(context) ? AppColors.borderSubtle : AppTheme._lightBorder;
+  }
+
+  static Color primaryText(BuildContext context) {
+    return isDark(context) ? AppColors.white : AppTheme._lightText;
+  }
+
+  static Color secondaryText(BuildContext context) {
+    return isDark(context) ? AppColors.textSecondary : AppTheme._lightTextSoft;
+  }
+
+  static Color tertiaryText(BuildContext context) {
+    return isDark(context) ? AppColors.textMuted : AppTheme._lightTextMuted;
+  }
+
+  static Color chromeSurface(BuildContext context) {
+    return isDark(context) ? const Color(0xFF1A2540) : AppTheme._lightSurface;
+  }
+
+  static Color softAction(BuildContext context) {
+    return isDark(context)
+        ? Colors.white.withValues(alpha: 0.06)
+        : AppTheme._lightSurfaceMuted;
+  }
+
+  static Color softBorder(BuildContext context) {
+    return isDark(context)
+        ? Colors.white.withValues(alpha: 0.10)
+        : AppTheme._lightBorder;
+  }
 }
 
 class OnboardingTheme {

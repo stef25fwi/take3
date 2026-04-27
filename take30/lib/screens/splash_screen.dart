@@ -17,8 +17,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   static const _bg = AppColors.navy;
-  static const _text = Color(0xFFFFFFFF);
-  static const _subtleGrey = Color(0xFF2A2A2E);
   static const _yellow = Color(0xFFF4C20D);
 
   late final AnimationController _master;
@@ -213,6 +211,9 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final isSmall = size.width < 380;
+    final backgroundColor = AppThemeTokens.pageBackground(context);
+    final textColor = AppThemeTokens.primaryText(context);
+    final subtleGrey = AppThemeTokens.border(context);
 
     final logoTextSize = isSmall ? 74.0 : 88.0;
     final hourglassHeight = logoTextSize;
@@ -220,15 +221,15 @@ class _SplashScreenState extends State<SplashScreen>
     final rightTuck = -(logoTextSize * 0.19);
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: backgroundColor,
       body: AnimatedBuilder(
         animation: Listenable.merge([_master, _shineController]),
         builder: (context, _) {
           return Stack(
             children: [
-              const Positioned.fill(
+              Positioned.fill(
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: _bg),
+                  decoration: BoxDecoration(color: backgroundColor),
                 ),
               ),
               Positioned.fill(
@@ -264,7 +265,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   children: [
                                     _AnimatedLogoText(
                                       text: 'TAKE',
-                                      color: _text,
+                                      color: textColor,
                                       fontSize: logoTextSize,
                                       opacity: _takeOpacity.value,
                                       scale: _takeScale.value,
@@ -286,7 +287,7 @@ class _SplashScreenState extends State<SplashScreen>
                                                 _hourglassSettleScale.value,
                                             child: _PremiumHourglass(
                                               height: hourglassHeight,
-                                              strokeColor: _text,
+                                              strokeColor: textColor,
                                               sandColor: _yellow,
                                               innerGlow: 0.25 +
                                                   (_shineController.value *
@@ -305,7 +306,7 @@ class _SplashScreenState extends State<SplashScreen>
                                           scale: _sixtyScale.value,
                                           child: _StaticLogoText(
                                             text: '60',
-                                            color: _text,
+                                            color: textColor,
                                             fontSize: logoTextSize,
                                           ),
                                         ),
@@ -322,14 +323,14 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: _taglineOpacity.value,
                           child: Transform.translate(
                             offset: Offset(0, _taglineSlide.value),
-                            child: const Text(
+                            child: Text(
                               'Rejoue des scènes\n& deviens viral',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 24,
                                 height: 1.08,
                                 fontWeight: FontWeight.w800,
-                                color: _text,
+                                color: textColor,
                                 letterSpacing: -0.9,
                               ),
                             ),
@@ -342,7 +343,7 @@ class _SplashScreenState extends State<SplashScreen>
                             width: 54,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: _subtleGrey,
+                              color: subtleGrey,
                               borderRadius: BorderRadius.circular(999),
                             ),
                             alignment: Alignment.centerLeft,

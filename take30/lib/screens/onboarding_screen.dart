@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../router/router.dart';
+import '../theme/app_theme.dart';
 import '../theme/take30_screen_themes.dart';
 import '../widgets/take30_logo.dart';
 
@@ -13,13 +14,15 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: T30Colors.navy,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      backgroundColor: AppThemeTokens.pageBackground(context),
+      body: Container(
+        decoration: BoxDecoration(gradient: AppThemeTokens.pageGradient(context)),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               const Center(
                 child: Take30Logo(height: 52),
               ),
@@ -33,7 +36,7 @@ class OnboardingScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: T30Text.h1.copyWith(
                   fontSize: 32,
-                  color: T30Colors.white,
+                  color: AppThemeTokens.primaryText(context),
                   fontWeight: FontWeight.w800,
                   height: 1.03,
                   letterSpacing: -1.1,
@@ -46,7 +49,7 @@ class OnboardingScreen extends StatelessWidget {
                     'Scènes quotidiennes',
                     textAlign: TextAlign.center,
                     style: T30Text.bodyMedium.copyWith(
-                      color: T30Colors.textSecondary,
+                      color: AppThemeTokens.secondaryText(context),
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -56,7 +59,7 @@ class OnboardingScreen extends StatelessWidget {
                     'Duels',
                     textAlign: TextAlign.center,
                     style: T30Text.bodyMedium.copyWith(
-                      color: T30Colors.textSecondary,
+                      color: AppThemeTokens.secondaryText(context),
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -66,7 +69,7 @@ class OnboardingScreen extends StatelessWidget {
                     'Classements',
                     textAlign: TextAlign.center,
                     style: T30Text.bodyMedium.copyWith(
-                      color: T30Colors.textSecondary,
+                      color: AppThemeTokens.secondaryText(context),
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -76,7 +79,7 @@ class OnboardingScreen extends StatelessWidget {
                     'Découverte de talents',
                     textAlign: TextAlign.center,
                     style: T30Text.bodyMedium.copyWith(
-                      color: T30Colors.textSecondary,
+                      color: AppThemeTokens.secondaryText(context),
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
@@ -114,12 +117,13 @@ class OnboardingScreen extends StatelessWidget {
                 child: Text(
                   'Se connecter',
                   style: T30Text.bodyMedium.copyWith(
-                    color: T30Colors.textSecondary,
+                    color: AppThemeTokens.secondaryText(context),
                     fontSize: 15,
                   ),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

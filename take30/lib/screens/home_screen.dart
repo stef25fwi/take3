@@ -53,14 +53,10 @@ class HomeScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      backgroundColor: FeedTheme.background,
+      backgroundColor: AppThemeTokens.pageBackground(context),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1020), Color(0xFF111827)],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
         ),
         child: Stack(
           children: [
@@ -177,7 +173,7 @@ class _HomeHeader extends StatelessWidget {
               style: GoogleFonts.dmSans(
                 fontSize: 25,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: AppThemeTokens.primaryText(context),
                 letterSpacing: -0.55,
               ),
             ),
@@ -187,7 +183,7 @@ class _HomeHeader extends StatelessWidget {
               style: GoogleFonts.dmSans(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withValues(alpha: 0.62),
+                color: AppThemeTokens.secondaryText(context),
               ),
             ),
           ],
@@ -201,15 +197,15 @@ class _HomeHeader extends StatelessWidget {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
+                    color: AppThemeTokens.softAction(context),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+                      color: AppThemeTokens.softBorder(context),
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.admin_panel_settings_outlined,
-                    color: Colors.white,
+                    color: AppThemeTokens.primaryText(context),
                     size: 21,
                   ),
                 ),
@@ -225,15 +221,15 @@ class _HomeHeader extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: AppThemeTokens.softAction(context),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
+                    color: AppThemeTokens.softBorder(context),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_none_rounded,
-                  color: Colors.white,
+                  color: AppThemeTokens.primaryText(context),
                   size: 22,
                 ),
               ),
@@ -284,21 +280,31 @@ class _HomeHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppThemeTokens.isDark(context);
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color.fromRGBO(255, 184, 0, 0.20),
-            Color.fromRGBO(0, 212, 255, 0.12),
-            Color.fromRGBO(108, 92, 231, 0.18),
-          ],
+          colors: isDark
+              ? const [
+                  Color.fromRGBO(255, 184, 0, 0.20),
+                  Color.fromRGBO(0, 212, 255, 0.12),
+                  Color.fromRGBO(108, 92, 231, 0.18),
+                ]
+              : const [
+                  Color(0xFFFFF7DA),
+                  Color(0xFFEAF8FF),
+                  Color(0xFFF2EEFF),
+                ],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppThemeTokens.border(context)),
         boxShadow: const [
           BoxShadow(
             color: Color.fromRGBO(0, 0, 0, 0.20),
@@ -328,7 +334,7 @@ class _HomeHeroCard extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.82),
+                        color: secondaryText,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -337,7 +343,7 @@ class _HomeHeroCard extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 23,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: primaryText,
                         height: 1.05,
                         letterSpacing: -0.55,
                       ),
@@ -400,7 +406,7 @@ class _HeroStat extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: AppThemeTokens.primaryText(context),
             letterSpacing: -0.25,
           ),
         ),
@@ -410,7 +416,7 @@ class _HeroStat extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize: 11.5,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.60),
+            color: AppThemeTokens.secondaryText(context),
           ),
         ),
       ],
@@ -484,9 +490,9 @@ class _HomeGhostButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Ink(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppThemeTokens.softAction(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+              border: Border.all(color: AppThemeTokens.softBorder(context)),
             ),
             child: Center(
               child: Text(
@@ -494,7 +500,7 @@ class _HomeGhostButton extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppThemeTokens.primaryText(context),
                 ),
               ),
             ),
@@ -517,7 +523,7 @@ class _SectionTitle extends StatelessWidget {
       style: GoogleFonts.dmSans(
         fontSize: 19,
         fontWeight: FontWeight.w700,
-        color: Colors.white,
+        color: AppThemeTokens.primaryText(context),
         letterSpacing: -0.35,
       ),
     );
@@ -710,9 +716,9 @@ class _ActivityPanel extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.045),
+            color: AppThemeTokens.surface(context),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: AppThemeTokens.border(context)),
           ),
           child: Column(
             children: activities
@@ -738,9 +744,9 @@ class _LoadingPanel extends StatelessWidget {
     return Container(
       height: 160,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: AppThemeTokens.surface(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppThemeTokens.border(context)),
       ),
       child: const Center(
         child: CircularProgressIndicator(color: AppColors.yellow),
@@ -761,9 +767,9 @@ class _EmptyPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: AppThemeTokens.surface(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: AppThemeTokens.border(context)),
       ),
       child: Column(
         children: [
@@ -772,7 +778,7 @@ class _EmptyPanel extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppThemeTokens.primaryText(context),
             ),
           ),
           const SizedBox(height: 6),
@@ -781,7 +787,7 @@ class _EmptyPanel extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(
               fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.66),
+              color: AppThemeTokens.secondaryText(context),
             ),
           ),
         ],
@@ -864,7 +870,7 @@ class _ActivityRow extends StatelessWidget {
                     style: GoogleFonts.dmSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.white,
+                      color: AppThemeTokens.primaryText(context),
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -873,7 +879,7 @@ class _ActivityRow extends StatelessWidget {
                     style: GoogleFonts.dmSans(
                       fontSize: 12.5,
                       height: 1.45,
-                      color: AppColors.textMuted,
+                      color: AppThemeTokens.secondaryText(context),
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -882,7 +888,7 @@ class _ActivityRow extends StatelessWidget {
                     style: GoogleFonts.dmSans(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: Colors.white.withValues(alpha: 0.46),
+                      color: AppThemeTokens.tertiaryText(context),
                     ),
                   ),
                 ],
