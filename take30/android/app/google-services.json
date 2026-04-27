@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "803573468710",
+    "project_id": "take30",
+    "storage_bucket": "take30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:803573468710:android:ce9222631b588d1939a0e7",
+        "android_client_info": {
+          "package_name": "app.take30"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "803573468710-6m4d23p55olm6s7gtv8cjag4c6mt62sg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMGwRTE9CCBIG0cB7Ted1LftzYPjEk6l8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "803573468710-6m4d23p55olm6s7gtv8cjag4c6mt62sg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "803573468710-1gl2cm7qgol52kjmbtjup9etlshdelcc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.take30."
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

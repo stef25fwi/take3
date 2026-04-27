@@ -2,7 +2,6 @@
 // Ce fichier doit être régénéré via :
 //   flutterfire configure --project=take30 --platforms=android,ios,web
 //
-// Les appId Android et iOS ci-dessous sont des PLACEHOLDERS.
 // Ils seront remplacés automatiquement quand tu lanceras flutterfire configure
 // après avoir déclaré les apps Android et iOS dans Firebase Console.
 // La configuration web et les IDs de sender/projet sont déjà corrects.
@@ -30,46 +29,47 @@ class DefaultFirebaseOptions {
   }
 
   // ─── Web (Vite React) + Flutter Web ────────────────────────────────────────
-  // Identique à la config dans apps/web/src/lib/firebase.js.
+
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBM6Wr064fmsyElN6cZEF5irLqlctcxHqc',
-    authDomain: 'take30.firebaseapp.com',
-    projectId: 'take30',
-    storageBucket: 'take30.firebasestorage.app',
-    messagingSenderId: '803573468710',
     appId: '1:803573468710:web:3aef887be4785feb39a0e7',
+    messagingSenderId: '803573468710',
+    projectId: 'take30',
+    authDomain: 'take30.firebaseapp.com',
+    storageBucket: 'take30.firebasestorage.app',
     measurementId: 'G-49LBD56KLW',
   );
+
+  // Identique à la config dans apps/web/src/lib/firebase.js.
 
   // ─── Android ───────────────────────────────────────────────────────────────
   // TODO : déclare l'app Android dans Firebase Console, télécharge
   // google-services.json → take30/android/app/google-services.json,
   // pour l'application `app.take30`, puis lance `flutterfire configure`
-  // pour remplacer l'appId ci-dessous.
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBM6Wr064fmsyElN6cZEF5irLqlctcxHqc',
+    apiKey: 'AIzaSyBMGwRTE9CCBIG0cB7Ted1LftzYPjEk6l8',
+    appId: '1:803573468710:android:ce9222631b588d1939a0e7',
+    messagingSenderId: '803573468710',
     projectId: 'take30',
     storageBucket: 'take30.firebasestorage.app',
-    messagingSenderId: '803573468710',
-    // Placeholder — remplace par l'appId Firebase Android réel.
-    appId: '1:803573468710:android:REMPLACE_MOI',
   );
 
+  
   // ─── iOS ───────────────────────────────────────────────────────────────────
   // TODO : déclare l'app iOS dans Firebase Console, télécharge
   // GoogleService-Info.plist → take30/ios/Runner/GoogleService-Info.plist,
   // pour le bundle `app.take30`, puis lance `flutterfire configure`
-  // pour remplacer les valeurs ci-dessous.
+
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBM6Wr064fmsyElN6cZEF5irLqlctcxHqc',
+    apiKey: 'AIzaSyBBt-gGlN4R02VP1MfKo-IP8wXynqGPTHc',
+    appId: '1:803573468710:ios:6e4b37c4744f651739a0e7',
+    messagingSenderId: '803573468710',
     projectId: 'take30',
     storageBucket: 'take30.firebasestorage.app',
-    messagingSenderId: '803573468710',
-    // Placeholder — remplace par l'appId Firebase iOS réel.
-    appId: '1:803573468710:ios:REMPLACE_MOI',
-    // iosClientId vient de REVERSED_CLIENT_ID dans GoogleService-Info.plist.
-    // Nécessaire pour Google Sign-In iOS.
-    iosClientId: null,
+    iosClientId: '803573468710-6oq2cjuqv2hfj2h6o2a40e1btaq4a3c0.apps.googleusercontent.com',
     iosBundleId: 'app.take30',
   );
+
+  // pour remplacer les valeurs ci-dessous.
 }
