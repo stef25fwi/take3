@@ -765,10 +765,10 @@ List<SceneModel> _buildDemoFeedScenes(
   final baseScenes = [
     SceneModel(
       id: 's_demo_feed_1',
-      title: 'Clash émotionnel en 30 secondes',
+      title: 'Clash émotionnel en 60 secondes',
       category: 'drama',
       thumbnailUrl: 'assets/scenes/battle_player_a.png',
-      durationSeconds: 30,
+      durationSeconds: 60,
       likesCount: 184,
       commentsCount: 23,
       sharesCount: 9,
@@ -782,7 +782,7 @@ List<SceneModel> _buildDemoFeedScenes(
       title: 'Réplique culte, version face cam',
       category: 'comedy',
       thumbnailUrl: 'assets/scenes/battle_player_b.png',
-      durationSeconds: 30,
+      durationSeconds: 60,
       likesCount: 172,
       commentsCount: 19,
       sharesCount: 11,
@@ -796,7 +796,7 @@ List<SceneModel> _buildDemoFeedScenes(
       title: 'Ton premier take peut déjà percer',
       category: 'spotlight',
       thumbnailUrl: 'assets/avatars/avatar_ia_female_lead.webp',
-      durationSeconds: 30,
+      durationSeconds: 60,
       likesCount: 96,
       commentsCount: 12,
       sharesCount: 5,
@@ -1093,7 +1093,10 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
                 ? state.scene!.thumbnailUrl
                 : 'assets/scenes/battle_player_a.png',
         videoUrl: state.recordedPath,
-        durationSeconds: state.elapsed > 0 ? state.elapsed : 30,
+        durationSeconds:
+          state.elapsed > 0
+            ? state.elapsed
+            : CameraService.maxRecordingSeconds,
         likesCount: 0,
         commentsCount: 0,
         sharesCount: 0,
@@ -1115,6 +1118,10 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       title: title,
       category: category,
       authorId: 'u1',
+      durationSeconds:
+          state.elapsed > 0
+              ? state.elapsed
+              : CameraService.maxRecordingSeconds,
       tags: tags,
     );
 
@@ -1506,7 +1513,7 @@ class DuelNotifier extends StateNotifier<DuelState> {
       title: 'Take 60 — Spotlight A',
       category: 'drama',
       thumbnailUrl: 'assets/scenes/battle_player_a.png',
-      durationSeconds: 30,
+      durationSeconds: 60,
       likesCount: 184,
       commentsCount: 23,
       viewsCount: 3200,
@@ -1520,7 +1527,7 @@ class DuelNotifier extends StateNotifier<DuelState> {
       title: 'Take 60 — Spotlight B',
       category: 'comedy',
       thumbnailUrl: 'assets/scenes/battle_player_b.png',
-      durationSeconds: 30,
+      durationSeconds: 60,
       likesCount: 172,
       commentsCount: 19,
       viewsCount: 2980,
@@ -1702,10 +1709,10 @@ DailyChallengeModel _buildDemoDailyChallenge() {
     id: 'daily_demo_local',
     sceneTitle: 'Confrontation sous pression',
     quote: 'Tu n\'as plus d\'excuse. Regarde-moi et dis enfin la vérité.',
-    maxSeconds: 30,
+    maxSeconds: 60,
     thumbnailUrl: 'assets/scenes/daily_challenge_spotlight.svg',
     rules: const [
-      '30 secondes max',
+      '60 secondes max',
       'Une intention forte dès la première seconde',
       'Publie ta vidéo pour entrer dans le classement',
     ],
@@ -1955,7 +1962,7 @@ List<SceneModel> _buildDemoProfileScenes(
       title: title,
       category: category,
       thumbnailUrl: thumbnailUrl,
-      durationSeconds: 30,
+      durationSeconds: 60,
       likesCount: likesCount,
       commentsCount: commentsCount,
       sharesCount: sharesCount,
@@ -2039,7 +2046,7 @@ List<SceneModel> _buildDemoProfileScenes(
         ),
         buildScene(
           id: 'scene_profile_demo_2',
-          title: 'Monologue express en 30 secondes',
+          title: 'Monologue express en 60 secondes',
           category: 'acting',
           thumbnailUrl: 'assets/scenes/battle_player_a.png',
           age: const Duration(hours: 6),

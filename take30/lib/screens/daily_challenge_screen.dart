@@ -15,7 +15,7 @@ class DailyChallengeScreen extends StatelessWidget {
   static const Color surfaceBorder = Color.fromRGBO(255, 255, 255, 0.09);
   static const Color accent = Color(0xFFFFB800);
   static const Color accentText = Color(0xFF111827);
-  static const double horizontalPadding = 20;
+  static const double horizontalPadding = AppThemeTokens.pageHorizontalPadding;
 
   static const String heroAsset = 'assets/scenes/daily_challenge_spotlight.svg';
   static const String sceneTitle = 'Confrontation sous pression';
@@ -25,7 +25,7 @@ class DailyChallengeScreen extends StatelessWidget {
   static const List<_ChallengeRuleData> _rules = [
     _ChallengeRuleData(
       icon: Icons.timer_outlined,
-      label: '30 secondes max',
+      label: '60 secondes max',
     ),
     _ChallengeRuleData(
       icon: Icons.theater_comedy_outlined,

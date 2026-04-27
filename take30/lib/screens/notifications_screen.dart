@@ -56,7 +56,12 @@ class NotificationsScreen extends ConsumerWidget {
             SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppThemeTokens.pageHorizontalPadding,
+                  12,
+                  AppThemeTokens.pageHorizontalPadding,
+                  0,
+                ),
                 child: Column(
                   children: [
                     _NotificationsTopBar(

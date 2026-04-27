@@ -94,7 +94,7 @@ class _BattleBodyState extends State<_BattleBody> {
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final screenW = mq.size.width;
-    const hPad = 20.0;
+    const hPad = AppThemeTokens.pageHorizontalPadding;
     final cardAreaW = screenW - hPad * 2;
     const cardGap = 12.0;
     final cardW = (cardAreaW - cardGap) / 2;

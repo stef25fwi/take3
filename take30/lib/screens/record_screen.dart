@@ -12,6 +12,7 @@ import '../providers/providers.dart';
 import '../router/router.dart';
 import '../services/camera_service.dart';
 import '../services/permission_service.dart';
+import '../theme/app_theme.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // RECORD SCREEN — Page 5 Pixel-Perfect (PRD)
@@ -138,8 +139,14 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         cameraService.isRecording || recordingState.isRecording;
     final currentScene = _scene ??
       (feedState.scenes.isNotEmpty ? feedState.scenes.first : _resolveCurrentScene());
+    final clampedRemaining = remaining.clamp(
+      0,
+      CameraService.maxRecordingSeconds,
+    );
+    final timerMinutes = clampedRemaining ~/ 60;
+    final timerSeconds = clampedRemaining % 60;
     final timerLabel =
-        '00:${remaining.clamp(0, 59).toString().padLeft(2, '0')}';
+        '${timerMinutes.toString().padLeft(2, '0')}:${timerSeconds.toString().padLeft(2, '0')}';
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -203,7 +210,10 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                 // ── Top bar ──
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      const EdgeInsets.symmetric(
+                        horizontal: AppThemeTokens.pageHorizontalPadding,
+                        vertical: 8,
+                      ),
                   child: Row(
                     children: [
                       _CircleButton(

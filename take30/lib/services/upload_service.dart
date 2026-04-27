@@ -48,6 +48,7 @@ class VideoUploadService extends ChangeNotifier {
     required String title,
     required String category,
     required String authorId,
+    required int durationSeconds,
     List<String> tags = const [],
   }) async {
     try {
@@ -65,6 +66,7 @@ class VideoUploadService extends ChangeNotifier {
         videoPath: videoPath,
         title: title,
         category: category,
+        durationSeconds: durationSeconds,
         tags: tags,
       );
 

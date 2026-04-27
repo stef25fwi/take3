@@ -80,7 +80,12 @@ class HomeScreen extends ConsumerWidget {
               bottom: false,
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+                padding: const EdgeInsets.fromLTRB(
+                  AppThemeTokens.pageHorizontalPadding,
+                  12,
+                  AppThemeTokens.pageHorizontalPadding,
+                  110,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -356,7 +361,7 @@ class _HomeHeroCard extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              const _HeroStat(value: '30s', label: 'Format'),
+              const _HeroStat(value: '60s', label: 'Format'),
               const SizedBox(width: 18),
               _HeroStat(value: '${user.scenesCount}', label: 'Scènes'),
               const SizedBox(width: 18),

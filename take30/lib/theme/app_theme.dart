@@ -746,6 +746,8 @@ class SplashTheme {
 }
 
 class AppThemeTokens {
+  static const double pageHorizontalPadding = 16;
+
   static bool isDark(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
   }

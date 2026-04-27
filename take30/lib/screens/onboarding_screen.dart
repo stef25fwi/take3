@@ -19,7 +19,12 @@ class OnboardingScreen extends StatelessWidget {
         decoration: BoxDecoration(gradient: AppThemeTokens.pageGradient(context)),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            padding: const EdgeInsets.fromLTRB(
+              AppThemeTokens.pageHorizontalPadding,
+              24,
+              AppThemeTokens.pageHorizontalPadding,
+              20,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

@@ -1119,7 +1119,7 @@ class _AddScenePageState extends State<AddScenePage> {
               Expanded(
                 child: ListView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 120),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
                   children: [
                     _section(
                       '1) Informations générales',

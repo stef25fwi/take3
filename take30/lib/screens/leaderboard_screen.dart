@@ -84,7 +84,12 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
               const SizedBox(height: 16),
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppThemeTokens.pageHorizontalPadding,
+                    0,
+                    AppThemeTokens.pageHorizontalPadding,
+                    24,
+                  ),
                   itemBuilder: (context, index) {
                     final entry = entries[index];
                     return SizedBox(

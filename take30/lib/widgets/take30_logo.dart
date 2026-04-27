@@ -8,7 +8,7 @@ class Take30Logo extends StatelessWidget {
     this.height = 44,
     this.assetPath = Take30Assets.logoDark,
     this.semanticLabel = 'Take 60',
-    this.color = Colors.white,
+    this.color,
     this.sandColor = const Color(0xFFF4C20D),
     this.innerGlow = 0.25,
   });
@@ -16,7 +16,7 @@ class Take30Logo extends StatelessWidget {
   final double height;
   final String assetPath;
   final String semanticLabel;
-  final Color color;
+  final Color? color;
   final Color sandColor;
   final double innerGlow;
 
@@ -25,6 +25,11 @@ class Take30Logo extends StatelessWidget {
     final fontSize = height;
     final leftTuck = -(fontSize * 0.22);
     final rightTuck = -(fontSize * 0.19);
+    final resolvedColor =
+        color ??
+        (Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black);
 
     return Semantics(
       label: semanticLabel,
@@ -39,12 +44,12 @@ class Take30Logo extends StatelessWidget {
               _LogoText(
                 text: 'TAKE',
                 fontSize: fontSize,
-                color: color,
+                color: resolvedColor,
               ),
               SizedBox(width: leftTuck),
               _PremiumHourglass(
                 height: fontSize,
-                strokeColor: color,
+                strokeColor: resolvedColor,
                 sandColor: sandColor,
                 innerGlow: innerGlow,
               ),
@@ -52,7 +57,7 @@ class Take30Logo extends StatelessWidget {
               _LogoText(
                 text: '60',
                 fontSize: fontSize,
-                color: color,
+                color: resolvedColor,
               ),
             ],
           ),

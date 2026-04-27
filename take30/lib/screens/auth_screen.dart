@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
+import '../router/router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/take30_logo.dart';
 
@@ -119,7 +120,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         decoration: BoxDecoration(gradient: AppThemeTokens.pageGradient(context)),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppThemeTokens.pageHorizontalPadding,
+            ),
             child: Column(
               children: [
               const SizedBox(height: 12),
@@ -260,6 +263,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     color: AppColors.cyan,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => context.go(AppRouter.admin),
+                child: Text(
+                  'Accès admin →',
+                  style: GoogleFonts.dmSans(
+                    color: AppColors.yellow,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

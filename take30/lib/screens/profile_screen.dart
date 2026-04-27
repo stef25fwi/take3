@@ -132,7 +132,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppThemeTokens.pageHorizontalPadding,
+                      ),
                       child: Column(
                         children: [
                           const SizedBox(height: 12),
@@ -178,7 +180,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 12)),
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppThemeTokens.pageHorizontalPadding,
+                    ),
                     sliver: sceneCount == 0
                         ? SliverToBoxAdapter(
                             child: Container(

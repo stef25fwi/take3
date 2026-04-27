@@ -132,6 +132,7 @@ class ApiService {
     required String videoPath,
     required String title,
     required String category,
+    required int durationSeconds,
     required List<String> tags,
   }) async {
     final uid = currentUid;
@@ -152,7 +153,7 @@ class ApiService {
       category: category,
       thumbnailUrl: '',
       videoUrl: videoUrl,
-      durationSeconds: 30,
+      durationSeconds: durationSeconds,
       author: user,
       createdAt: DateTime.now(),
       tags: tags,

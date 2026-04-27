@@ -35,7 +35,7 @@ class CameraService extends ChangeNotifier {
 
   factory CameraService() => _instance;
 
-  static const int maxRecordingSeconds = 30;
+  static const int maxRecordingSeconds = 60;
 
   CameraController? _controller;
   List<CameraDescription> _cameras = <CameraDescription>[];

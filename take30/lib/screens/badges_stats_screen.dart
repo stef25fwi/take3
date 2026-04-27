@@ -111,7 +111,12 @@ class BadgesStatsScreen extends ConsumerWidget {
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppThemeTokens.pageHorizontalPadding,
+                        10,
+                        AppThemeTokens.pageHorizontalPadding,
+                        120,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

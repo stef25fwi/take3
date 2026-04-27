@@ -181,7 +181,7 @@ class SceneModel {
     required this.category,
     required this.thumbnailUrl,
     this.videoUrl,
-    this.durationSeconds = 30,
+    this.durationSeconds = 60,
     this.likesCount = 0,
     this.commentsCount = 0,
     this.sharesCount = 0,

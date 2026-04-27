@@ -247,7 +247,9 @@ class _SplashScreenState extends State<SplashScreen>
               SafeArea(
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppThemeTokens.pageHorizontalPadding,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

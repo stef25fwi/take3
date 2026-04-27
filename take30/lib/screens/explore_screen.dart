@@ -134,7 +134,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               bottom: false,
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 116),
+                padding: const EdgeInsets.fromLTRB(
+                  AppThemeTokens.pageHorizontalPadding,
+                  12,
+                  AppThemeTokens.pageHorizontalPadding,
+                  116,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

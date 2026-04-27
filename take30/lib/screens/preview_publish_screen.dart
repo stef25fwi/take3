@@ -208,7 +208,12 @@ class _PreviewPublishScreenState extends ConsumerState<PreviewPublishScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppThemeTokens.pageHorizontalPadding,
+          12,
+          AppThemeTokens.pageHorizontalPadding,
+          24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

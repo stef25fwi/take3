@@ -148,7 +148,12 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppThemeTokens.pageHorizontalPadding,
+          8,
+          AppThemeTokens.pageHorizontalPadding,
+          24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
