@@ -1,4 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 void main() {
   runApp(const Take30AdminApp());
@@ -1085,6 +1090,7 @@ class AddScenePage extends StatefulWidget {
 class _AddScenePageState extends State<AddScenePage> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
+  final SpeechToText _speechToText = SpeechToText();
 
   final projectTitleCtrl = TextEditingController();
   final sceneNameCtrl = TextEditingController();
@@ -1246,8 +1252,17 @@ class _AddScenePageState extends State<AddScenePage> {
     'punchy',
   ];
 
+  bool _speechAvailable = false;
+  bool _speechInitializing = false;
+  bool _isListeningToDialogue = false;
+  bool _dialogueReceivedSpeech = false;
+  String _dialogueSpeechBaseText = '';
+  String? _dialogueSpeechStatus;
+  String? _dialogueSpeechError;
+
   @override
   void dispose() {
+    _speechToText.cancel();
     _scrollController.dispose();
     for (final c in [
       projectTitleCtrl,
@@ -1612,7 +1627,7 @@ class _AddScenePageState extends State<AddScenePage> {
                           items: textTypeOptions,
                           onChanged: (v) => setState(() => selectedTextType = v!),
                         ),
-                        _textField(dialogueTextCtrl, 'Dialogue / monologue', maxLines: 8),
+                        _dialogueTextField(),
                         _textField(
                           emphasizedWordsCtrl,
                           'Mots ou phrases à accentuer',
@@ -1819,6 +1834,308 @@ class _AddScenePageState extends State<AddScenePage> {
       maxLines: maxLines,
       decoration: InputDecoration(labelText: label),
     );
+  }
+
+  Widget _dialogueTextField() {
+    final message = _dialogueSpeechError ?? _dialogueSpeechStatus;
+    final messageColor = _dialogueSpeechError != null
+        ? Colors.red.shade600
+        : const Color(0xFF0F766E);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: dialogueTextCtrl,
+          maxLines: 8,
+          minLines: 8,
+          decoration: InputDecoration(
+            labelText: 'Dialogue / monologue',
+            alignLabelWithHint: true,
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 52,
+              minHeight: 52,
+            ),
+            suffixIcon: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: _speechInitializing
+                      ? null
+                      : () {
+                          if (_isListeningToDialogue) {
+                            _stopDialogueListening();
+                          } else {
+                            _startDialogueListening();
+                          }
+                        },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _isListeningToDialogue
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFFF3F4F6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isListeningToDialogue
+                            ? const Color(0xFFEF4444)
+                            : Colors.grey.shade300,
+                      ),
+                      boxShadow: _isListeningToDialogue
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFEF4444)
+                                    .withValues(alpha: 0.22),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: _speechInitializing
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(
+                              _isListeningToDialogue
+                                  ? Icons.stop_rounded
+                                  : Icons.mic_none_rounded,
+                              size: 18,
+                              color: _isListeningToDialogue
+                                  ? Colors.white
+                                  : const Color(0xFF111827),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (message != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                _dialogueSpeechError != null
+                    ? Icons.error_outline_rounded
+                    : (_isListeningToDialogue
+                        ? Icons.graphic_eq_rounded
+                        : Icons.check_circle_outline_rounded),
+                size: 16,
+                color: messageColor,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color: messageColor,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _startDialogueListening() async {
+    if (_speechInitializing || _isListeningToDialogue) {
+      return;
+    }
+
+    setState(() {
+      _speechInitializing = true;
+      _dialogueSpeechError = null;
+      _dialogueSpeechStatus = 'Préparation du micro…';
+    });
+
+    final hasPermission = await _ensureSpeechPermission();
+    if (!hasPermission || !mounted) {
+      setState(() {
+        _speechInitializing = false;
+      });
+      return;
+    }
+
+    if (!_speechAvailable) {
+      _speechAvailable = await _speechToText.initialize(
+        onStatus: _onSpeechStatus,
+        onError: _onSpeechError,
+      );
+    }
+
+    if (!_speechAvailable) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _speechInitializing = false;
+        _dialogueSpeechStatus = null;
+        _dialogueSpeechError =
+            'La reconnaissance vocale n’est pas disponible sur cette plateforme.';
+      });
+      return;
+    }
+
+    _dialogueSpeechBaseText = dialogueTextCtrl.text.trimRight();
+    _dialogueReceivedSpeech = false;
+
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      listenOptions: SpeechListenOptions(
+        partialResults: true,
+        cancelOnError: true,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _speechInitializing = false;
+      _isListeningToDialogue = true;
+      _dialogueSpeechError = null;
+      _dialogueSpeechStatus = 'Écoute en cours…';
+    });
+  }
+
+  Future<void> _stopDialogueListening() async {
+    await _speechToText.stop();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isListeningToDialogue = false;
+      if (_dialogueSpeechError == null) {
+        _dialogueSpeechStatus = _dialogueReceivedSpeech
+            ? 'Dictée ajoutée au dialogue.'
+            : 'Aucune voix détectée.';
+      }
+    });
+  }
+
+  Future<bool> _ensureSpeechPermission() async {
+    if (kIsWeb) {
+      return true;
+    }
+
+    final status = await Permission.microphone.status;
+    if (status == PermissionStatus.granted) {
+      return true;
+    }
+
+    final requested = await Permission.microphone.request();
+    if (requested == PermissionStatus.granted) {
+      return true;
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
+    final isPermanent = requested == PermissionStatus.permanentlyDenied ||
+        requested == PermissionStatus.restricted;
+
+    setState(() {
+      _dialogueSpeechStatus = null;
+      _dialogueSpeechError = isPermanent
+          ? 'Microphone refusé. Active-le dans les réglages du système.'
+          : 'Microphone refusé. Autorise-le pour dicter le dialogue.';
+    });
+    return false;
+  }
+
+  void _onSpeechStatus(String status) {
+    if (!mounted) {
+      return;
+    }
+
+    if (status == 'listening') {
+      setState(() {
+        _isListeningToDialogue = true;
+        _dialogueSpeechStatus = 'Écoute en cours…';
+      });
+      return;
+    }
+
+    if (status == 'notListening') {
+      setState(() {
+        _isListeningToDialogue = false;
+        if (_dialogueSpeechError == null) {
+          _dialogueSpeechStatus = _dialogueReceivedSpeech
+              ? 'Dictée ajoutée au dialogue.'
+              : 'Aucune voix détectée.';
+        }
+      });
+    }
+  }
+
+  void _onSpeechError(SpeechRecognitionError error) {
+    if (!mounted) {
+      return;
+    }
+
+    final raw = error.errorMsg.toLowerCase();
+    String message;
+    if (raw.contains('permission')) {
+      message = 'Microphone refusé. Autorise-le pour utiliser la dictée.';
+    } else if (raw.contains('notavailable') || raw.contains('not available')) {
+      message = 'Speech to text non disponible sur cette plateforme.';
+    } else if (raw.contains('no match') || raw.contains('nomatch')) {
+      message = 'Aucune voix détectée.';
+    } else {
+      message = 'Erreur de reconnaissance vocale.';
+    }
+
+    setState(() {
+      _speechInitializing = false;
+      _isListeningToDialogue = false;
+      _dialogueSpeechStatus = null;
+      _dialogueSpeechError = message;
+    });
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    final recognized = result.recognizedWords.trim();
+    if (recognized.isEmpty) {
+      return;
+    }
+
+    _dialogueReceivedSpeech = true;
+    final separator = _dialogueSpeechBaseText.isEmpty
+        ? ''
+        : (_dialogueSpeechBaseText.endsWith('\n') ||
+                _dialogueSpeechBaseText.endsWith(' ')
+            ? ''
+            : '\n');
+    final nextText = '$_dialogueSpeechBaseText$separator$recognized';
+
+    dialogueTextCtrl.value = dialogueTextCtrl.value.copyWith(
+      text: nextText,
+      selection: TextSelection.collapsed(offset: nextText.length),
+      composing: TextRange.empty,
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _dialogueSpeechError = null;
+      _dialogueSpeechStatus = result.finalResult
+          ? 'Dictée ajoutée au dialogue.'
+          : 'Écoute en cours…';
+    });
   }
 
   Widget _requiredField(
