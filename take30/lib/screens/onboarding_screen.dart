@@ -145,8 +145,8 @@ class _HeroCollagePlaceholder extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
-        final cardWidth = width * 0.44;
-        final cardHeight = height * 0.72;
+        final cardWidth = width * 0.39;
+        final cardHeight = height * 0.64;
 
         return Stack(
           children: [
@@ -164,8 +164,8 @@ class _HeroCollagePlaceholder extends StatelessWidget {
               left: width * 0.28,
               top: height * -0.01,
               child: _PhotoSlot(
-                width: cardWidth * 1.03,
-                height: cardHeight * 1.10,
+                width: cardWidth * 1.01,
+                height: cardHeight * 1.04,
                 imagePath: '../take 30 images IA/2pic.png',
                 angle: 0.02,
                 highlighted: true,

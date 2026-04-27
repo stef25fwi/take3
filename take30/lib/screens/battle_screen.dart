@@ -145,6 +145,27 @@ class _BattleBodyState extends State<_BattleBody> {
             bottom: false,
             child: Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppThemeTokens.pageHorizontalPadding,
+                    8,
+                    AppThemeTokens.pageHorizontalPadding,
+                    4,
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Battle',
+                        style: GoogleFonts.dmSans(
+                          color: AppThemeTokens.primaryText(context),
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 8),
                 // ── Cards ──
                 Padding(

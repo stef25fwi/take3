@@ -126,7 +126,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
         bottom: false,
         child: Column(
           children: [
-            _TopBar(onLogout: _onLogout),
+            _TopBar(
+              onLogout: _onLogout,
+              onShareTap: () {
+                ref.read(profileProvider(widget.userId).notifier).shareProfile();
+              },
+            ),
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -243,9 +248,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onLogout});
+  const _TopBar({required this.onLogout, required this.onShareTap});
 
   final VoidCallback onLogout;
+  final VoidCallback onShareTap;
 
   @override
   Widget build(BuildContext context) {
@@ -282,6 +288,21 @@ class _TopBar extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              GestureDetector(
+                onTap: onShareTap,
+                behavior: HitTestBehavior.opaque,
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Center(
+                    child: Icon(
+                      Icons.ios_share_rounded,
+                      color: iconColor,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
               GestureDetector(
                 onTap: () => context.go(AppRouter.explore),
                 behavior: HitTestBehavior.opaque,

@@ -146,6 +146,16 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () => ref.read(shareServiceProvider).shareScene(scene),
+            icon: Icon(
+              Icons.ios_share_rounded,
+              color: AppThemeTokens.primaryText(context),
+              size: 20,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(
@@ -305,6 +315,27 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                       style: GoogleFonts.dmSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => ref.read(shareServiceProvider).shareScene(scene),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppThemeTokens.border(context)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(
+                      'Partager',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppThemeTokens.primaryText(context),
                       ),
                     ),
                   ),
