@@ -1,9 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+
+import 'models/ai_generated_video.dart';
+import 'services/veo_video_generation_service.dart';
+import 'widgets/admin_video_preview.dart';
 
 void main() {
   runApp(const Take30AdminApp());
@@ -17,6 +23,34 @@ const _kAdminPassword = String.fromEnvironment(
   'TAKE30_ADMIN_PASSWORD',
   defaultValue: 'Take30Admin2026',
 );
+
+const _kDefaultVeoPrompt =
+    'Video cinematique realiste de 15 secondes, format 16:9, ambiance de court-metrage dramatique. '
+    'Plan large au debut sur une rue calme en fin d\'apres-midi, lumiere doree, atmosphere legerement tendue. '
+    'La camera avance lentement en travelling vers l\'entree d\'un petit batiment, profondeur de champ cinematographique, '
+    'rendu realiste, mouvement fluide, couleurs naturelles, style film independant. '
+    'La scene se termine sur un cadrage fixe devant la porte, comme si un personnage allait entrer dans le champ. '
+    'Aucun texte a l\'image, aucun logo, aucun visage identifiable.';
+
+DateTime _readAdminDate(dynamic value) {
+  if (value is Timestamp) {
+    return value.toDate();
+  }
+  if (value is DateTime) {
+    return value;
+  }
+  if (value is String) {
+    return DateTime.tryParse(value) ?? DateTime.now();
+  }
+  return DateTime.now();
+}
+
+String _formatAdminDate(DateTime? value) {
+  if (value == null) {
+    return '-';
+  }
+  return DateFormat('dd/MM/yyyy • HH:mm').format(value);
+}
 
 class AdminSession {
   const AdminSession({
@@ -327,9 +361,31 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 }
 
 class SceneDraftRepository {
+  static final FirebaseFirestore _db = FirebaseFirestore.instance;
   static final List<SceneFormData> _items = [];
 
+  static CollectionReference<Map<String, dynamic>> get _collection =>
+      _db.collection('scenes');
+
   static Future<void> save(SceneFormData data) async {
+    _upsertLocal(data);
+    await _collection.doc(data.id).set(data.toFirestore(), SetOptions(merge: true));
+  }
+
+  static Stream<List<SceneFormData>> watchAll() {
+    return _collection.where('adminWorkflow', isEqualTo: true).snapshots().map((s) {
+      final items = s.docs
+          .map((doc) => SceneFormData.fromFirestore(doc.id, doc.data()))
+          .toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      _items
+        ..clear()
+        ..addAll(items);
+      return List.unmodifiable(items);
+    });
+  }
+
+  static void _upsertLocal(SceneFormData data) {
     final index = _items.indexWhere((e) => e.id == data.id);
     if (index >= 0) {
       _items[index] = data;
@@ -343,15 +399,49 @@ class SceneDraftRepository {
   static List<SceneFormData> drafts() =>
       _items.where((e) => e.status == SceneStatus.draft).toList();
 
+  static List<SceneFormData> pendingPublication() => _items
+      .where((e) => e.status == SceneStatus.pendingPublication)
+      .toList();
+
   static List<SceneFormData> published() =>
       _items.where((e) => e.status == SceneStatus.published).toList();
 }
 
-enum SceneStatus { draft, published }
+enum SceneStatus { draft, pendingPublication, published }
+
+SceneStatus _sceneStatusFromString(String? value) {
+  switch (value) {
+    case 'draft':
+      return SceneStatus.draft;
+    case 'pending_publication':
+      return SceneStatus.pendingPublication;
+    case 'published':
+      return SceneStatus.published;
+    default:
+      return SceneStatus.draft;
+  }
+}
+
+extension SceneStatusX on SceneStatus {
+  String get value => switch (this) {
+        SceneStatus.draft => 'draft',
+        SceneStatus.pendingPublication => 'pending_publication',
+        SceneStatus.published => 'published',
+      };
+
+  String get label => switch (this) {
+        SceneStatus.draft => 'Brouillon',
+        SceneStatus.pendingPublication => 'En attente de publication',
+        SceneStatus.published => 'Publiee',
+      };
+}
 
 class SceneFormData {
   final String id;
   final SceneStatus status;
+  final String category;
+  final String genre;
+  final String recommendedLevel;
 
   final String projectTitle;
   final String sceneName;
@@ -363,6 +453,7 @@ class SceneFormData {
 
   final String characterName;
   final String apparentAge;
+  final String characterGender;
   final String profileRole;
   final String relationship;
   final String initialState;
@@ -435,10 +526,27 @@ class SceneFormData {
 
   final String spectatorFeeling;
   final String directorFinalNote;
+  final String requestedVideoFormat;
+
+  final List<String> testedPrompts;
+  final AiGeneratedVideo? aiIntroVideo;
+  final String visualTransitionPoint;
+  final String emotionalTransitionPoint;
+  final String firstActorAction;
+  final String firstExpectedEmotion;
+  final String lastAiFrameDescription;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? submittedAt;
+  final DateTime? publishedAt;
+  final String createdBy;
 
   const SceneFormData({
     required this.id,
     required this.status,
+    required this.category,
+    required this.genre,
+    required this.recommendedLevel,
     required this.projectTitle,
     required this.sceneName,
     required this.sceneNumber,
@@ -448,6 +556,7 @@ class SceneFormData {
     required this.targetDuration,
     required this.characterName,
     required this.apparentAge,
+    required this.characterGender,
     required this.profileRole,
     required this.relationship,
     required this.initialState,
@@ -507,14 +616,43 @@ class SceneFormData {
     required this.technicalConstraints,
     required this.spectatorFeeling,
     required this.directorFinalNote,
+    required this.requestedVideoFormat,
+    required this.testedPrompts,
+    required this.aiIntroVideo,
+    required this.visualTransitionPoint,
+    required this.emotionalTransitionPoint,
+    required this.firstActorAction,
+    required this.firstExpectedEmotion,
+    required this.lastAiFrameDescription,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.submittedAt,
+    required this.publishedAt,
+    required this.createdBy,
   });
+
+  String get displayTitle => sceneName.isEmpty ? projectTitle : sceneName;
+
+  String get thumbnailUrl => aiIntroVideo?.thumbnailUrl ?? '';
+
+  int get aiDurationSeconds => aiIntroVideo?.durationSeconds ?? 15;
+
+  bool get hasValidatedAiVideo => aiIntroVideo?.isValidated ?? false;
 
   SceneFormData copyWith({
     SceneStatus? status,
+    AiGeneratedVideo? aiIntroVideo,
+    List<String>? testedPrompts,
+    DateTime? updatedAt,
+    DateTime? submittedAt,
+    DateTime? publishedAt,
   }) {
     return SceneFormData(
       id: id,
       status: status ?? this.status,
+      category: category,
+      genre: genre,
+      recommendedLevel: recommendedLevel,
       projectTitle: projectTitle,
       sceneName: sceneName,
       sceneNumber: sceneNumber,
@@ -524,6 +662,7 @@ class SceneFormData {
       targetDuration: targetDuration,
       characterName: characterName,
       apparentAge: apparentAge,
+      characterGender: characterGender,
       profileRole: profileRole,
       relationship: relationship,
       initialState: initialState,
@@ -583,6 +722,260 @@ class SceneFormData {
       technicalConstraints: technicalConstraints,
       spectatorFeeling: spectatorFeeling,
       directorFinalNote: directorFinalNote,
+      requestedVideoFormat: requestedVideoFormat,
+      testedPrompts: testedPrompts ?? this.testedPrompts,
+      aiIntroVideo: aiIntroVideo ?? this.aiIntroVideo,
+      visualTransitionPoint: visualTransitionPoint,
+      emotionalTransitionPoint: emotionalTransitionPoint,
+      firstActorAction: firstActorAction,
+      firstExpectedEmotion: firstExpectedEmotion,
+      lastAiFrameDescription: lastAiFrameDescription,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      submittedAt: submittedAt ?? this.submittedAt,
+      publishedAt: publishedAt ?? this.publishedAt,
+      createdBy: createdBy,
+    );
+  }
+
+  SceneFormData withPublicationStatus(SceneStatus nextStatus) {
+    final now = DateTime.now();
+    return copyWith(
+      status: nextStatus,
+      updatedAt: now,
+      submittedAt: nextStatus == SceneStatus.pendingPublication ||
+              nextStatus == SceneStatus.published
+          ? (submittedAt ?? now)
+          : null,
+      publishedAt:
+          nextStatus == SceneStatus.published ? (publishedAt ?? now) : null,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() {
+    final nowAuthor = createdBy.isEmpty ? 'admin_take30' : createdBy;
+    return {
+      'id': id,
+      'title': displayTitle,
+      'category': category,
+      'genre': genre,
+      'level': recommendedLevel,
+      'status': status.value,
+      'thumbnailUrl': thumbnailUrl,
+      'videoUrl': aiIntroVideo?.videoUrl,
+      'durationSeconds': aiDurationSeconds,
+      'authorId': nowAuthor,
+      'authorDenorm': {
+        'id': nowAuthor,
+        'username': nowAuthor,
+        'avatarUrl': '',
+        'isVerified': false,
+      },
+      'likesCount': 0,
+      'commentsCount': 0,
+      'sharesCount': 0,
+      'viewsCount': 0,
+      'tags': [category, genre, recommendedLevel]
+          .where((value) => value.trim().isNotEmpty)
+          .toList(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+      'adminWorkflow': true,
+      'projectTitle': projectTitle,
+      'sceneName': sceneName,
+      'sceneNumber': sceneNumber,
+      'shootDate': shootDate,
+      'location': location,
+      'director': director,
+      'targetDuration': targetDuration,
+      'dominantEmotion': dominantEmotion,
+      'secondaryEmotion': secondaryEmotion,
+      'intensity': intensity,
+      'textType': textType,
+      'dialogueText': dialogueText,
+      'playStyles': playStyles,
+      'testedPrompts': testedPrompts,
+      'actorSheet': {
+        'characterName': characterName,
+        'apparentAge': apparentAge,
+        'characterGender': characterGender,
+        'roleType': profileRole,
+        'mainEmotion': dominantEmotion,
+        'characterIntention': mainObjective,
+        'dramaticContext': contextSummary,
+        'sceneObjective': stakes.isEmpty ? mainObstacle : stakes,
+        'expectedTone': playStyles.join(' • '),
+        'difficultyLevel': recommendedLevel,
+        'actingConstraints': technicalConstraints,
+        'stagingInstructions': [actingDirection, bodyDirection]
+            .where((value) => value.trim().isNotEmpty)
+            .join('\n'),
+        'actingTextOrInstructions': dialogueText,
+        'expectedActorVideoDuration': targetDuration,
+        'recommendedFraming': framingType,
+        'requestedVideoFormat': requestedVideoFormat,
+        'props': usedObjects,
+        'suggestedSet': location.isEmpty ? whereAreWe : location,
+        'adminNotes': directorFinalNote,
+        'relationship': relationship,
+        'initialState': initialState,
+        'characterSummary': characterSummary,
+        'emphasizedWords': emphasizedWords,
+        'keyPhrase': keyPhrase,
+      },
+      'aiIntroVideo': aiIntroVideo == null
+          ? null
+          : {
+              'provider': aiIntroVideo!.provider,
+              'prompt': aiIntroVideo!.prompt,
+              'videoUrl': aiIntroVideo!.videoUrl,
+              'thumbnailUrl': aiIntroVideo!.thumbnailUrl,
+              'durationSeconds': aiIntroVideo!.durationSeconds,
+              'aspectRatio': aiIntroVideo!.aspectRatio,
+              'status': aiIntroVideo!.status.value,
+              'generatedAt': Timestamp.fromDate(aiIntroVideo!.generatedAt),
+              'updatedAt': Timestamp.fromDate(aiIntroVideo!.updatedAt),
+            },
+      'raccord': {
+        'visualTransitionPoint': visualTransitionPoint,
+        'emotionalTransitionPoint': emotionalTransitionPoint,
+        'firstActorAction': firstActorAction,
+        'firstExpectedEmotion': firstExpectedEmotion,
+        'lastAiFrameDescription': lastAiFrameDescription,
+      },
+      'publication': {
+        'createdBy': nowAuthor,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'updatedAt': Timestamp.fromDate(updatedAt),
+        'submittedAt': submittedAt == null ? null : Timestamp.fromDate(submittedAt!),
+        'publishedAt': publishedAt == null ? null : Timestamp.fromDate(publishedAt!),
+      },
+    };
+  }
+
+  factory SceneFormData.fromFirestore(String id, Map<String, dynamic> data) {
+    final actorSheet = data['actorSheet'] as Map<String, dynamic>? ?? const {};
+    final aiIntroVideo = data['aiIntroVideo'] as Map<String, dynamic>?;
+    final raccord = data['raccord'] as Map<String, dynamic>? ?? const {};
+    final publication = data['publication'] as Map<String, dynamic>? ?? const {};
+
+    return SceneFormData(
+      id: id,
+      status: _sceneStatusFromString(data['status'] as String?),
+      category: data['category'] as String? ?? '',
+      genre: data['genre'] as String? ?? '',
+      recommendedLevel: data['level'] as String? ?? 'intermediaire',
+      projectTitle: data['projectTitle'] as String? ?? '',
+      sceneName: data['sceneName'] as String? ?? data['title'] as String? ?? '',
+      sceneNumber: data['sceneNumber'] as String? ?? '',
+      shootDate: data['shootDate'] as String? ?? '',
+      location: data['location'] as String? ?? '',
+      director: data['director'] as String? ?? '',
+      targetDuration: data['targetDuration'] as String? ?? '',
+      characterName: actorSheet['characterName'] as String? ?? '',
+      apparentAge: actorSheet['apparentAge'] as String? ?? '',
+      characterGender: actorSheet['characterGender'] as String? ?? '',
+      profileRole: actorSheet['roleType'] as String? ?? '',
+      relationship: actorSheet['relationship'] as String? ?? '',
+      initialState: actorSheet['initialState'] as String? ?? '',
+      characterSummary: actorSheet['characterSummary'] as String? ?? '',
+      previousMoment: data['previousMoment'] as String? ?? '',
+      whereAreWe: data['whereAreWe'] as String? ?? '',
+      withWho: data['withWho'] as String? ?? '',
+      whyImportant: data['whyImportant'] as String? ?? '',
+      contextSummary: actorSheet['dramaticContext'] as String? ?? '',
+      mainObjective: actorSheet['characterIntention'] as String? ?? '',
+      mainObstacle: data['mainObstacle'] as String? ?? '',
+      stakes: actorSheet['sceneObjective'] as String? ?? '',
+      dominantEmotion: actorSheet['mainEmotion'] as String? ?? '',
+      secondaryEmotion: data['secondaryEmotion'] as String? ?? '',
+      intensity: data['intensity'] as String? ?? '',
+      evolutionStart: data['evolutionStart'] as String? ?? '',
+      evolutionMiddle: data['evolutionMiddle'] as String? ?? '',
+      evolutionEnd: data['evolutionEnd'] as String? ?? '',
+      emotionalNuance: data['emotionalNuance'] as String? ?? '',
+      playStyles: (data['playStyles'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+      actingDirection: actorSheet['stagingInstructions'] as String? ?? '',
+      references: data['references'] as String? ?? '',
+      textType: data['textType'] as String? ?? '',
+      dialogueText: actorSheet['actingTextOrInstructions'] as String? ?? '',
+      emphasizedWords: actorSheet['emphasizedWords'] as String? ?? '',
+      keyPhrase: actorSheet['keyPhrase'] as String? ?? '',
+      block1Intention: data['block1Intention'] as String? ?? '',
+      block1Energy: data['block1Energy'] as String? ?? '',
+      block1Look: data['block1Look'] as String? ?? '',
+      block1Rhythm: data['block1Rhythm'] as String? ?? '',
+      block2Intention: data['block2Intention'] as String? ?? '',
+      block2Energy: data['block2Energy'] as String? ?? '',
+      block2Look: data['block2Look'] as String? ?? '',
+      block2Rhythm: data['block2Rhythm'] as String? ?? '',
+      block3Intention: data['block3Intention'] as String? ?? '',
+      block3Energy: data['block3Energy'] as String? ?? '',
+      block3Look: data['block3Look'] as String? ?? '',
+      block3Rhythm: data['block3Rhythm'] as String? ?? '',
+      startPosition: data['startPosition'] as String? ?? '',
+      plannedMovement: data['plannedMovement'] as String? ?? '',
+      expectedGestures: data['expectedGestures'] as String? ?? '',
+      usedObjects: actorSheet['props'] as String? ?? '',
+      keyActionMoment: data['keyActionMoment'] as String? ?? '',
+      bodyDirection: data['bodyDirection'] as String? ?? '',
+      framingType: actorSheet['recommendedFraming'] as String? ?? '',
+      cameraRelation: data['cameraRelation'] as String? ?? '',
+      gazePoint: data['gazePoint'] as String? ?? '',
+      faceDirection: data['faceDirection'] as String? ?? '',
+      globalTempo: data['globalTempo'] as String? ?? '',
+      silences: data['silences'] as String? ?? '',
+      dramaticRise: data['dramaticRise'] as String? ?? '',
+      floorMark: data['floorMark'] as String? ?? '',
+      startCue: data['startCue'] as String? ?? '',
+      movementCue: data['movementCue'] as String? ?? '',
+      exactEnd: data['exactEnd'] as String? ?? '',
+      idealTextDuration:
+          data['idealTextDuration'] as String? ?? data['durationSeconds']?.toString() ?? '',
+      technicalConstraints: actorSheet['actingConstraints'] as String? ?? '',
+      spectatorFeeling: data['spectatorFeeling'] as String? ?? '',
+      directorFinalNote: actorSheet['adminNotes'] as String? ?? '',
+      requestedVideoFormat:
+          actorSheet['requestedVideoFormat'] as String? ?? '16:9',
+      testedPrompts: (data['testedPrompts'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+      aiIntroVideo: aiIntroVideo == null
+          ? null
+          : AiGeneratedVideo(
+              provider: aiIntroVideo['provider'] as String? ?? 'veo3',
+              prompt: aiIntroVideo['prompt'] as String? ?? '',
+              videoUrl: aiIntroVideo['videoUrl'] as String? ?? '',
+              thumbnailUrl: aiIntroVideo['thumbnailUrl'] as String?,
+              durationSeconds:
+                  (aiIntroVideo['durationSeconds'] as num?)?.toInt() ?? 15,
+              aspectRatio: aiIntroVideo['aspectRatio'] as String? ?? '16:9',
+              status: aiIntroVideoStatusFromString(
+                aiIntroVideo['status'] as String?,
+              ),
+              generatedAt: _readAdminDate(aiIntroVideo['generatedAt']),
+              updatedAt: _readAdminDate(aiIntroVideo['updatedAt']),
+            ),
+      visualTransitionPoint:
+          raccord['visualTransitionPoint'] as String? ?? '',
+      emotionalTransitionPoint:
+          raccord['emotionalTransitionPoint'] as String? ?? '',
+      firstActorAction: raccord['firstActorAction'] as String? ?? '',
+      firstExpectedEmotion:
+          raccord['firstExpectedEmotion'] as String? ?? '',
+      lastAiFrameDescription:
+          raccord['lastAiFrameDescription'] as String? ?? '',
+      createdAt: _readAdminDate(publication['createdAt'] ?? data['createdAt']),
+      updatedAt: _readAdminDate(publication['updatedAt'] ?? data['updatedAt']),
+      submittedAt: publication['submittedAt'] == null
+          ? null
+          : _readAdminDate(publication['submittedAt']),
+      publishedAt: publication['publishedAt'] == null
+          ? null
+          : _readAdminDate(publication['publishedAt']),
+      createdBy: publication['createdBy'] as String? ?? 'admin_take30',
     );
   }
 }
@@ -599,9 +992,6 @@ class AdminDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final drafts = SceneDraftRepository.drafts().length;
-    final published = SceneDraftRepository.published().length;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Take 60 • Administration'),
@@ -615,75 +1005,84 @@ class AdminDashboardPage extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: GridView.count(
-          crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: [
-            _AdminTile(
-              title: 'Ajout scène',
-              subtitle: 'Créer une fiche acteur de 1 minute',
-              icon: Icons.add_box_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6C4DFF), Color(0xFF8D74FF)],
-              ),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AddScenePage(),
+      body: StreamBuilder<List<SceneFormData>>(
+        stream: SceneDraftRepository.watchAll(),
+        builder: (context, snapshot) {
+          final items = snapshot.data ?? SceneDraftRepository.all();
+          final drafts = items.where((item) => item.status == SceneStatus.draft).length;
+          final pending = items
+              .where((item) => item.status == SceneStatus.pendingPublication)
+              .length;
+          final published = items
+              .where((item) => item.status == SceneStatus.published)
+              .length;
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: GridView.count(
+              crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              children: [
+                _AdminTile(
+                  title: 'Ajout scène',
+                  subtitle: 'Créer la scène, la fiche acteur et la video IA',
+                  icon: Icons.add_box_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6C4DFF), Color(0xFF8D74FF)],
                   ),
-                );
-              },
-            ),
-            _AdminTile(
-              title: 'Analytics full',
-              subtitle: 'Vue complète des scènes, projets et tendances',
-              icon: Icons.analytics_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
-              ),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AnalyticsFullPage(),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AddScenePage(),
+                      ),
+                    );
+                  },
+                ),
+                _AdminTile(
+                  title: 'Analytics full',
+                  subtitle: 'Vue complète des scènes, projets et tendances',
+                  icon: Icons.analytics_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
                   ),
-                );
-              },
-            ),
-            _AdminTile(
-              title: 'Bibliothèque scène',
-              subtitle: '$drafts brouillon(s) • $published publié(es)',
-              icon: Icons.video_library_rounded,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF121826), Color(0xFF2B3245)],
-              ),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SceneLibraryPage(),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AnalyticsFullPage(),
+                      ),
+                    );
+                  },
+                ),
+                _AdminTile(
+                  title: 'Bibliothèque scène',
+                  subtitle:
+                      '$drafts brouillon(s) • $pending en attente • $published publiee(s)',
+                  icon: Icons.video_library_rounded,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF97316), Color(0xFFFB923C)],
                   ),
-                );
-              },
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SceneLibraryPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
 class _AdminTile extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  final Gradient gradient;
-
   const _AdminTile({
     required this.title,
     required this.subtitle,
@@ -692,11 +1091,17 @@ class _AdminTile extends StatelessWidget {
     required this.gradient,
   });
 
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+  final Gradient gradient;
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(28),
       onTap: onTap,
+      borderRadius: BorderRadius.circular(28),
       child: Ink(
         decoration: BoxDecoration(
           gradient: gradient,
@@ -704,42 +1109,40 @@ class _AdminTile extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white.withValues(alpha: 0.16),
-                child: Icon(icon, color: Colors.white, size: 28),
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.white.withValues(alpha: 0.18),
+              child: Icon(icon, color: Colors.white),
+            ),
+            const Spacer(),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
               ),
-              const Spacer(),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                  height: 1.05,
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.45,
+                color: Colors.white.withValues(alpha: 0.86),
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  fontSize: 12.5,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -751,102 +1154,131 @@ class AnalyticsFullPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = SceneDraftRepository.all();
-    final drafts = SceneDraftRepository.drafts();
-    final published = SceneDraftRepository.published();
-    final uniqueProjects = items
-        .map((item) => item.projectTitle.trim())
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .length;
-    final uniqueCharacters = items
-        .map((item) => item.characterName.trim())
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .length;
-
-    final topProjects = _sortedCountEntries(
-      items.map((item) => item.projectTitle),
-      emptyLabel: 'Sans projet',
-    );
-    final topEmotions = _sortedCountEntries(
-      items.map((item) => item.dominantEmotion),
-      emptyLabel: 'Non définie',
-    );
-    final topDirectors = _sortedCountEntries(
-      items.map((item) => item.director),
-      emptyLabel: 'Non renseigné',
-    );
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics full'),
         backgroundColor: Colors.transparent,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Row(
+      body: StreamBuilder<List<SceneFormData>>(
+        stream: SceneDraftRepository.watchAll(),
+        builder: (context, snapshot) {
+          final items = snapshot.data ?? SceneDraftRepository.all();
+          final drafts = items.where((item) => item.status == SceneStatus.draft).toList();
+          final pending = items
+              .where((item) => item.status == SceneStatus.pendingPublication)
+              .toList();
+          final published = items
+              .where((item) => item.status == SceneStatus.published)
+              .toList();
+          final uniqueProjects = items
+              .map((item) => item.projectTitle.trim())
+              .where((value) => value.isNotEmpty)
+              .toSet()
+              .length;
+          final uniqueCharacters = items
+              .map((item) => item.characterName.trim())
+              .where((value) => value.isNotEmpty)
+              .toSet()
+              .length;
+
+          final topProjects = _sortedCountEntries(
+            items.map((item) => item.projectTitle),
+            emptyLabel: 'Sans projet',
+          );
+          final topEmotions = _sortedCountEntries(
+            items.map((item) => item.dominantEmotion),
+            emptyLabel: 'Non definie',
+          );
+          final topDirectors = _sortedCountEntries(
+            items.map((item) => item.director),
+            emptyLabel: 'Non renseigne',
+          );
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              Expanded(
-                child: _AnalyticsStatCard(
-                  label: 'Scènes',
-                  value: items.length.toString(),
-                  color: const Color(0xFF6C4DFF),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _AnalyticsStatCard(
+                      label: 'Scenes',
+                      value: items.length.toString(),
+                      color: const Color(0xFF6C4DFF),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _AnalyticsStatCard(
+                      label: 'Brouillons',
+                      value: drafts.length.toString(),
+                      color: const Color(0xFFF97316),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _AnalyticsStatCard(
+                      label: 'En attente',
+                      value: pending.length.toString(),
+                      color: const Color(0xFF1D4ED8),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _AnalyticsStatCard(
+                      label: 'Publiees',
+                      value: published.length.toString(),
+                      color: const Color(0xFF0F766E),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _AnalyticsStatCard(
-                  label: 'Publiées',
-                  value: published.length.toString(),
-                  color: const Color(0xFF16A34A),
-                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _AnalyticsStatCard(
+                      label: 'Projets',
+                      value: uniqueProjects.toString(),
+                      color: const Color(0xFF1D4ED8),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _AnalyticsStatCard(
+                      label: 'Personnages',
+                      value: uniqueCharacters.toString(),
+                      color: const Color(0xFFDC2626),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _AnalyticsBreakdownCard(
+                title: 'Statuts',
+                items: [
+                  ('Brouillon', drafts.length, const Color(0xFFF97316)),
+                  ('En attente', pending.length, const Color(0xFF1D4ED8)),
+                  ('Publiee', published.length, const Color(0xFF0F766E)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _AnalyticsListCard(
+                title: 'Top projets',
+                entries: topProjects,
+              ),
+              const SizedBox(height: 16),
+              _AnalyticsListCard(
+                title: 'Emotions dominantes',
+                entries: topEmotions,
+              ),
+              const SizedBox(height: 16),
+              _AnalyticsListCard(
+                title: 'Direction / realisation',
+                entries: topDirectors,
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _AnalyticsStatCard(
-                  label: 'Projets',
-                  value: uniqueProjects.toString(),
-                  color: const Color(0xFF0EA5E9),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _AnalyticsStatCard(
-                  label: 'Personnages',
-                  value: uniqueCharacters.toString(),
-                  color: const Color(0xFFF59E0B),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _AnalyticsBreakdownCard(
-            drafts: drafts.length,
-            published: published.length,
-            total: items.length,
-          ),
-          const SizedBox(height: 16),
-          _AnalyticsListCard(
-            title: 'Top projets',
-            entries: topProjects,
-          ),
-          const SizedBox(height: 16),
-          _AnalyticsListCard(
-            title: 'Top émotions dominantes',
-            entries: topEmotions,
-          ),
-          const SizedBox(height: 16),
-          _AnalyticsListCard(
-            title: 'Direction / réalisateur',
-            entries: topDirectors,
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -900,20 +1332,17 @@ class _AnalyticsStatCard extends StatelessWidget {
 
 class _AnalyticsBreakdownCard extends StatelessWidget {
   const _AnalyticsBreakdownCard({
-    required this.drafts,
-    required this.published,
-    required this.total,
+    required this.title,
+    required this.items,
   });
 
-  final int drafts;
-  final int published;
-  final int total;
+  final String title;
+  final List<(String, int, Color)> items;
 
   @override
   Widget build(BuildContext context) {
+    final total = items.fold<int>(0, (runningTotal, item) => runningTotal + item.$2);
     final safeTotal = total == 0 ? 1 : total;
-    final draftRatio = drafts / safeTotal;
-    final publishedRatio = published / safeTotal;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -925,9 +1354,9 @@ class _AnalyticsBreakdownCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Répartition des statuts',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 14),
           ClipRRect(
@@ -936,27 +1365,30 @@ class _AnalyticsBreakdownCard extends StatelessWidget {
               height: 14,
               child: Row(
                 children: [
-                  Expanded(
-                    flex: (draftRatio * 1000).round(),
-                    child: Container(color: const Color(0xFFF59E0B)),
-                  ),
-                  Expanded(
-                    flex: (publishedRatio * 1000).round(),
-                    child: Container(color: const Color(0xFF16A34A)),
-                  ),
-                  if (drafts == 0 && published == 0)
+                  if (items.every((item) => item.$2 == 0))
                     const Expanded(child: ColoredBox(color: Color(0xFFE5E7EB))),
+                  ...items.where((item) => item.$2 > 0).map(
+                        (item) => Expanded(
+                          flex: ((item.$2 / safeTotal) * 1000).round(),
+                          child: Container(color: item.$3),
+                        ),
+                      ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              _LegendDot(color: const Color(0xFFF59E0B), label: 'Brouillons $drafts'),
-              const SizedBox(width: 16),
-              _LegendDot(color: const Color(0xFF16A34A), label: 'Publiées $published'),
-            ],
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: items
+                .map(
+                  (item) => _LegendDot(
+                    color: item.$3,
+                    label: '${item.$1} ${item.$2}',
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -1081,7 +1513,14 @@ List<MapEntry<String, int>> _sortedCountEntries(
 }
 
 class AddScenePage extends StatefulWidget {
-  const AddScenePage({super.key});
+  const AddScenePage({
+    super.key,
+    this.initialData,
+    this.veoVideoGenerationService,
+  });
+
+  final SceneFormData? initialData;
+  final VeoVideoGenerationService? veoVideoGenerationService;
 
   @override
   State<AddScenePage> createState() => _AddScenePageState();
@@ -1091,6 +1530,15 @@ class _AddScenePageState extends State<AddScenePage> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
   final SpeechToText _speechToText = SpeechToText();
+  late final VeoVideoGenerationService _veoVideoGenerationService;
+  final _step15SectionKey = GlobalKey();
+  final _step16SectionKey = GlobalKey();
+
+  late final String _sceneDraftId;
+  late final DateTime _sceneCreatedAt;
+
+  final categoryCtrl = TextEditingController(text: 'Audition');
+  final genreCtrl = TextEditingController(text: 'Drame');
 
   final projectTitleCtrl = TextEditingController();
   final sceneNameCtrl = TextEditingController();
@@ -1102,6 +1550,7 @@ class _AddScenePageState extends State<AddScenePage> {
 
   final characterNameCtrl = TextEditingController();
   final apparentAgeCtrl = TextEditingController();
+  final characterGenderCtrl = TextEditingController();
   final profileRoleCtrl = TextEditingController();
   final relationshipCtrl = TextEditingController();
   final initialStateCtrl = TextEditingController();
@@ -1165,6 +1614,13 @@ class _AddScenePageState extends State<AddScenePage> {
 
   final spectatorFeelingCtrl = TextEditingController();
   final directorFinalNoteCtrl = TextEditingController();
+  final requestedVideoFormatCtrl = TextEditingController(text: '16:9');
+  final veoPromptCtrl = TextEditingController(text: _kDefaultVeoPrompt);
+  final visualTransitionPointCtrl = TextEditingController();
+  final emotionalTransitionPointCtrl = TextEditingController();
+  final firstActorActionCtrl = TextEditingController();
+  final firstExpectedEmotionCtrl = TextEditingController();
+  final lastAiFrameDescriptionCtrl = TextEditingController();
 
   String selectedMainObjective = 'convaincre';
   String selectedDominantEmotion = 'détermination';
@@ -1174,6 +1630,7 @@ class _AddScenePageState extends State<AddScenePage> {
   String selectedFramingType = 'plan poitrine';
   String selectedCameraRelation = 'légèrement hors caméra';
   String selectedGlobalTempo = 'progressif';
+  String selectedRecommendedLevel = 'intermédiaire';
 
   final List<String> selectedStyles = ['cinéma', 'intense'];
 
@@ -1252,6 +1709,13 @@ class _AddScenePageState extends State<AddScenePage> {
     'punchy',
   ];
 
+  final recommendedLevelOptions = const [
+    'débutant',
+    'intermédiaire',
+    'confirmé',
+    'avancé',
+  ];
+
   bool _speechAvailable = false;
   bool _speechInitializing = false;
   bool _isListeningToDialogue = false;
@@ -1259,12 +1723,137 @@ class _AddScenePageState extends State<AddScenePage> {
   String _dialogueSpeechBaseText = '';
   String? _dialogueSpeechStatus;
   String? _dialogueSpeechError;
+  bool _isGeneratingPreview = false;
+  bool _isVeoPromptLocked = false;
+  String? _veoGenerationStatus;
+  String? _veoGenerationError;
+  AiGeneratedVideo? _generatedPreviewVideo;
+  AiGeneratedVideo? _validatedPreviewVideo;
+  List<String> _testedPrompts = [];
+  SceneStatus _selectedPublicationTarget = SceneStatus.draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _veoVideoGenerationService = widget.veoVideoGenerationService ??
+      VeoVideoGenerationServiceFactory.createDefault();
+    _sceneDraftId =
+        widget.initialData?.id ?? 'scene_${DateTime.now().millisecondsSinceEpoch}';
+    _sceneCreatedAt = widget.initialData?.createdAt ?? DateTime.now();
+    if (widget.initialData != null) {
+      _hydrateFromDraft(widget.initialData!);
+    }
+  }
+
+  void _hydrateFromDraft(SceneFormData data) {
+    categoryCtrl.text = data.category;
+    genreCtrl.text = data.genre;
+    projectTitleCtrl.text = data.projectTitle;
+    sceneNameCtrl.text = data.sceneName;
+    sceneNumberCtrl.text = data.sceneNumber;
+    shootDateCtrl.text = data.shootDate;
+    locationCtrl.text = data.location;
+    directorCtrl.text = data.director;
+    targetDurationCtrl.text = data.targetDuration;
+    characterNameCtrl.text = data.characterName;
+    apparentAgeCtrl.text = data.apparentAge;
+    characterGenderCtrl.text = data.characterGender;
+    profileRoleCtrl.text = data.profileRole;
+    relationshipCtrl.text = data.relationship;
+    initialStateCtrl.text = data.initialState;
+    characterSummaryCtrl.text = data.characterSummary;
+    previousMomentCtrl.text = data.previousMoment;
+    whereAreWeCtrl.text = data.whereAreWe;
+    withWhoCtrl.text = data.withWho;
+    whyImportantCtrl.text = data.whyImportant;
+    contextSummaryCtrl.text = data.contextSummary;
+    mainObstacleCtrl.text = data.mainObstacle;
+    stakesCtrl.text = data.stakes;
+    evolutionStartCtrl.text = data.evolutionStart;
+    evolutionMiddleCtrl.text = data.evolutionMiddle;
+    evolutionEndCtrl.text = data.evolutionEnd;
+    emotionalNuanceCtrl.text = data.emotionalNuance;
+    actingDirectionCtrl.text = data.actingDirection;
+    referencesCtrl.text = data.references;
+    dialogueTextCtrl.text = data.dialogueText;
+    emphasizedWordsCtrl.text = data.emphasizedWords;
+    keyPhraseCtrl.text = data.keyPhrase;
+    block1IntentionCtrl.text = data.block1Intention;
+    block1EnergyCtrl.text = data.block1Energy;
+    block1LookCtrl.text = data.block1Look;
+    block1RhythmCtrl.text = data.block1Rhythm;
+    block2IntentionCtrl.text = data.block2Intention;
+    block2EnergyCtrl.text = data.block2Energy;
+    block2LookCtrl.text = data.block2Look;
+    block2RhythmCtrl.text = data.block2Rhythm;
+    block3IntentionCtrl.text = data.block3Intention;
+    block3EnergyCtrl.text = data.block3Energy;
+    block3LookCtrl.text = data.block3Look;
+    block3RhythmCtrl.text = data.block3Rhythm;
+    startPositionCtrl.text = data.startPosition;
+    plannedMovementCtrl.text = data.plannedMovement;
+    expectedGesturesCtrl.text = data.expectedGestures;
+    usedObjectsCtrl.text = data.usedObjects;
+    keyActionMomentCtrl.text = data.keyActionMoment;
+    bodyDirectionCtrl.text = data.bodyDirection;
+    gazePointCtrl.text = data.gazePoint;
+    faceDirectionCtrl.text = data.faceDirection;
+    silencesCtrl.text = data.silences;
+    dramaticRiseCtrl.text = data.dramaticRise;
+    floorMarkCtrl.text = data.floorMark;
+    startCueCtrl.text = data.startCue;
+    movementCueCtrl.text = data.movementCue;
+    exactEndCtrl.text = data.exactEnd;
+    idealTextDurationCtrl.text = data.idealTextDuration;
+    technicalConstraintsCtrl.text = data.technicalConstraints;
+    spectatorFeelingCtrl.text = data.spectatorFeeling;
+    directorFinalNoteCtrl.text = data.directorFinalNote;
+    requestedVideoFormatCtrl.text = data.requestedVideoFormat;
+    veoPromptCtrl.text = data.aiIntroVideo?.prompt ?? _kDefaultVeoPrompt;
+    visualTransitionPointCtrl.text = data.visualTransitionPoint;
+    emotionalTransitionPointCtrl.text = data.emotionalTransitionPoint;
+    firstActorActionCtrl.text = data.firstActorAction;
+    firstExpectedEmotionCtrl.text = data.firstExpectedEmotion;
+    lastAiFrameDescriptionCtrl.text = data.lastAiFrameDescription;
+
+    selectedMainObjective = data.mainObjective.isEmpty ? selectedMainObjective : data.mainObjective;
+    selectedDominantEmotion = data.dominantEmotion.isEmpty
+        ? selectedDominantEmotion
+        : data.dominantEmotion;
+    selectedSecondaryEmotion = data.secondaryEmotion.isEmpty
+        ? selectedSecondaryEmotion
+        : data.secondaryEmotion;
+    selectedIntensity = data.intensity.isEmpty ? selectedIntensity : data.intensity;
+    selectedTextType = data.textType.isEmpty ? selectedTextType : data.textType;
+    selectedFramingType =
+        data.framingType.isEmpty ? selectedFramingType : data.framingType;
+    selectedCameraRelation = data.cameraRelation.isEmpty
+        ? selectedCameraRelation
+        : data.cameraRelation;
+    selectedGlobalTempo =
+        data.globalTempo.isEmpty ? selectedGlobalTempo : data.globalTempo;
+    selectedRecommendedLevel = data.recommendedLevel.isEmpty
+        ? selectedRecommendedLevel
+        : data.recommendedLevel;
+    selectedStyles
+      ..clear()
+      ..addAll(data.playStyles);
+    _testedPrompts = List<String>.from(data.testedPrompts);
+    _generatedPreviewVideo = data.aiIntroVideo;
+    _validatedPreviewVideo = data.aiIntroVideo?.isValidated == true
+        ? data.aiIntroVideo
+        : null;
+    _isVeoPromptLocked = data.aiIntroVideo != null;
+    _selectedPublicationTarget = data.status;
+  }
 
   @override
   void dispose() {
     _speechToText.cancel();
     _scrollController.dispose();
     for (final c in [
+      categoryCtrl,
+      genreCtrl,
       projectTitleCtrl,
       sceneNameCtrl,
       sceneNumberCtrl,
@@ -1274,6 +1863,7 @@ class _AddScenePageState extends State<AddScenePage> {
       targetDurationCtrl,
       characterNameCtrl,
       apparentAgeCtrl,
+      characterGenderCtrl,
       profileRoleCtrl,
       relationshipCtrl,
       initialStateCtrl,
@@ -1324,16 +1914,36 @@ class _AddScenePageState extends State<AddScenePage> {
       technicalConstraintsCtrl,
       spectatorFeelingCtrl,
       directorFinalNoteCtrl,
+      requestedVideoFormatCtrl,
+      veoPromptCtrl,
+      visualTransitionPointCtrl,
+      emotionalTransitionPointCtrl,
+      firstActorActionCtrl,
+      firstExpectedEmotionCtrl,
+      lastAiFrameDescriptionCtrl,
     ]) {
       c.dispose();
     }
     super.dispose();
   }
 
-  SceneFormData _buildData(SceneStatus status) {
+  SceneFormData _composeData(SceneStatus status, {DateTime? updatedAt}) {
+    final now = updatedAt ?? DateTime.now();
+    final currentVideo = (_validatedPreviewVideo ?? _generatedPreviewVideo)
+        ?.copyWith(
+          status: _validatedPreviewVideo != null
+              ? AiIntroVideoStatus.validated
+              : (_generatedPreviewVideo?.status ?? AiIntroVideoStatus.generated),
+          prompt: veoPromptCtrl.text.trim(),
+          updatedAt: now,
+        );
+
     return SceneFormData(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _sceneDraftId,
       status: status,
+      category: categoryCtrl.text.trim(),
+      genre: genreCtrl.text.trim(),
+      recommendedLevel: selectedRecommendedLevel,
       projectTitle: projectTitleCtrl.text.trim(),
       sceneName: sceneNameCtrl.text.trim(),
       sceneNumber: sceneNumberCtrl.text.trim(),
@@ -1343,6 +1953,7 @@ class _AddScenePageState extends State<AddScenePage> {
       targetDuration: targetDurationCtrl.text.trim(),
       characterName: characterNameCtrl.text.trim(),
       apparentAge: apparentAgeCtrl.text.trim(),
+      characterGender: characterGenderCtrl.text.trim(),
       profileRole: profileRoleCtrl.text.trim(),
       relationship: relationshipCtrl.text.trim(),
       initialState: initialStateCtrl.text.trim(),
@@ -1402,37 +2013,119 @@ class _AddScenePageState extends State<AddScenePage> {
       technicalConstraints: technicalConstraintsCtrl.text.trim(),
       spectatorFeeling: spectatorFeelingCtrl.text.trim(),
       directorFinalNote: directorFinalNoteCtrl.text.trim(),
+      requestedVideoFormat: requestedVideoFormatCtrl.text.trim(),
+      testedPrompts: _testedPrompts,
+      aiIntroVideo: currentVideo,
+      visualTransitionPoint: visualTransitionPointCtrl.text.trim(),
+      emotionalTransitionPoint: emotionalTransitionPointCtrl.text.trim(),
+      firstActorAction: firstActorActionCtrl.text.trim(),
+      firstExpectedEmotion: firstExpectedEmotionCtrl.text.trim(),
+      lastAiFrameDescription: lastAiFrameDescriptionCtrl.text.trim(),
+      createdAt: _sceneCreatedAt,
+      updatedAt: now,
+      submittedAt: status == SceneStatus.pendingPublication ||
+              status == SceneStatus.published
+          ? (widget.initialData?.submittedAt ?? now)
+          : null,
+      publishedAt:
+          status == SceneStatus.published ? (widget.initialData?.publishedAt ?? now) : null,
+      createdBy: adminAccessController.value.identifier ?? 'admin_take30',
     );
   }
 
-  Future<void> _save(SceneStatus status) async {
-    if (status == SceneStatus.published) {
-      if (!_formKey.currentState!.validate()) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOut,
-        );
-        return;
-      }
+  SceneFormData _buildData(SceneStatus status) => _composeData(status);
+
+  SceneFormData _currentPreviewData() =>
+      _composeData(_selectedPublicationTarget, updatedAt: DateTime.now());
+
+  bool _hasActorSheet() {
+    return characterNameCtrl.text.trim().isNotEmpty &&
+        dialogueTextCtrl.text.trim().isNotEmpty;
+  }
+
+  void _showAdminMessage(String message, {Color? backgroundColor}) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: backgroundColor),
+    );
+  }
+
+  Future<void> _scrollToSection(GlobalKey key) async {
+    final targetContext = key.currentContext;
+    if (targetContext == null) {
+      return;
+    }
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      alignment: 0.04,
+    );
+  }
+
+  Future<void> _persistScene(
+    SceneStatus status, {
+    required bool requireValidatedVideo,
+  }) async {
+    if (!_formKey.currentState!.validate()) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+      );
+      return;
+    }
+
+    if (!_hasActorSheet()) {
+      _showAdminMessage(
+        'La fiche acteur doit au minimum contenir un personnage et un texte.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+      return;
+    }
+
+    if (requireValidatedVideo && _validatedPreviewVideo == null) {
+      _showAdminMessage(
+        'Une video IA validee est requise avant de generer la scene.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+      await _scrollToSection(_step15SectionKey);
+      return;
     }
 
     final data = _buildData(status);
     await SceneDraftRepository.save(data);
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          status == SceneStatus.draft
-              ? 'Scène enregistrée en brouillon'
-              : 'Scène publiée',
-        ),
-      ),
+    setState(() {
+      _selectedPublicationTarget = status;
+    });
+
+    _showAdminMessage(
+      switch (status) {
+        SceneStatus.draft => 'Scene enregistree en brouillon.',
+        SceneStatus.pendingPublication =>
+          'Scene envoyee en attente de publication.',
+        SceneStatus.published => 'Scene publiee dans la bibliotheque.',
+      },
+      backgroundColor: const Color(0xFF0F766E),
     );
+  }
 
-    Navigator.pop(context);
+  Future<void> _saveDraft() {
+    return _persistScene(SceneStatus.draft, requireValidatedVideo: false);
+  }
+
+  Future<void> _generateScene() {
+    return _persistScene(
+      _selectedPublicationTarget,
+      requireValidatedVideo: true,
+    );
   }
 
   @override
@@ -1479,6 +2172,8 @@ class _AddScenePageState extends State<AddScenePage> {
                       _MenuHintItem('12. Repères techniques'),
                       _MenuHintItem('13. Ressenti spectateur'),
                       _MenuHintItem('14. Note finale'),
+                      _MenuHintItem('15. Vidéo IA d’introduction'),
+                      _MenuHintItem('16. Preview détail'),
                     ],
                   ),
                 ),
@@ -1492,6 +2187,15 @@ class _AddScenePageState extends State<AddScenePage> {
                       children: [
                         _requiredField(projectTitleCtrl, 'Titre du projet'),
                         _requiredField(sceneNameCtrl, 'Nom de la scène'),
+                        _requiredField(categoryCtrl, 'Catégorie'),
+                        _requiredField(genreCtrl, 'Genre'),
+                        _dropdown(
+                          label: 'Niveau recommandé',
+                          value: selectedRecommendedLevel,
+                          items: recommendedLevelOptions,
+                          onChanged: (value) =>
+                              setState(() => selectedRecommendedLevel = value!),
+                        ),
                         _textField(sceneNumberCtrl, 'Numéro de scène / prise'),
                         _textField(shootDateCtrl, 'Date du tournage'),
                         _textField(locationCtrl, 'Lieu'),
@@ -1507,6 +2211,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       children: [
                         _requiredField(characterNameCtrl, 'Nom du personnage'),
                         _textField(apparentAgeCtrl, 'Âge apparent'),
+                        _textField(characterGenderCtrl, 'Genre du personnage'),
                         _textField(profileRoleCtrl, 'Profil / rôle'),
                         _textField(
                           relationshipCtrl,
@@ -1745,6 +2450,258 @@ class _AddScenePageState extends State<AddScenePage> {
                         ),
                       ],
                     ),
+                    _section(
+                      '15) Vidéo IA d’introduction',
+                      sectionKey: _step15SectionKey,
+                      children: [
+                        const Text(
+                          'Rédigez ici le prompt qui servira à générer une vidéo cinématique d’environ 15 secondes. Cette vidéo doit préparer l’ambiance émotionnelle de la scène sans voler la place de l’acteur. Elle doit idéalement se terminer sur un cadrage permettant un raccord naturel avec la scène jouée.',
+                          style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                        ),
+                        TextFormField(
+                          controller: veoPromptCtrl,
+                          enabled: !_isGeneratingPreview && !_isVeoPromptLocked,
+                          maxLines: 8,
+                          minLines: 8,
+                          decoration: const InputDecoration(
+                            labelText: 'Prompt VEO3',
+                            alignLabelWithHint: true,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Aide prompt VEO3',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF111827),
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              Text('• Durée recommandée : environ 15 secondes.'),
+                              Text('• Format recommandé : 16:9.'),
+                              Text('• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
+                              Text('• Éviter les visages identifiables.'),
+                              Text('• Éviter le texte à l’image.'),
+                              Text('• Éviter les logos.'),
+                              Text('• La vidéo IA doit servir d’introduction émotionnelle.'),
+                            ],
+                          ),
+                        ),
+                        if (_testedPrompts.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _testedPrompts
+                                .map(
+                                  (prompt) => ActionChip(
+                                    label: Text(
+                                      prompt.length > 42
+                                          ? '${prompt.substring(0, 42)}…'
+                                          : prompt,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        veoPromptCtrl.text = prompt;
+                                      });
+                                    },
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        if (_veoGenerationError != null || _veoGenerationStatus != null)
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: _veoGenerationError != null
+                                  ? const Color(0xFFFEF2F2)
+                                  : const Color(0xFFECFDF5),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _veoGenerationError != null
+                                      ? Icons.error_outline_rounded
+                                      : Icons.auto_awesome_rounded,
+                                  color: _veoGenerationError != null
+                                      ? const Color(0xFFB91C1C)
+                                      : const Color(0xFF0F766E),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _veoGenerationError ?? _veoGenerationStatus!,
+                                    style: TextStyle(
+                                      color: _veoGenerationError != null
+                                          ? const Color(0xFF991B1B)
+                                          : const Color(0xFF065F46),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        FilledButton.icon(
+                          onPressed: _isGeneratingPreview ? null : _generatePreviewVideo,
+                          icon: _isGeneratingPreview
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.auto_awesome_rounded),
+                          label: Text(
+                            _isGeneratingPreview
+                                ? 'Génération de la preview vidéo en cours…'
+                                : 'Valider et générer la preview',
+                          ),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                        ),
+                        if (_generatedPreviewVideo != null) ...[
+                          AdminVideoPreview(
+                            videoUrl: _generatedPreviewVideo!.videoUrl,
+                            thumbnailUrl: _generatedPreviewVideo!.thumbnailUrl,
+                            caption:
+                                'Vidéo IA d’introduction — destinée à créer l’ambiance de la scène.',
+                          ),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: _correctVeoPrompt,
+                                icon: const Icon(Icons.edit_rounded),
+                                label: const Text('Corriger le prompt'),
+                              ),
+                              FilledButton.icon(
+                                onPressed: _validatedPreviewVideo != null
+                                    ? null
+                                    : _validateGeneratedVideo,
+                                icon: Icon(
+                                  _validatedPreviewVideo != null
+                                      ? Icons.check_circle_rounded
+                                      : Icons.verified_rounded,
+                                ),
+                                label: Text(
+                                  _validatedPreviewVideo != null
+                                      ? 'Vidéo validée'
+                                      : 'Valider cette vidéo',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                    _section(
+                      '16) Prévisualisation de la page détail de scène',
+                      sectionKey: _step16SectionKey,
+                      children: [
+                        const Text(
+                          'L’admin voit ici exactement comment la scène apparaîtra avant publication. La vidéo IA reste toujours une introduction émotionnelle, distincte de la prestation de l’acteur.',
+                          style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                        ),
+                        _SceneDetailPreview(scene: _currentPreviewData()),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                _scrollController.animateTo(
+                                  0,
+                                  duration: const Duration(milliseconds: 450),
+                                  curve: Curves.easeOutCubic,
+                                );
+                              },
+                              icon: const Icon(Icons.tune_rounded),
+                              label: const Text('Modifier les informations'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () async {
+                                _correctVeoPrompt();
+                                await _scrollToSection(_step15SectionKey);
+                              },
+                              icon: const Icon(Icons.edit_note_rounded),
+                              label: const Text('Modifier le prompt VEO3'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed:
+                                  _isGeneratingPreview ? null : _generatePreviewVideo,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Régénérer la vidéo'),
+                            ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: SceneStatus.values
+                              .map(
+                                (status) => ChoiceChip(
+                                  label: Text(status.label),
+                                  selected: _selectedPublicationTarget == status,
+                                  onSelected: (_) {
+                                    setState(() {
+                                      _selectedPublicationTarget = status;
+                                    });
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _saveDraft,
+                              icon: const Icon(Icons.save_outlined),
+                              label: const Text('Enregistrer en brouillon'),
+                            ),
+                            FilledButton.tonalIcon(
+                              onPressed: () {
+                                setState(() {
+                                  _selectedPublicationTarget =
+                                      SceneStatus.pendingPublication;
+                                });
+                                _generateScene();
+                              },
+                              icon: const Icon(Icons.schedule_send_rounded),
+                              label: const Text('Envoyer en attente de publication'),
+                            ),
+                            FilledButton.tonalIcon(
+                              onPressed: () {
+                                setState(() {
+                                  _selectedPublicationTarget = SceneStatus.published;
+                                });
+                                _generateScene();
+                              },
+                              icon: const Icon(Icons.publish_rounded),
+                              label: const Text('Publier'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -1764,7 +2721,7 @@ class _AddScenePageState extends State<AddScenePage> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _save(SceneStatus.draft),
+                  onPressed: _saveDraft,
                   icon: const Icon(Icons.edit_note_rounded),
                   label: const Text('Brouillon'),
                   style: OutlinedButton.styleFrom(
@@ -1778,9 +2735,9 @@ class _AddScenePageState extends State<AddScenePage> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () => _save(SceneStatus.published),
-                  icon: const Icon(Icons.publish_rounded),
-                  label: const Text('Publier'),
+                  onPressed: _generateScene,
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                  label: const Text('Générer la scène'),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(54),
                     shape: RoundedRectangleBorder(
@@ -1796,8 +2753,13 @@ class _AddScenePageState extends State<AddScenePage> {
     );
   }
 
-  Widget _section(String title, {required List<Widget> children}) {
+  Widget _section(
+    String title, {
+    Key? sectionKey,
+    required List<Widget> children,
+  }) {
     return Card(
+      key: sectionKey,
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
@@ -1947,6 +2909,93 @@ class _AddScenePageState extends State<AddScenePage> {
         ],
       ],
     );
+  }
+
+  Future<void> _generatePreviewVideo() async {
+    final prompt = veoPromptCtrl.text.trim();
+    if (prompt.isEmpty) {
+      setState(() {
+        _veoGenerationError = 'Le prompt VEO3 est obligatoire.';
+        _veoGenerationStatus = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _veoGenerationError = null;
+      _veoGenerationStatus = 'Génération de la preview vidéo en cours…';
+      _isGeneratingPreview = true;
+      _isVeoPromptLocked = true;
+      if (!_testedPrompts.contains(prompt)) {
+        _testedPrompts = [..._testedPrompts, prompt];
+      }
+    });
+
+    try {
+      final generated = await _veoVideoGenerationService.generateSceneIntroVideo(
+        sceneDraftId: _sceneDraftId,
+        prompt: prompt,
+        durationSeconds: 15,
+        aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+            ? '16:9'
+            : requestedVideoFormatCtrl.text.trim(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _generatedPreviewVideo = generated;
+        _validatedPreviewVideo = null;
+        _isGeneratingPreview = false;
+        _veoGenerationStatus =
+            'Preview générée. Vérifie le raccord final puis valide la vidéo.';
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isGeneratingPreview = false;
+        _isVeoPromptLocked = false;
+        _veoGenerationStatus = null;
+        _veoGenerationError =
+            'Impossible de générer la preview pour le moment. Réessaie.';
+      });
+    }
+  }
+
+  void _correctVeoPrompt() {
+    setState(() {
+      _isVeoPromptLocked = false;
+      _validatedPreviewVideo = null;
+      _veoGenerationError = null;
+      _veoGenerationStatus =
+          'Prompt réactivé. Corrige le texte puis relance une génération.';
+    });
+  }
+
+  Future<void> _validateGeneratedVideo() async {
+    final preview = _generatedPreviewVideo;
+    if (preview == null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    setState(() {
+      _validatedPreviewVideo = preview.copyWith(
+        prompt: veoPromptCtrl.text.trim(),
+        status: AiIntroVideoStatus.validated,
+        updatedAt: now,
+      );
+      _isVeoPromptLocked = true;
+      _veoGenerationError = null;
+      _veoGenerationStatus =
+          'Vidéo IA validée. Tu peux finaliser la prévisualisation détaillée.';
+    });
+
+    await _scrollToSection(_step16SectionKey);
   }
 
   Future<void> _startDialogueListening() async {
@@ -2250,72 +3299,527 @@ class SceneLibraryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = SceneDraftRepository.all().reversed.toList();
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Bibliothèque de scènes'),
+          backgroundColor: Colors.transparent,
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Brouillon'),
+              Tab(text: 'En attente de publication'),
+              Tab(text: 'Publiée'),
+            ],
+          ),
+        ),
+        body: StreamBuilder<List<SceneFormData>>(
+          stream: SceneDraftRepository.watchAll(),
+          builder: (context, snapshot) {
+            final items = snapshot.data ?? SceneDraftRepository.all();
+            if (items.isEmpty) {
+              return const Center(
+                child: Text(
+                  'Aucune scène enregistrée pour le moment',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              );
+            }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bibliothèque scène'),
-        backgroundColor: Colors.transparent,
+            return TabBarView(
+              children: [
+                _SceneLibraryList(
+                  items: items,
+                  status: SceneStatus.draft,
+                ),
+                _SceneLibraryList(
+                  items: items,
+                  status: SceneStatus.pendingPublication,
+                ),
+                _SceneLibraryList(
+                  items: items,
+                  status: SceneStatus.published,
+                ),
+              ],
+            );
+          },
+        ),
       ),
-      body: items.isEmpty
-          ? const Center(
-              child: Text(
-                'Aucune scène enregistrée pour le moment',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (_, index) {
-                final item = items[index];
-                final isDraft = item.status == SceneStatus.draft;
+    );
+  }
+}
 
-                return Card(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    title: Text(
-                      item.sceneName.isEmpty ? 'Sans titre' : item.sceneName,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        'Projet : ${item.projectTitle.isEmpty ? '-' : item.projectTitle}\n'
-                        'Personnage : ${item.characterName.isEmpty ? '-' : item.characterName}\n'
-                        'Statut : ${isDraft ? 'Brouillon' : 'Publié'}',
-                        style: TextStyle(
-                          height: 1.45,
-                          color: Colors.grey.shade700,
+class _SceneLibraryList extends StatelessWidget {
+  const _SceneLibraryList({
+    required this.items,
+    required this.status,
+  });
+
+  final List<SceneFormData> items;
+  final SceneStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = items.where((item) => item.status == status).toList();
+    if (filtered.isEmpty) {
+      return Center(
+        child: Text(
+          'Aucune scène dans ${status.label.toLowerCase()}',
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemBuilder: (_, index) => _SceneLibraryCard(scene: filtered[index]),
+      separatorBuilder: (_, __) => const SizedBox(height: 14),
+      itemCount: filtered.length,
+    );
+  }
+}
+
+class _SceneLibraryCard extends StatelessWidget {
+  const _SceneLibraryCard({required this.scene});
+
+  final SceneFormData scene;
+
+  Color get _statusBackground => switch (scene.status) {
+        SceneStatus.draft => const Color(0xFFFFF4DA),
+        SceneStatus.pendingPublication => const Color(0xFFDBEAFE),
+        SceneStatus.published => const Color(0xFFDCFCE7),
+      };
+
+  Color get _statusForeground => switch (scene.status) {
+        SceneStatus.draft => const Color(0xFF9A6B00),
+        SceneStatus.pendingPublication => const Color(0xFF1D4ED8),
+        SceneStatus.published => const Color(0xFF166534),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: SizedBox(
+                    width: 156,
+                    height: 92,
+                    child: scene.thumbnailUrl.isEmpty
+                        ? Container(
+                            color: const Color(0xFFE5E7EB),
+                            child: const Icon(
+                              Icons.movie_creation_outlined,
+                              color: Color(0xFF6B7280),
+                              size: 30,
+                            ),
+                          )
+                        : Image.network(
+                            scene.thumbnailUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFFE5E7EB),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        scene.displayTitle,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${scene.genre.isEmpty ? '-' : scene.genre} • ${scene.recommendedLevel.isEmpty ? '-' : scene.recommendedLevel}',
+                        style: const TextStyle(
+                          color: Color(0xFF4B5563),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Durée IA : ${scene.aiDurationSeconds}s • Créée le ${_formatAdminDate(scene.createdAt)}',
+                        style: const TextStyle(color: Color(0xFF6B7280)),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _statusBackground,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    scene.status.label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _statusForeground,
                     ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SceneAdminDetailPage(scene: scene),
                       ),
-                      decoration: BoxDecoration(
-                        color: isDraft
-                            ? const Color(0xFFFFF4DA)
-                            : const Color(0xFFDCFCE7),
-                        borderRadius: BorderRadius.circular(999),
+                    );
+                  },
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: const Text('Voir détail'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddScenePage(initialData: scene),
                       ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Modifier'),
+                ),
+                if (scene.status != SceneStatus.published)
+                  FilledButton.tonalIcon(
+                    onPressed: () async {
+                      await SceneDraftRepository.save(
+                        scene.withPublicationStatus(SceneStatus.published),
+                      );
+                    },
+                    icon: const Icon(Icons.publish_rounded),
+                    label: const Text('Publier'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SceneAdminDetailPage extends StatelessWidget {
+  const SceneAdminDetailPage({
+    super.key,
+    required this.scene,
+  });
+
+  final SceneFormData scene;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(scene.displayTitle),
+        backgroundColor: Colors.transparent,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _SceneDetailPreview(scene: scene),
+        ],
+      ),
+    );
+  }
+}
+
+class _SceneDetailPreview extends StatelessWidget {
+  const _SceneDetailPreview({required this.scene});
+
+  final SceneFormData scene;
+
+  @override
+  Widget build(BuildContext context) {
+    final actorFields = <MapEntry<String, String>>[
+      MapEntry('Nom du personnage', scene.characterName),
+      MapEntry('Âge apparent', scene.apparentAge),
+      MapEntry('Genre du personnage', scene.characterGender),
+      MapEntry('Type de rôle', scene.profileRole),
+      MapEntry('Émotion principale à jouer', scene.dominantEmotion),
+      MapEntry('Intention du personnage', scene.mainObjective),
+      MapEntry('Contexte dramatique', scene.contextSummary),
+      MapEntry(
+        'Objectif de la scène',
+        scene.stakes.isEmpty ? scene.mainObstacle : scene.stakes,
+      ),
+      MapEntry('Ton de jeu attendu', scene.playStyles.join(' • ')),
+      MapEntry('Niveau de difficulté', scene.recommendedLevel),
+      MapEntry('Contraintes de jeu', scene.technicalConstraints),
+      MapEntry(
+        'Indications de mise en scène',
+        [scene.actingDirection, scene.bodyDirection]
+            .where((value) => value.trim().isNotEmpty)
+            .join('\n'),
+      ),
+      MapEntry('Texte ou consigne de jeu', scene.dialogueText),
+      MapEntry(
+        'Durée attendue de la prestation acteur',
+        scene.targetDuration,
+      ),
+      MapEntry('Type de cadrage recommandé', scene.framingType),
+      MapEntry('Format vidéo demandé', scene.requestedVideoFormat),
+      MapEntry('Accessoires éventuels', scene.usedObjects),
+      MapEntry(
+        'Décor conseillé',
+        scene.location.isEmpty ? scene.whereAreWe : scene.location,
+      ),
+      MapEntry('Notes complémentaires de l’admin', scene.directorFinalNote),
+    ].where((entry) => entry.value.trim().isNotEmpty).toList();
+
+    final raccordFields = <MapEntry<String, String>>[
+      MapEntry('Point de raccord visuel', scene.visualTransitionPoint),
+      MapEntry('Point de raccord émotionnel', scene.emotionalTransitionPoint),
+      MapEntry('Première action attendue de l’acteur', scene.firstActorAction),
+      MapEntry('Première émotion attendue', scene.firstExpectedEmotion),
+      MapEntry('Dernière image de la vidéo IA', scene.lastAiFrameDescription),
+    ].where((entry) => entry.value.trim().isNotEmpty).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  scene.displayTitle,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _PreviewPill(label: 'Catégorie', value: scene.category),
+                    _PreviewPill(label: 'Genre', value: scene.genre),
+                    _PreviewPill(label: 'Niveau', value: scene.recommendedLevel),
+                    _PreviewPill(label: 'Audition', value: scene.targetDuration),
+                    _PreviewPill(label: 'Statut', value: scene.status.label),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Vidéo IA d’introduction',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                if (scene.aiIntroVideo != null)
+                  AdminVideoPreview(
+                    videoUrl: scene.aiIntroVideo!.videoUrl,
+                    thumbnailUrl: scene.aiIntroVideo!.thumbnailUrl,
+                    caption:
+                        'Vidéo IA d’introduction — destinée à créer l’ambiance de la scène.',
+                  )
+                else
+                  Container(
+                    height: 220,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
                       child: Text(
-                        isDraft ? 'Brouillon' : 'Publié',
+                        'Aucune vidéo IA validée pour l’instant',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: isDraft
-                              ? const Color(0xFF9A6B00)
-                              : const Color(0xFF166534),
+                          color: Color(0xFF6B7280),
                         ),
                       ),
                     ),
                   ),
-                );
-              },
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemCount: items.length,
+                const SizedBox(height: 12),
+                const Text(
+                  'Vidéo IA d’introduction — destinée à créer l’ambiance de la scène.',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ce que l’acteur doit jouer',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: actorFields
+                      .map(
+                        (entry) => SizedBox(
+                          width: 260,
+                          child: _PreviewFieldCard(
+                            label: entry.key,
+                            value: entry.value,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Intention de raccord',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'La vidéo IA sert d’introduction émotionnelle. L’acteur doit poursuivre naturellement l’ambiance installée par cette vidéo, sans chercher à la reproduire exactement.',
+                  style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: raccordFields
+                      .map(
+                        (entry) => SizedBox(
+                          width: 260,
+                          child: _PreviewFieldCard(
+                            label: entry.key,
+                            value: entry.value,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PreviewPill extends StatelessWidget {
+  const _PreviewPill({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label : ${value.isEmpty ? '-' : value}',
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _PreviewFieldCard extends StatelessWidget {
+  const _PreviewFieldCard({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF111827),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
