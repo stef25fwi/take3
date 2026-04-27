@@ -634,6 +634,22 @@ class AdminDashboardPage extends StatelessWidget {
               },
             ),
             _AdminTile(
+              title: 'Analytics full',
+              subtitle: 'Vue complète des scènes, projets et tendances',
+              icon: Icons.analytics_rounded,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F766E), Color(0xFF14B8A6)],
+              ),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AnalyticsFullPage(),
+                  ),
+                );
+              },
+            ),
+            _AdminTile(
               title: 'Bibliothèque scène',
               subtitle: '$drafts brouillon(s) • $published publié(es)',
               icon: Icons.video_library_rounded,
@@ -704,7 +720,8 @@ class _AdminTile extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
-                  fontSize: 20,
+                  fontSize: 18,
+                  height: 1.05,
                 ),
               ),
               const SizedBox(height: 8),
@@ -712,7 +729,7 @@ class _AdminTile extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.92),
-                  fontSize: 13.5,
+                  fontSize: 12.5,
                   height: 1.35,
                 ),
               ),
@@ -722,6 +739,340 @@ class _AdminTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class AnalyticsFullPage extends StatelessWidget {
+  const AnalyticsFullPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = SceneDraftRepository.all();
+    final drafts = SceneDraftRepository.drafts();
+    final published = SceneDraftRepository.published();
+    final uniqueProjects = items
+        .map((item) => item.projectTitle.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .length;
+    final uniqueCharacters = items
+        .map((item) => item.characterName.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .length;
+
+    final topProjects = _sortedCountEntries(
+      items.map((item) => item.projectTitle),
+      emptyLabel: 'Sans projet',
+    );
+    final topEmotions = _sortedCountEntries(
+      items.map((item) => item.dominantEmotion),
+      emptyLabel: 'Non définie',
+    );
+    final topDirectors = _sortedCountEntries(
+      items.map((item) => item.director),
+      emptyLabel: 'Non renseigné',
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Analytics full'),
+        backgroundColor: Colors.transparent,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _AnalyticsStatCard(
+                  label: 'Scènes',
+                  value: items.length.toString(),
+                  color: const Color(0xFF6C4DFF),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _AnalyticsStatCard(
+                  label: 'Publiées',
+                  value: published.length.toString(),
+                  color: const Color(0xFF16A34A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _AnalyticsStatCard(
+                  label: 'Projets',
+                  value: uniqueProjects.toString(),
+                  color: const Color(0xFF0EA5E9),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _AnalyticsStatCard(
+                  label: 'Personnages',
+                  value: uniqueCharacters.toString(),
+                  color: const Color(0xFFF59E0B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _AnalyticsBreakdownCard(
+            drafts: drafts.length,
+            published: published.length,
+            total: items.length,
+          ),
+          const SizedBox(height: 16),
+          _AnalyticsListCard(
+            title: 'Top projets',
+            entries: topProjects,
+          ),
+          const SizedBox(height: 16),
+          _AnalyticsListCard(
+            title: 'Top émotions dominantes',
+            entries: topEmotions,
+          ),
+          const SizedBox(height: 16),
+          _AnalyticsListCard(
+            title: 'Direction / réalisateur',
+            entries: topDirectors,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalyticsStatCard extends StatelessWidget {
+  const _AnalyticsStatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalyticsBreakdownCard extends StatelessWidget {
+  const _AnalyticsBreakdownCard({
+    required this.drafts,
+    required this.published,
+    required this.total,
+  });
+
+  final int drafts;
+  final int published;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeTotal = total == 0 ? 1 : total;
+    final draftRatio = drafts / safeTotal;
+    final publishedRatio = published / safeTotal;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Répartition des statuts',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: SizedBox(
+              height: 14,
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: (draftRatio * 1000).round(),
+                    child: Container(color: const Color(0xFFF59E0B)),
+                  ),
+                  Expanded(
+                    flex: (publishedRatio * 1000).round(),
+                    child: Container(color: const Color(0xFF16A34A)),
+                  ),
+                  if (drafts == 0 && published == 0)
+                    const Expanded(child: ColoredBox(color: Color(0xFFE5E7EB))),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _LegendDot(color: const Color(0xFFF59E0B), label: 'Brouillons $drafts'),
+              const SizedBox(width: 16),
+              _LegendDot(color: const Color(0xFF16A34A), label: 'Publiées $published'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalyticsListCard extends StatelessWidget {
+  const _AnalyticsListCard({required this.title, required this.entries});
+
+  final String title;
+  final List<MapEntry<String, int>> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          if (entries.isEmpty)
+            Text(
+              'Aucune donnée disponible.',
+              style: TextStyle(color: Colors.grey.shade600),
+            )
+          else
+            for (final entry in entries.take(4)) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.key,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      entry.value.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+              if (entry != entries.take(4).last) const SizedBox(height: 10),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade700,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+List<MapEntry<String, int>> _sortedCountEntries(
+  Iterable<String> rawValues, {
+  required String emptyLabel,
+}) {
+  final counts = <String, int>{};
+  for (final rawValue in rawValues) {
+    final key = rawValue.trim().isEmpty ? emptyLabel : rawValue.trim();
+    counts.update(key, (value) => value + 1, ifAbsent: () => 1);
+  }
+
+  final entries = counts.entries.toList()
+    ..sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      if (byCount != 0) {
+        return byCount;
+      }
+      return a.key.compareTo(b.key);
+    });
+  return entries;
 }
 
 class AddScenePage extends StatefulWidget {
