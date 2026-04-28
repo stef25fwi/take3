@@ -10,6 +10,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/shared_widgets.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
@@ -120,20 +121,22 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         palette: palette,
                       )
                     else
-                      Row(
-                        children: [
-                          for (var index = 0; index < visiblePopular.length; index++) ...[
-                            Expanded(
-                              child: _PopularSceneCard(
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            for (var index = 0; index < visiblePopular.length; index++) ...[
+                              _PopularSceneCard(
                                 scene: visiblePopular[index],
                                 palette: palette,
                                 onTap: () => _openScene(visiblePopular[index].resolvedSceneId),
                               ),
-                            ),
-                            if (index != visiblePopular.length - 1)
-                              const SizedBox(width: 8),
+                              if (index != visiblePopular.length - 1)
+                                const SizedBox(width: 12),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     const SizedBox(height: 16),
                     _SectionTitle(label: 'Nouvelles scènes', palette: palette),
@@ -348,13 +351,14 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tileBackground = data.isMoreTile
-        ? palette.moreTileBackground
-        : palette.isDark
-            ? data.color
-            : Color.lerp(data.color, Colors.white, 0.18)!;
-    final contentColor = data.isMoreTile
-        ? palette.moreTileForeground
-        : Colors.white;
+      ? palette.moreTileBackground
+      : palette.isDark
+        ? const Color.fromRGBO(255, 255, 255, 0.04)
+        : const Color.fromRGBO(255, 255, 255, 0.88);
+    final contentColor = data.isMoreTile ? palette.moreTileForeground : palette.primaryText;
+    final activeBorder = data.isMoreTile
+      ? palette.tileSelectedBorder
+      : data.color.withValues(alpha: palette.isDark ? 0.90 : 0.55);
 
     return GestureDetector(
       onTap: onTap,
@@ -369,12 +373,12 @@ class _CategoryTile extends StatelessWidget {
             color: tileBackground,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? palette.tileSelectedBorder : palette.tileBorder,
+              color: selected ? activeBorder : palette.tileBorder,
               width: selected ? 1.4 : 0.9,
             ),
             boxShadow: [
               BoxShadow(
-                color: selected ? tileBackground.withValues(alpha: 0.22) : Colors.transparent,
+                color: selected ? activeBorder.withValues(alpha: 0.18) : Colors.transparent,
                 blurRadius: 14,
                 offset: const Offset(0, 8),
               ),
@@ -383,7 +387,27 @@ class _CategoryTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(data.icon, size: 17, color: contentColor),
+              Container(
+                width: 26,
+                height: 26,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFB800),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.circle,
+                  size: 0,
+                  color: Colors.transparent,
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(0, -26),
+                child: Icon(
+                  data.icon,
+                  size: 15,
+                  color: const Color(0xFF0B1020),
+                ),
+              ),
               Text(
                 data.label,
                 maxLines: 1,
@@ -416,101 +440,7 @@ class _PopularSceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AspectRatio(
-        aspectRatio: 0.64,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: palette.cardBorder),
-            boxShadow: [
-              BoxShadow(
-                color: palette.cardShadow,
-                blurRadius: 18,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _SceneArtwork(assetPath: scene.assetPath, fallbackColor: scene.fallbackColor, palette: palette),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.transparent,
-                        palette.cardOverlayMid,
-                        palette.cardOverlayStrong,
-                      ],
-                      stops: const [0.0, 0.42, 0.72, 1.0],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: palette.cardChipBackground,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: palette.cardChipBorder),
-                    ),
-                    child: Text(
-                      scene.category,
-                      style: GoogleFonts.dmSans(
-                        color: palette.cardChipText,
-                        fontSize: 9.6,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.15,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 8,
-                  right: 8,
-                  bottom: 8,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        scene.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.dmSans(
-                          color: Colors.white,
-                          fontSize: 12.6,
-                          fontWeight: FontWeight.w600,
-                          height: 1.08,
-                          letterSpacing: -0.12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        scene.duration,
-                        style: GoogleFonts.dmSans(
-                          color: Colors.white.withValues(alpha: 0.76),
-                          fontSize: 10.4,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return _FeaturedExplorerCard(scene: scene, palette: palette, onTap: onTap);
   }
 }
 
@@ -527,84 +457,153 @@ class _MiniSceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _FeaturedExplorerCard(scene: scene, palette: palette, onTap: onTap);
+  }
+}
+
+class _FeaturedExplorerCard extends StatelessWidget {
+  const _FeaturedExplorerCard({
+    required this.scene,
+    required this.palette,
+    required this.onTap,
+  });
+
+  final _ExplorerSceneData scene;
+  final _ExplorerPalette palette;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: 114,
-        child: AspectRatio(
-          aspectRatio: 0.90,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: palette.cardBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: palette.cardShadow.withValues(alpha: palette.isDark ? 0.82 : 0.50),
-                  blurRadius: 16,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+      child: Container(
+        width: 178,
+        height: 250,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: palette.cardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: palette.cardShadow,
+              blurRadius: 18,
+              offset: const Offset(0, 12),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _SceneArtwork(assetPath: scene.assetPath, fallbackColor: scene.fallbackColor, palette: palette),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          palette.cardOverlaySoft,
-                          palette.cardOverlayStrong,
-                        ],
-                        stops: const [0.0, 0.48, 1.0],
-                      ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _SceneArtwork(assetPath: scene.assetPath, fallbackColor: scene.fallbackColor, palette: palette),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      palette.cardOverlaySoft,
+                      palette.cardOverlayMid,
+                      palette.cardOverlayStrong,
+                    ],
+                    stops: const [0.0, 0.30, 0.52, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                top: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: scene.badgeColor,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: palette.cardChipBorder),
+                  ),
+                  child: Text(
+                    scene.category,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: palette.cardChipText,
+                      letterSpacing: 0.15,
                     ),
                   ),
-                  Positioned(
-                    left: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: palette.cardChipBackground,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: palette.cardChipBorder),
-                      ),
-                      child: Text(
-                        scene.duration,
-                        style: GoogleFonts.dmSans(
-                          color: palette.cardChipText,
-                          fontSize: 9.2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 8,
-                    right: 8,
-                    bottom: 8,
-                    child: Text(
-                      scene.subtitle ?? scene.title,
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      scene.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
-                        fontSize: 11.2,
-                        fontWeight: FontWeight.w600,
-                        height: 1.12,
-                        letterSpacing: -0.08,
+                        height: 1.08,
+                        letterSpacing: -0.25,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        UserAvatar(
+                          url: scene.authorAvatarUrl,
+                          userId: scene.authorName,
+                          size: 30,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            scene.authorName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.favorite_rounded, size: 14, color: Color(0xFFFF6B6B)),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatCompact(scene.likesCount),
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.80),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.play_circle_fill_rounded, size: 14, color: Color(0xFF47D7FF)),
+                        const SizedBox(width: 4),
+                        Text(
+                          scene.duration,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.80),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -873,9 +872,13 @@ class _ExplorerSceneData {
     required this.category,
     required this.assetPath,
     required this.fallbackColor,
+    required this.badgeColor,
+    required this.authorName,
+    required this.likesCount,
     required this.matchKeywords,
     required this.fallbackFeedIndex,
     this.subtitle,
+    this.authorAvatarUrl,
     this.resolvedSceneId,
   });
 
@@ -884,9 +887,13 @@ class _ExplorerSceneData {
   final String category;
   final String assetPath;
   final Color fallbackColor;
+  final Color badgeColor;
+  final String authorName;
+  final int likesCount;
   final List<String> matchKeywords;
   final int fallbackFeedIndex;
   final String? subtitle;
+  final String? authorAvatarUrl;
   final String? resolvedSceneId;
 
   _ExplorerSceneData withResolvedSceneId(String? sceneId) {
@@ -896,9 +903,13 @@ class _ExplorerSceneData {
       category: category,
       assetPath: assetPath,
       fallbackColor: fallbackColor,
+      badgeColor: badgeColor,
+      authorName: authorName,
+      likesCount: likesCount,
       matchKeywords: matchKeywords,
       fallbackFeedIndex: fallbackFeedIndex,
       subtitle: subtitle,
+      authorAvatarUrl: authorAvatarUrl,
       resolvedSceneId: sceneId,
     );
   }
@@ -941,6 +952,10 @@ class _ExplorerMockData {
       category: 'Drame',
       assetPath: 'assets/scenes/scene_rupture_telephone.svg',
       fallbackColor: Color(0xFF5A2D54),
+      badgeColor: Color(0xCC6C5CE7),
+      authorName: 'Luna Demo',
+      likesCount: 1800,
+      authorAvatarUrl: 'assets/scenes/battle_player_a.png',
       matchKeywords: ['rupture', 'telephone', 'drame'],
       fallbackFeedIndex: 0,
     ),
@@ -950,6 +965,10 @@ class _ExplorerMockData {
       category: 'Action',
       assetPath: 'assets/scenes/scene_interrogatoire.svg',
       fallbackColor: Color(0xFF1F4564),
+      badgeColor: Color(0xCC00B8FF),
+      authorName: 'Max Demo',
+      likesCount: 1500,
+      authorAvatarUrl: 'assets/scenes/battle_player_b.png',
       matchKeywords: ['interrogatoire', 'tendu', 'action'],
       fallbackFeedIndex: 1,
     ),
@@ -959,6 +978,10 @@ class _ExplorerMockData {
       category: 'Romance',
       assetPath: 'assets/scenes/scene_declaration_amour.svg',
       fallbackColor: Color(0xFF7C3854),
+      badgeColor: Color(0xCCE95A74),
+      authorName: 'Iris Demo',
+      likesCount: 2100,
+      authorAvatarUrl: 'assets/scenes/battle_player_a.png',
       matchKeywords: ['declaration', 'amour', 'romance'],
       fallbackFeedIndex: 2,
     ),
@@ -972,6 +995,10 @@ class _ExplorerMockData {
       category: 'Action',
       assetPath: 'assets/scenes/scene_confrontation.svg',
       fallbackColor: Color(0xFF214669),
+      badgeColor: Color(0xCC00B8FF),
+      authorName: 'Max Demo',
+      likesCount: 1200,
+      authorAvatarUrl: 'assets/scenes/battle_player_b.png',
       matchKeywords: ['confrontation', 'face', 'action'],
       fallbackFeedIndex: 0,
     ),
@@ -982,6 +1009,10 @@ class _ExplorerMockData {
       category: 'Drame',
       assetPath: 'assets/scenes/scene_mauvaise_nouvelle.svg',
       fallbackColor: Color(0xFF5A3658),
+      badgeColor: Color(0xCC6C5CE7),
+      authorName: 'Luna Demo',
+      likesCount: 980,
+      authorAvatarUrl: 'assets/scenes/battle_player_a.png',
       matchKeywords: ['mauvaise', 'nouvelle', 'drame'],
       fallbackFeedIndex: 1,
     ),
@@ -992,8 +1023,17 @@ class _ExplorerMockData {
       category: 'Comédie',
       assetPath: 'assets/scenes/daily_challenge_spotlight.svg',
       fallbackColor: Color(0xFF1E4C5A),
+      badgeColor: Color(0xCC25C6A6),
+      authorName: 'Take30 Studio',
+      likesCount: 1450,
       matchKeywords: ['spotlight', 'challenge', 'comedie'],
       fallbackFeedIndex: 2,
     ),
   ];
+}
+
+String _formatCompact(int n) {
+  if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+  if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+  return n.toString();
 }
