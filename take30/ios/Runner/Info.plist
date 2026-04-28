@@ -43,6 +43,8 @@
 	<string>Take30 a besoin du microphone pour enregistrer le son de tes performances.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Take30 a besoin de la reconnaissance vocale pour dicter le texte des scènes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Take30 peut enregistrer vos vidéos dans votre galerie lorsque vous le demandez.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Take30 a besoin d'accéder à ta galerie pour importer des vidéos.</string>
 	<key>UIApplicationSceneManifest</key>
