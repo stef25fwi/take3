@@ -1,3 +1,4 @@
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 /**
  * Take30 — Cloud Functions (v2)
  *
@@ -9,9 +10,11 @@
 import * as admin from "firebase-admin";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentCreated, onDocumentDeleted, onDocumentWritten } from "firebase-functions/v2/firestore";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions, logger } from "firebase-functions/v2";
+
+import { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
+import { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
 
 admin.initializeApp();
 
@@ -409,3 +412,6 @@ export const computeLeaderboard = onSchedule("every 60 minutes", async () => {
     logger.info(`Leaderboard ${cfg.period}: ${ranked.length} entries`);
   }
 });
+
+export { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
+export { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";

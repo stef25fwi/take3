@@ -1,0 +1,159 @@
+# Take30 — Implémentation VEO 3 pour “Ajout scène”
+
+## Objectif
+
+Ajouter dans le parcours administrateur Ajout scène une génération vidéo IA via VEO 3, sans exposer de clé serveur dans Flutter.
+
+## Parcours cible côté admin
+
+1. L’admin remplit les informations de scène.
+2. À l’étape 15, il saisit un prompt descriptif de vidéo cinématique.
+3. Il clique sur Valider preview.
+4. Flutter appelle une Cloud Function callable sécurisée.
+5. Le backend démarre une génération VEO 3 via Vertex AI.
+6. Firestore stocke l’état queued, puis generating, puis completed ou failed.
+7. La vidéo finale est stockée dans scenes/{adminUid}/{sceneId}.mp4.
+8. La miniature finale est stockée dans thumbnails/{adminUid}/{sceneId}.jpg.
+9. Le document scenes/{sceneId} est mis à jour avec videoUrl, thumbnailUrl, veoPrompt, veoStatus, veoOperationId, createdBy et updatedAt.
+10. L’admin peut prévisualiser la vidéo et relancer une génération.
+11. L’étape 16 réutilise la vidéo générée dans la preview détail.
+
+## Contraintes de sécurité
+
+- Ne jamais appeler Vertex AI ou VEO directement depuis Flutter.
+- Ne jamais stocker de clé Google Cloud, service account, token Vertex AI ou secret dans Flutter.
+- Utiliser un backend Firebase Cloud Functions ou un backend serveur.
+- Exiger un utilisateur authentifié.
+- Vérifier un rôle admin via users/{uid}.isAdmin, users/{uid}.role == admin ou admins/{uid}.
+
+## Ciblage Firebase confirmé
+
+- Projet Firebase : take30
+- Storage bucket : take30.firebasestorage.app
+- Paths Storage confirmés côté Flutter :
+	- scenes/{uid}/{sceneId}.mp4
+	- thumbnails/{uid}/{sceneId}.jpg
+	- avatars/{uid}.jpg
+
+## Contrat Flutter
+
+Créer un service dédié : lib/services/veo_scene_generation_service.dart
+
+### startVeoSceneGeneration
+
+Payload :
+
+```json
+{
+	"sceneId": "string",
+	"prompt": "string",
+	"durationSeconds": 15,
+	"aspectRatio": "16:9"
+}
+```
+
+Réponse minimale :
+
+```json
+{
+	"ok": true,
+	"operationId": "mock_or_vertex_operation_id",
+	"status": "queued"
+}
+```
+
+### checkVeoSceneGeneration
+
+Payload :
+
+```json
+{
+	"sceneId": "string"
+}
+```
+
+Réponse minimale :
+
+```json
+{
+	"ok": true,
+	"status": "completed",
+	"videoUrl": "https://...",
+	"thumbnailUrl": "https://..."
+}
+```
+
+## Firestore cible
+
+Collection principale : scenes/{sceneId}
+
+Champs attendus :
+
+- id
+- title
+- description
+- dialogueText
+- difficulty
+- durationSeconds
+- createdBy
+- createdAt
+- updatedAt
+- videoUrl
+- thumbnailUrl
+- veoPrompt
+- veoStatus
+- veoOperationId
+- veoError
+
+Statuts VEO autorisés :
+
+- none
+- queued
+- generating
+- completed
+- failed
+
+## Backend Functions attendu
+
+Fonctions callable à exposer :
+
+- startVeoSceneGeneration
+- checkVeoSceneGeneration
+
+Comportement :
+
+1. Vérifier auth.
+2. Vérifier admin.
+3. Refuser un prompt vide ou supérieur à 4000 caractères.
+4. Limiter durationSeconds à 15 ou 30.
+5. Écrire veoStatus, veoPrompt, veoOperationId, updatedAt dans Firestore.
+6. Prévoir un mode mock sécurisé tant que Vertex AI n’est pas configuré.
+
+## TODO Vertex AI / VEO 3
+
+- Vérifier la région VERTEX_LOCATION compatible avec VEO.
+- Vérifier le modèle réellement disponible dans le projet.
+- Vérifier les quotas, allowlist et permissions IAM du runtime Functions.
+- Remplacer le mock backend par l’appel réel Vertex AI.
+- Ajouter un worker planifié si la génération doit être reprise automatiquement.
+
+## Variables d’environnement backend à prévoir
+
+- GOOGLE_CLOUD_PROJECT=take30
+- VERTEX_LOCATION=us-central1
+- VEO_MODEL_ID=veo-3.0-generate-preview
+- VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+- VEO_USE_MOCK=false pour activer l’appel Vertex AI réel hors émulateur
+
+## Runtime Functions actuel
+
+- Si GOOGLE_CLOUD_PROJECT, VERTEX_LOCATION et VEO_MODEL_ID sont définis et que VEO_USE_MOCK n’est pas à true, le backend tente un appel réel Vertex AI via REST et ADC.
+- Sinon, le backend reste en mode mock structuré pour ne pas bloquer l’interface admin.
+- La vérification d’opération réelle essaie d’extraire les URI vidéo et miniature depuis la réponse Vertex AI, puis copie les assets dans Firebase Storage.
+- TODO : ajuster le schéma exact du body et de la réponse si le modèle VEO activé dans le projet expose un contrat différent de predictLongRunning.
+
+## Validation et déploiement
+
+- Flutter : flutter analyze puis flutter build web --release
+- Rules : firestore.rules et storage.rules
+- Functions : déploiement du code backend racine sous /functions

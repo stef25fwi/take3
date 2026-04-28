@@ -40,8 +40,14 @@ class BattleScreen extends ConsumerWidget {
                 )
               : _BattleBody(
                   duel: state.duel!,
-                  onVote: (choice) =>
-                      ref.read(duelProvider.notifier).vote(choice),
+                  onVoteCandidateA: () =>
+                    ref.read(duelProvider.notifier).vote(0),
+                  onVoteCandidateB: () =>
+                    ref.read(duelProvider.notifier).vote(1),
+                  onShareCandidateA: () =>
+                    ref.read(shareServiceProvider).shareScene(state.duel!.sceneA),
+                  onShareCandidateB: () =>
+                    ref.read(shareServiceProvider).shareScene(state.duel!.sceneB),
                 ),
     );
   }
@@ -52,9 +58,18 @@ class BattleScreen extends ConsumerWidget {
 // ──────────────────────────────────────────────────────────────────────────────
 
 class _BattleBody extends StatefulWidget {
-  const _BattleBody({required this.duel, required this.onVote});
+  const _BattleBody({
+    required this.duel,
+    required this.onShareCandidateA,
+    required this.onShareCandidateB,
+    required this.onVoteCandidateA,
+    required this.onVoteCandidateB,
+  });
   final DuelModel duel;
-  final void Function(int) onVote;
+  final VoidCallback onShareCandidateA;
+  final VoidCallback onShareCandidateB;
+  final VoidCallback onVoteCandidateA;
+  final VoidCallback onVoteCandidateB;
 
   @override
   State<_BattleBody> createState() => _BattleBodyState();
@@ -87,7 +102,52 @@ class _BattleBodyState extends State<_BattleBody> {
       _selectedVote = choice;
       _voteSubmitted = true;
     });
-    widget.onVote(choice);
+    if (choice == 0) {
+      widget.onVoteCandidateA();
+      return;
+    }
+    widget.onVoteCandidateB();
+  }
+
+  void onShareCandidateA() {
+    HapticFeedback.selectionClick();
+    widget.onShareCandidateA();
+  }
+
+  void onShareCandidateB() {
+    HapticFeedback.selectionClick();
+    widget.onShareCandidateB();
+  }
+
+  void onVoteCandidateA() => _handleVote(0);
+
+  void onVoteCandidateB() => _handleVote(1);
+
+  String _candidateName(SceneModel scene, String fallbackSide) {
+    final displayName = scene.author.displayName.trim();
+    if (displayName.isNotEmpty) {
+      return displayName;
+    }
+    final username = scene.author.username.trim();
+    if (username.isNotEmpty) {
+      return username;
+    }
+    return fallbackSide;
+  }
+
+  String _voteLabel({
+    required SceneModel scene,
+    required String fallbackSide,
+    required bool isSelected,
+  }) {
+    if (isSelected) {
+      return 'Choisi ✓';
+    }
+    return 'Voter pour ${_candidateName(scene, fallbackSide)}';
+  }
+
+  String _shareLabel(SceneModel scene, String fallbackSide) {
+    return 'Partager ${_candidateName(scene, fallbackSide)}';
   }
 
   @override
@@ -98,6 +158,7 @@ class _BattleBodyState extends State<_BattleBody> {
     final cardAreaW = screenW - hPad * 2;
     const cardGap = 12.0;
     final cardW = (cardAreaW - cardGap) / 2;
+    final actionColumnW = (cardAreaW - cardGap) / 2;
     // Card height: proportional, targeting ~46% of screen
     final cardH = (mq.size.height * 0.46).clamp(260.0, 400.0);
     final isDark = AppThemeTokens.isDark(context);
@@ -155,7 +216,7 @@ class _BattleBodyState extends State<_BattleBody> {
                   child: Row(
                     children: [
                       Text(
-                        'Battle',
+                        'Duel d’interprétation',
                         style: GoogleFonts.dmSans(
                           color: AppThemeTokens.primaryText(context),
                           fontSize: 24,
@@ -209,7 +270,7 @@ class _BattleBodyState extends State<_BattleBody> {
 
                 // ── Title ──
                 Text(
-                  'Qui a le mieux joué ?',
+                  'Qui a livré la meilleure performance ?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.dmSans(
                     color: AppThemeTokens.primaryText(context),
@@ -222,32 +283,67 @@ class _BattleBodyState extends State<_BattleBody> {
 
                 const SizedBox(height: 20),
 
-                // ── Vote Buttons ──
+                // ── Candidate Actions ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: hPad),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _VoteButton(
-                          label: _selectedVote == 0 ? 'A  Choisi ✓' : 'A  Voter A',
-                          gradient: _P.voteAGrad,
-                          glowColor: _P.cyan,
-                          textColor: const Color(0xFF06101E),
-                          enabled: !_voteSubmitted,
-                          isSelected: _selectedVote == 0,
-                          onTap: () => _handleVote(0),
+                      SizedBox(
+                        width: actionColumnW,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _SecondaryBattleButton(
+                              label: _shareLabel(widget.duel.sceneA, 'A'),
+                              borderColor: _P.cyan,
+                              glowColor: _P.cyan,
+                              onTap: onShareCandidateA,
+                            ),
+                            const SizedBox(height: 12),
+                            _VoteButton(
+                              label: _voteLabel(
+                                scene: widget.duel.sceneA,
+                                fallbackSide: 'A',
+                                isSelected: _selectedVote == 0,
+                              ),
+                              gradient: _P.voteAGrad,
+                              glowColor: _P.cyan,
+                              textColor: const Color(0xFF06101E),
+                              enabled: !_voteSubmitted,
+                              isSelected: _selectedVote == 0,
+                              onTap: onVoteCandidateA,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 14),
-                      Expanded(
-                        child: _VoteButton(
-                          label: _selectedVote == 1 ? 'B  Choisi ✓' : 'B  Voter B',
-                          gradient: _P.voteBGrad,
-                          glowColor: _P.gold,
-                          textColor: const Color(0xFF1A1203),
-                          enabled: !_voteSubmitted,
-                          isSelected: _selectedVote == 1,
-                          onTap: () => _handleVote(1),
+                      SizedBox(
+                        width: actionColumnW,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _SecondaryBattleButton(
+                              label: _shareLabel(widget.duel.sceneB, 'B'),
+                              borderColor: _P.gold,
+                              glowColor: _P.gold,
+                              onTap: onShareCandidateB,
+                            ),
+                            const SizedBox(height: 12),
+                            _VoteButton(
+                              label: _voteLabel(
+                                scene: widget.duel.sceneB,
+                                fallbackSide: 'B',
+                                isSelected: _selectedVote == 1,
+                              ),
+                              gradient: _P.voteBGrad,
+                              glowColor: _P.gold,
+                              textColor: const Color(0xFF1A1203),
+                              enabled: !_voteSubmitted,
+                              isSelected: _selectedVote == 1,
+                              onTap: onVoteCandidateB,
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -553,7 +649,7 @@ class _VoteButtonState extends State<_VoteButton>
           opacity: dimmed ? 0.55 : 1.0,
           duration: const Duration(milliseconds: 200),
           child: Container(
-            height: 76,
+            height: 84,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: widget.gradient,
@@ -600,18 +696,99 @@ class _VoteButtonState extends State<_VoteButton>
                   ),
                 ),
                 Center(
-                  child: Text(
-                    widget.label,
-                    style: GoogleFonts.dmSans(
-                      color: widget.textColor,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.2,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Text(
+                      widget.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        color: widget.textColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.2,
+                        height: 1.1,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryBattleButton extends StatelessWidget {
+  const _SecondaryBattleButton({
+    required this.label,
+    required this.borderColor,
+    required this.glowColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color borderColor;
+  final Color glowColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              borderColor.withValues(alpha: 0.20),
+              const Color(0xFF141A2B),
+              const Color(0xFF101625),
+            ],
+          ),
+          border: Border.all(
+            color: borderColor.withValues(alpha: 0.60),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: glowColor.withValues(alpha: 0.14),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.share_outlined,
+                color: Colors.white.withValues(alpha: 0.95),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

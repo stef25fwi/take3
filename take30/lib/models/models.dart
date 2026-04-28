@@ -181,6 +181,9 @@ class SceneModel {
     required this.category,
     required this.thumbnailUrl,
     this.videoUrl,
+    this.description = '',
+    this.dialogueText = '',
+    this.difficulty = '',
     this.durationSeconds = 60,
     this.likesCount = 0,
     this.commentsCount = 0,
@@ -188,6 +191,12 @@ class SceneModel {
     this.viewsCount = 0,
     required this.author,
     required this.createdAt,
+    this.updatedAt,
+    this.createdBy,
+    this.veoPrompt = '',
+    this.veoStatus = 'none',
+    this.veoOperationId,
+    this.veoError,
     this.isLiked = false,
     this.tags = const [],
     this.status = 'published',
@@ -198,6 +207,9 @@ class SceneModel {
   final String category;
   final String thumbnailUrl;
   final String? videoUrl;
+  final String description;
+  final String dialogueText;
+  final String difficulty;
   final int durationSeconds;
   final int likesCount;
   final int commentsCount;
@@ -205,6 +217,12 @@ class SceneModel {
   final int viewsCount;
   final UserModel author;
   final DateTime createdAt;
+  final DateTime? updatedAt;
+  final String? createdBy;
+  final String veoPrompt;
+  final String veoStatus;
+  final String? veoOperationId;
+  final String? veoError;
   final bool isLiked;
   final List<String> tags;
   final String status;
@@ -221,6 +239,9 @@ class SceneModel {
       category: category,
       thumbnailUrl: thumbnailUrl,
       videoUrl: videoUrl,
+      description: description,
+      dialogueText: dialogueText,
+      difficulty: difficulty,
       durationSeconds: durationSeconds,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount,
@@ -228,6 +249,12 @@ class SceneModel {
       viewsCount: viewsCount,
       author: author,
       createdAt: createdAt,
+      updatedAt: updatedAt,
+      createdBy: createdBy,
+      veoPrompt: veoPrompt,
+      veoStatus: veoStatus,
+      veoOperationId: veoOperationId,
+      veoError: veoError,
       isLiked: isLiked ?? this.isLiked,
       tags: tags,
       status: status,
@@ -249,6 +276,9 @@ class SceneModel {
       category: d['category'] as String? ?? '',
       thumbnailUrl: d['thumbnailUrl'] as String? ?? '',
       videoUrl: d['videoUrl'] as String?,
+      description: d['description'] as String? ?? '',
+      dialogueText: d['dialogueText'] as String? ?? '',
+      difficulty: d['difficulty'] as String? ?? d['level'] as String? ?? '',
       durationSeconds: (d['durationSeconds'] as num?)?.toInt() ?? 30,
       likesCount: (d['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (d['commentsCount'] as num?)?.toInt() ?? 0,
@@ -262,6 +292,12 @@ class SceneModel {
         isVerified: authorMap['isVerified'] as bool? ?? false,
       ),
       createdAt: _readDate(d['createdAt']),
+      updatedAt: d['updatedAt'] == null ? null : _readDate(d['updatedAt']),
+      createdBy: d['createdBy'] as String?,
+      veoPrompt: d['veoPrompt'] as String? ?? '',
+      veoStatus: d['veoStatus'] as String? ?? 'none',
+      veoOperationId: d['veoOperationId'] as String?,
+      veoError: d['veoError'] as String?,
       tags: (d['tags'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())
           .toList(),
@@ -274,9 +310,17 @@ class SceneModel {
         'category': category,
         'thumbnailUrl': thumbnailUrl,
         'videoUrl': videoUrl,
+        'description': description,
+        'dialogueText': dialogueText,
+        'difficulty': difficulty,
         'durationSeconds': durationSeconds,
         'authorId': author.id,
         'authorDenorm': author.toStub().toMap(),
+        'createdBy': createdBy ?? author.id,
+        'veoPrompt': veoPrompt,
+        'veoStatus': veoStatus,
+        'veoOperationId': veoOperationId,
+        'veoError': veoError,
         'likesCount': likesCount,
         'commentsCount': commentsCount,
         'sharesCount': sharesCount,
@@ -284,6 +328,7 @@ class SceneModel {
         'tags': tags,
         'status': status,
         'createdAt': _writeDate(createdAt),
+        'updatedAt': _writeDate(updatedAt ?? createdAt),
       };
 }
 

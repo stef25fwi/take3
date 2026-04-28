@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,8 @@ import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../models/veo_generation_job.dart';
+import '../services/veo_scene_generation_service.dart';
 import 'models/ai_generated_video.dart';
 import 'services/veo_video_generation_service.dart';
 import 'widgets/admin_video_preview.dart';
@@ -432,7 +435,7 @@ extension SceneStatusX on SceneStatus {
   String get label => switch (this) {
         SceneStatus.draft => 'Brouillon',
         SceneStatus.pendingPublication => 'En attente de publication',
-        SceneStatus.published => 'Publiee',
+        SceneStatus.published => 'Publié',
       };
 }
 
@@ -530,6 +533,10 @@ class SceneFormData {
 
   final List<String> testedPrompts;
   final AiGeneratedVideo? aiIntroVideo;
+  final String veoPrompt;
+  final String veoStatus;
+  final String? veoOperationId;
+  final String? veoError;
   final String visualTransitionPoint;
   final String emotionalTransitionPoint;
   final String firstActorAction;
@@ -619,6 +626,10 @@ class SceneFormData {
     required this.requestedVideoFormat,
     required this.testedPrompts,
     required this.aiIntroVideo,
+    this.veoPrompt = '',
+    this.veoStatus = 'none',
+    this.veoOperationId,
+    this.veoError,
     required this.visualTransitionPoint,
     required this.emotionalTransitionPoint,
     required this.firstActorAction,
@@ -646,6 +657,10 @@ class SceneFormData {
     DateTime? updatedAt,
     DateTime? submittedAt,
     DateTime? publishedAt,
+    String? veoPrompt,
+    String? veoStatus,
+    String? veoOperationId,
+    String? veoError,
   }) {
     return SceneFormData(
       id: id,
@@ -725,6 +740,10 @@ class SceneFormData {
       requestedVideoFormat: requestedVideoFormat,
       testedPrompts: testedPrompts ?? this.testedPrompts,
       aiIntroVideo: aiIntroVideo ?? this.aiIntroVideo,
+      veoPrompt: veoPrompt ?? this.veoPrompt,
+      veoStatus: veoStatus ?? this.veoStatus,
+      veoOperationId: veoOperationId ?? this.veoOperationId,
+      veoError: veoError ?? this.veoError,
       visualTransitionPoint: visualTransitionPoint,
       emotionalTransitionPoint: emotionalTransitionPoint,
       firstActorAction: firstActorAction,
@@ -757,13 +776,21 @@ class SceneFormData {
     return {
       'id': id,
       'title': displayTitle,
+      'description': contextSummary,
       'category': category,
       'genre': genre,
       'level': recommendedLevel,
+      'difficulty': recommendedLevel,
       'status': status.value,
       'thumbnailUrl': thumbnailUrl,
       'videoUrl': aiIntroVideo?.videoUrl,
       'durationSeconds': aiDurationSeconds,
+      'dialogueText': dialogueText,
+      'createdBy': nowAuthor,
+      'veoPrompt': veoPrompt.isEmpty ? (aiIntroVideo?.prompt ?? '') : veoPrompt,
+      'veoStatus': veoStatus,
+      'veoOperationId': veoOperationId,
+      'veoError': veoError,
       'authorId': nowAuthor,
       'authorDenorm': {
         'id': nowAuthor,
@@ -792,7 +819,6 @@ class SceneFormData {
       'secondaryEmotion': secondaryEmotion,
       'intensity': intensity,
       'textType': textType,
-      'dialogueText': dialogueText,
       'playStyles': playStyles,
       'testedPrompts': testedPrompts,
       'actorSheet': {
@@ -958,6 +984,10 @@ class SceneFormData {
               generatedAt: _readAdminDate(aiIntroVideo['generatedAt']),
               updatedAt: _readAdminDate(aiIntroVideo['updatedAt']),
             ),
+      veoPrompt: data['veoPrompt'] as String? ?? aiIntroVideo?['prompt'] as String? ?? '',
+      veoStatus: data['veoStatus'] as String? ?? (aiIntroVideo == null ? 'none' : 'completed'),
+      veoOperationId: data['veoOperationId'] as String?,
+      veoError: data['veoError'] as String?,
       visualTransitionPoint:
           raccord['visualTransitionPoint'] as String? ?? '',
       emotionalTransitionPoint:
@@ -1531,6 +1561,8 @@ class _AddScenePageState extends State<AddScenePage> {
   final _scrollController = ScrollController();
   final SpeechToText _speechToText = SpeechToText();
   late final VeoVideoGenerationService _veoVideoGenerationService;
+  late final VeoSceneGenerationService _veoSceneGenerationService;
+  late final bool _useCallableVeoFlow;
   final _step15SectionKey = GlobalKey();
   final _step16SectionKey = GlobalKey();
 
@@ -1725,6 +1757,8 @@ class _AddScenePageState extends State<AddScenePage> {
   String? _dialogueSpeechError;
   bool _isGeneratingPreview = false;
   bool _isVeoPromptLocked = false;
+  String _veoStatusValue = 'none';
+  String? _veoOperationId;
   String? _veoGenerationStatus;
   String? _veoGenerationError;
   AiGeneratedVideo? _generatedPreviewVideo;
@@ -1737,6 +1771,8 @@ class _AddScenePageState extends State<AddScenePage> {
     super.initState();
     _veoVideoGenerationService = widget.veoVideoGenerationService ??
       VeoVideoGenerationServiceFactory.createDefault();
+    _veoSceneGenerationService = VeoSceneGenerationService();
+    _useCallableVeoFlow = widget.veoVideoGenerationService == null;
     _sceneDraftId =
         widget.initialData?.id ?? 'scene_${DateTime.now().millisecondsSinceEpoch}';
     _sceneCreatedAt = widget.initialData?.createdAt ?? DateTime.now();
@@ -1809,7 +1845,9 @@ class _AddScenePageState extends State<AddScenePage> {
     spectatorFeelingCtrl.text = data.spectatorFeeling;
     directorFinalNoteCtrl.text = data.directorFinalNote;
     requestedVideoFormatCtrl.text = data.requestedVideoFormat;
-    veoPromptCtrl.text = data.aiIntroVideo?.prompt ?? _kDefaultVeoPrompt;
+    veoPromptCtrl.text = data.veoPrompt.isNotEmpty
+      ? data.veoPrompt
+      : (data.aiIntroVideo?.prompt ?? _kDefaultVeoPrompt);
     visualTransitionPointCtrl.text = data.visualTransitionPoint;
     emotionalTransitionPointCtrl.text = data.emotionalTransitionPoint;
     firstActorActionCtrl.text = data.firstActorAction;
@@ -1844,6 +1882,9 @@ class _AddScenePageState extends State<AddScenePage> {
         ? data.aiIntroVideo
         : null;
     _isVeoPromptLocked = data.aiIntroVideo != null;
+    _veoStatusValue = data.veoStatus;
+    _veoOperationId = data.veoOperationId;
+    _veoGenerationError = data.veoError;
     _selectedPublicationTarget = data.status;
   }
 
@@ -2029,7 +2070,11 @@ class _AddScenePageState extends State<AddScenePage> {
           : null,
       publishedAt:
           status == SceneStatus.published ? (widget.initialData?.publishedAt ?? now) : null,
-      createdBy: adminAccessController.value.identifier ?? 'admin_take30',
+      createdBy: _currentCreatorId(),
+      veoPrompt: veoPromptCtrl.text.trim(),
+      veoStatus: _normalizedVeoStatusValue(),
+      veoOperationId: _veoOperationId,
+      veoError: _veoGenerationError,
     );
   }
 
@@ -2050,6 +2095,111 @@ class _AddScenePageState extends State<AddScenePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: backgroundColor),
     );
+  }
+
+  String _currentCreatorId() {
+    return fa.FirebaseAuth.instance.currentUser?.uid ??
+        adminAccessController.value.identifier ??
+        'admin_take30';
+  }
+
+  String _normalizedVeoStatusValue() {
+    if (_veoStatusValue != 'none') {
+      return _veoStatusValue;
+    }
+    if (_validatedPreviewVideo != null || _generatedPreviewVideo != null) {
+      return 'completed';
+    }
+    return 'none';
+  }
+
+  String _statusMessageFor(VeoGenerationStatus status) {
+    switch (status) {
+      case VeoGenerationStatus.none:
+        return 'Statut VEO: none';
+      case VeoGenerationStatus.queued:
+        return 'Statut VEO: queued';
+      case VeoGenerationStatus.generating:
+        return 'Statut VEO: generating';
+      case VeoGenerationStatus.completed:
+        return 'Statut VEO: completed';
+      case VeoGenerationStatus.failed:
+        return 'Statut VEO: failed';
+    }
+  }
+
+  AiGeneratedVideo _buildAiVideoFromJob(VeoGenerationJob job, String prompt) {
+    final generatedAt = job.updatedAt ?? DateTime.now();
+    return AiGeneratedVideo(
+      provider: 'veo3',
+      prompt: job.prompt.isEmpty ? prompt : job.prompt,
+      videoUrl: job.videoUrl ?? '',
+      thumbnailUrl: job.thumbnailUrl,
+      durationSeconds: job.durationSeconds,
+      aspectRatio: job.aspectRatio,
+      status: AiIntroVideoStatus.generated,
+      generatedAt: generatedAt,
+      updatedAt: generatedAt,
+    );
+  }
+
+  Future<void> _pollCallablePreviewGeneration(String prompt) async {
+    for (var attempt = 0; attempt < 12; attempt++) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      final job = await _veoSceneGenerationService.checkVeoSceneGeneration(
+        sceneId: _sceneDraftId,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (job.isCompleted && (job.videoUrl?.isNotEmpty ?? false)) {
+        setState(() {
+          _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+          _validatedPreviewVideo = null;
+          _isGeneratingPreview = false;
+          _veoStatusValue = job.status.value;
+          _veoOperationId = job.operationId ?? _veoOperationId;
+          _veoGenerationError = null;
+          _veoGenerationStatus =
+              'Preview générée. Vérifie le raccord final puis valide la vidéo.';
+        });
+        return;
+      }
+
+      if (job.isFailed) {
+        setState(() {
+          _isGeneratingPreview = false;
+          _isVeoPromptLocked = false;
+          _veoStatusValue = job.status.value;
+          _veoGenerationStatus = null;
+          _veoGenerationError = job.errorMessage ??
+              'La génération VEO a échoué côté backend.';
+        });
+        return;
+      }
+
+      setState(() {
+        _veoStatusValue = job.status.value;
+        _veoOperationId = job.operationId ?? _veoOperationId;
+        _veoGenerationStatus = _statusMessageFor(job.status);
+      });
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isGeneratingPreview = false;
+      _isVeoPromptLocked = false;
+      _veoStatusValue = 'failed';
+      _veoGenerationStatus = null;
+      _veoGenerationError =
+          'La génération VEO prend plus de temps que prévu. Réessaie ou vérifie le backend.';
+    });
   }
 
   Future<void> _scrollToSection(GlobalKey key) async {
@@ -2469,6 +2619,29 @@ class _AddScenePageState extends State<AddScenePage> {
                           ),
                         ),
                         Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Exemple de prompt',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF92400E),
+                                ),
+                              ),
+                              SizedBox(height: 10),
+                              Text(_kDefaultVeoPrompt),
+                            ],
+                          ),
+                        ),
+                        Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
@@ -2496,6 +2669,20 @@ class _AddScenePageState extends State<AddScenePage> {
                             ],
                           ),
                         ),
+                        if (_veoStatusValue != 'none' || _veoOperationId != null)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Chip(
+                                label: Text(
+                                  'Statut: ${veoGenerationStatusFromString(_veoStatusValue).label}',
+                                ),
+                              ),
+                              if (_veoOperationId != null)
+                                Chip(label: Text('Opération: $_veoOperationId')),
+                            ],
+                          ),
                         if (_testedPrompts.isNotEmpty)
                           Wrap(
                             spacing: 8,
@@ -2917,21 +3104,60 @@ class _AddScenePageState extends State<AddScenePage> {
       setState(() {
         _veoGenerationError = 'Le prompt VEO3 est obligatoire.';
         _veoGenerationStatus = null;
+        _veoStatusValue = 'failed';
       });
       return;
     }
 
     setState(() {
       _veoGenerationError = null;
-      _veoGenerationStatus = 'Génération de la preview vidéo en cours…';
+      _veoGenerationStatus = 'Statut VEO: queued';
       _isGeneratingPreview = true;
       _isVeoPromptLocked = true;
+      _veoStatusValue = 'queued';
+      _veoOperationId = null;
       if (!_testedPrompts.contains(prompt)) {
         _testedPrompts = [..._testedPrompts, prompt];
       }
     });
 
     try {
+      if (_useCallableVeoFlow) {
+        final job = await _veoSceneGenerationService.requestVeoScenePreview(
+          sceneId: _sceneDraftId,
+          prompt: prompt,
+          durationSeconds: 15,
+          aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+              ? '16:9'
+              : requestedVideoFormatCtrl.text.trim(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _veoStatusValue = job.status.value;
+          _veoOperationId = job.operationId;
+          _veoGenerationStatus = _statusMessageFor(job.status);
+        });
+
+        if (job.isCompleted && (job.videoUrl?.isNotEmpty ?? false)) {
+          setState(() {
+            _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+            _validatedPreviewVideo = null;
+            _isGeneratingPreview = false;
+            _veoStatusValue = job.status.value;
+            _veoGenerationStatus =
+                'Preview générée. Vérifie le raccord final puis valide la vidéo.';
+          });
+          return;
+        }
+
+        await _pollCallablePreviewGeneration(prompt);
+        return;
+      }
+
       final generated = await _veoVideoGenerationService.generateSceneIntroVideo(
         sceneDraftId: _sceneDraftId,
         prompt: prompt,
@@ -2949,8 +3175,21 @@ class _AddScenePageState extends State<AddScenePage> {
         _generatedPreviewVideo = generated;
         _validatedPreviewVideo = null;
         _isGeneratingPreview = false;
+        _veoStatusValue = 'completed';
+        _veoOperationId = null;
         _veoGenerationStatus =
             'Preview générée. Vérifie le raccord final puis valide la vidéo.';
+      });
+    } on VeoSceneGenerationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isGeneratingPreview = false;
+        _isVeoPromptLocked = false;
+        _veoStatusValue = 'failed';
+        _veoGenerationStatus = null;
+        _veoGenerationError = error.message;
       });
     } catch (_) {
       if (!mounted) {
@@ -2959,6 +3198,7 @@ class _AddScenePageState extends State<AddScenePage> {
       setState(() {
         _isGeneratingPreview = false;
         _isVeoPromptLocked = false;
+        _veoStatusValue = 'failed';
         _veoGenerationStatus = null;
         _veoGenerationError =
             'Impossible de générer la preview pour le moment. Réessaie.';
@@ -2971,6 +3211,7 @@ class _AddScenePageState extends State<AddScenePage> {
       _isVeoPromptLocked = false;
       _validatedPreviewVideo = null;
       _veoGenerationError = null;
+      _veoStatusValue = _generatedPreviewVideo == null ? 'none' : _veoStatusValue;
       _veoGenerationStatus =
           'Prompt réactivé. Corrige le texte puis relance une génération.';
     });
