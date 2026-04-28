@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +19,38 @@ class ExploreScreen extends ConsumerStatefulWidget {
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedCategory = 'Tout';
+
+  String _query = '';
+  String? _selectedCategory;
+
+  static const List<_CategoryTileData> _categories = [
+    _CategoryTileData(
+      label: 'Drame',
+      color: Color(0xFF7C67F8),
+      icon: Icons.theater_comedy_rounded,
+    ),
+    _CategoryTileData(
+      label: 'Comédie',
+      color: Color(0xFF31C8A6),
+      icon: Icons.sentiment_very_satisfied_rounded,
+    ),
+    _CategoryTileData(
+      label: 'Action',
+      color: Color(0xFF2F9CFF),
+      icon: Icons.flash_on_rounded,
+    ),
+    _CategoryTileData(
+      label: 'Romance',
+      color: Color(0xFFE85F7E),
+      icon: Icons.favorite_rounded,
+    ),
+    _CategoryTileData(
+      label: 'Plus',
+      color: Color(0xFFECEEF6),
+      icon: Icons.grid_view_rounded,
+      darkIcon: true,
+    ),
+  ];
 
   @override
   void dispose() {
@@ -25,185 +58,198 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     super.dispose();
   }
 
+  _SceneEntry _entryForScene(SceneModel scene) {
+    final words = scene.title.split(' ');
+    final title = words.length >= 2
+        ? '${words.first}\n${words.sublist(1).join(' ')}'
+        : scene.title;
+    return _SceneEntry(
+      scene: scene,
+      displayTitle: title,
+      durationLabel: scene.durationFormatted,
+      exploreCategory: scene.category,
+    );
+  }
+
+  bool _matches(_SceneEntry entry) {
+    final normalizedQuery = _query.trim().toLowerCase();
+    final matchesQuery = normalizedQuery.isEmpty ||
+        entry.scene.title.toLowerCase().contains(normalizedQuery) ||
+        entry.displayTitle.toLowerCase().contains(normalizedQuery) ||
+        entry.exploreCategory.toLowerCase().contains(normalizedQuery);
+    final matchesCategory =
+        _selectedCategory == null || entry.exploreCategory == _selectedCategory;
+    return matchesQuery && matchesCategory;
+  }
+
+  void _resetFilters() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+      _selectedCategory = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final feedState = ref.watch(feedProvider);
     final scenes = feedState.scenes;
-    final categories = _buildCategories(scenes);
-    final filteredScenes = _filterScenes(scenes);
-    final popularScenes = [...filteredScenes]
-      ..sort((a, b) => b.viewsCount.compareTo(a.viewsCount));
-    final latestScenes = [...filteredScenes]
+    final popularEntries = [...scenes]
+      ..sort((a, b) => b.likesCount.compareTo(a.likesCount));
+    final newEntries = [...scenes]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    final visiblePopular = popularEntries
+        .map(_entryForScene)
+        .where(_matches)
+        .take(3)
+        .toList();
+    final visibleNew = newEntries.map(_entryForScene).where(_matches).toList();
 
     return Scaffold(
       backgroundColor: AppThemeTokens.pageBackground(context),
-      body: SafeArea(
-        bottom: false,
-        child: feedState.isLoading && scenes.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-              onRefresh: () => ref.read(feedProvider.notifier).loadFeed(refresh: true),
-                child: ListView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppThemeTokens.pageGradient(context),
+        ),
+        child: Stack(
+          children: [
+            const Positioned(
+              top: -70,
+              right: -36,
+              child: _AmbientGlow(
+                size: 210,
+                color: Color.fromRGBO(255, 184, 0, 0.08),
+              ),
+            ),
+            const Positioned(
+              top: 170,
+              left: -60,
+              child: _AmbientGlow(
+                size: 180,
+                color: Color.fromRGBO(0, 212, 255, 0.06),
+              ),
+            ),
+            SafeArea(
+              bottom: false,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  AppThemeTokens.pageHorizontalPadding,
+                  12,
+                  AppThemeTokens.pageHorizontalPadding,
+                  116,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Explorer',
-                          style: GoogleFonts.dmSans(
-                            color: AppThemeTokens.primaryText(context),
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.6,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton.filledTonal(
-                          onPressed: () {
-                            FocusScope.of(context).unfocus();
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.search_rounded),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
                     _ExplorerSearchBar(
                       controller: _searchController,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: (value) => setState(() => _query = value),
+                      onActionTap: _resetFilters,
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      height: 42,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: categories.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final category = categories[index];
-                          final isSelected = category == _selectedCategory;
-                          return _CategoryChip(
-                            label: category,
-                            isSelected: isSelected,
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = category;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _SectionTitle(
-                      title: 'Scènes populaires',
-                      actionLabel: filteredScenes.length > 3 ? 'Voir plus' : null,
-                    ),
+                    const _SectionTitle('Catégories'),
                     const SizedBox(height: 12),
-                    if (popularScenes.isEmpty)
-                      const _EmptyExplorerState()
-                    else
-                      SizedBox(
-                        height: 260,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: popularScenes.take(3).length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
-                          itemBuilder: (context, index) {
-                            final scene = popularScenes[index];
-                            return SizedBox(
-                              width: 180,
-                              child: _PopularSceneCard(
-                                scene: scene,
-                                onTap: () => _openScene(scene.id),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const gap = 8.0;
+                        final tileWidth = (constraints.maxWidth - gap * 4) / 5;
+                        return Row(
+                          children: [
+                            for (var index = 0; index < _categories.length; index++) ...[
+                              SizedBox(
+                                width: tileWidth,
+                                child: _CategoryTile(
+                                  data: _categories[index],
+                                  selected:
+                                      _selectedCategory == _categories[index].label,
+                                  onTap: () {
+                                    final label = _categories[index].label;
+                                    if (label == 'Plus') {
+                                      _resetFilters();
+                                      return;
+                                    }
+                                    setState(() {
+                                      _selectedCategory =
+                                          _selectedCategory == label ? null : label;
+                                    });
+                                  },
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 24),
-                    _SectionTitle(
-                      title: 'Nouvelles scènes',
-                      actionLabel: latestScenes.length > 3 ? 'Voir plus' : null,
+                              if (index != _categories.length - 1)
+                                const SizedBox(width: gap),
+                            ],
+                          ],
+                        );
+                      },
                     ),
+                    const SizedBox(height: 20),
+                    const _SectionTitle('Scènes populaires'),
                     const SizedBox(height: 12),
-                    if (latestScenes.isEmpty)
-                      const _EmptyExplorerState()
+                    if (feedState.isLoading && scenes.isEmpty)
+                      const _EmptyState(
+                        label: 'Chargement des scènes…',
+                      )
+                    else if (visiblePopular.isEmpty)
+                      const _EmptyState(
+                        label: 'Aucune scène populaire pour ce filtre.',
+                      )
                     else
-                      Column(
+                      Row(
                         children: [
-                          for (final scene in latestScenes.take(6)) ...[
-                            _MiniSceneCard(
-                              scene: scene,
-                              onTap: () => _openScene(scene.id),
+                          for (var index = 0; index < visiblePopular.length; index++) ...[
+                            Expanded(
+                              child: _PopularSceneCard(
+                                entry: visiblePopular[index],
+                                onTap: () => context.go(
+                                  AppRouter.scenePath(visiblePopular[index].scene.id),
+                                ),
+                              ),
                             ),
-                            const SizedBox(height: 12),
+                            if (index != visiblePopular.length - 1)
+                              const SizedBox(width: 10),
                           ],
                         ],
                       ),
-                    if (feedState.error != null && scenes.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text(
-                          feedState.error!,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.dmSans(
-                            color: AppThemeTokens.tertiaryText(context),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    const SizedBox(height: 20),
+                    const _SectionTitle('Nouvelles scènes'),
+                    const SizedBox(height: 12),
+                    if (feedState.isLoading && scenes.isEmpty)
+                      const _EmptyState(
+                        label: 'Chargement des nouveautés…',
+                      )
+                    else if (visibleNew.isEmpty)
+                      const _EmptyState(
+                        label: 'Aucune nouvelle scène pour ce filtre.',
+                      )
+                    else
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            for (var index = 0; index < visibleNew.length; index++) ...[
+                              _MiniSceneCard(
+                                entry: visibleNew[index],
+                                onTap: () => context.go(
+                                  AppRouter.scenePath(visibleNew[index].scene.id),
+                                ),
+                              ),
+                              if (index != visibleNew.length - 1)
+                                const SizedBox(width: 10),
+                            ],
+                          ],
                         ),
                       ),
                   ],
                 ),
               ),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  List<String> _buildCategories(List<SceneModel> scenes) {
-    final unique = <String>{};
-    for (final scene in scenes) {
-      final category = scene.category.trim();
-      if (category.isNotEmpty) {
-        unique.add(_humanizeCategory(category));
-      }
-    }
-    return ['Tout', ...unique.take(6)];
-  }
-
-  List<SceneModel> _filterScenes(List<SceneModel> scenes) {
-    final query = _searchController.text.trim().toLowerCase();
-    return scenes.where((scene) {
-      final matchesCategory = _selectedCategory == 'Tout' ||
-          _humanizeCategory(scene.category) == _selectedCategory;
-      final haystack = [
-        scene.title,
-        scene.description,
-        scene.category,
-        scene.author.displayName,
-        scene.author.username,
-      ].join(' ').toLowerCase();
-      final matchesQuery = query.isEmpty || haystack.contains(query);
-      return matchesCategory && matchesQuery;
-    }).toList();
-  }
-
-  String _humanizeCategory(String raw) {
-    if (raw.isEmpty) {
-      return raw;
-    }
-    final normalized = raw.replaceAll('_', ' ').trim();
-    return normalized[0].toUpperCase() + normalized.substring(1).toLowerCase();
-  }
-
-  void _openScene(String sceneId) {
-    context.go(AppRouter.scenePath(sceneId));
   }
 }
 
@@ -211,175 +257,88 @@ class _ExplorerSearchBar extends StatelessWidget {
   const _ExplorerSearchBar({
     required this.controller,
     required this.onChanged,
+    required this.onActionTap,
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final VoidCallback onActionTap;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: 'Rechercher une scène',
-        prefixIcon: const Icon(Icons.search_rounded),
-        filled: true,
-        fillColor: AppThemeTokens.surface(context),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: AppThemeTokens.border(context)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: AppThemeTokens.border(context)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, this.actionLabel});
-
-  final String title;
-  final String? actionLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.dmSans(
-            color: AppThemeTokens.primaryText(context),
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const Spacer(),
-        if (actionLabel != null)
-          Text(
-            actionLabel!,
-            style: GoogleFonts.dmSans(
-              color: AppThemeTokens.tertiaryText(context),
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: AppThemeTokens.surface(context),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppThemeTokens.border(context),
             ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.20),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
-      ],
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? primary : AppThemeTokens.surface(context),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isSelected ? primary : AppThemeTokens.border(context),
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.dmSans(
-            color: isSelected ? Colors.white : AppThemeTokens.primaryText(context),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PopularSceneCard extends StatelessWidget {
-  const _PopularSceneCard({required this.scene, required this.onTap});
-
-  final SceneModel scene;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppThemeTokens.surface(context),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Expanded(child: _SceneThumbnail(scene: scene)),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      scene.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        color: AppThemeTokens.primaryText(context),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        height: 1.15,
-                      ),
+              Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: AppThemeTokens.secondaryText(context),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  onChanged: onChanged,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppThemeTokens.primaryText(context),
+                  ),
+                  cursorColor: Theme.of(context).colorScheme.primary,
+                  decoration: InputDecoration(
+                    isCollapsed: true,
+                    border: InputBorder.none,
+                    hintText: 'Rechercher une scène...',
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppThemeTokens.tertiaryText(context),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      scene.author.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        color: AppThemeTokens.tertiaryText(context),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onActionTap,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFB800),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFFB800).withValues(alpha: 0.22),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${scene.viewsCount} vues',
-                      style: GoogleFonts.dmSans(
-                        color: AppThemeTokens.tertiaryText(context),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    size: 14,
+                    color: Color(0xFF0B1020),
+                  ),
                 ),
               ),
             ],
@@ -390,149 +349,195 @@ class _PopularSceneCard extends StatelessWidget {
   }
 }
 
-class _MiniSceneCard extends StatelessWidget {
-  const _MiniSceneCard({required this.scene, required this.onTap});
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.label);
 
-  final SceneModel scene;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.dmSans(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: AppThemeTokens.primaryText(context),
+        letterSpacing: -0.35,
+      ),
+    );
+  }
+}
+
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({
+    required this.data,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _CategoryTileData data;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const accentText = Color(0xFF0B1020);
+    const tileColor = Color(0xFFFFC62E);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 66,
+        decoration: BoxDecoration(
+          color: tileColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? accentText
+                : accentText.withValues(alpha: 0.18),
+            width: selected ? 1.4 : 0.8,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: tileColor.withValues(alpha: 0.30),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Icon(data.icon, size: 19, color: accentText),
+            Text(
+              data.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                fontSize: data.label == 'Comédie' ? 9.6 : 10.2,
+                fontWeight: FontWeight.w700,
+                color: accentText,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PopularSceneCard extends StatelessWidget {
+  const _PopularSceneCard({required this.entry, required this.onTap});
+
+  final _SceneEntry entry;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppThemeTokens.surface(context),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppThemeTokens.border(context)),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 90,
-              height: 90,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: _SceneThumbnail(scene: scene),
+      child: AspectRatio(
+        aspectRatio: 0.68,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.22),
+                blurRadius: 18,
+                offset: Offset(0, 12),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    scene.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      color: AppThemeTokens.primaryText(context),
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      height: 1.15,
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  entry.scene.thumbnailUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: const Color(0xFF1A2234),
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.28),
+                        Colors.black.withValues(alpha: 0.84),
+                      ],
+                      stops: const [0.0, 0.40, 0.72, 1.0],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    scene.description.isNotEmpty ? scene.description : scene.category,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
-                      color: AppThemeTokens.tertiaryText(context),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.play_arrow_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 16,
+                ),
+                Positioned(
+                  left: 10,
+                  top: 10,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.34),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.10),
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${scene.viewsCount} vues • ${scene.durationSeconds}s',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.dmSans(
-                            color: AppThemeTokens.tertiaryText(context),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    ),
+                    child: Text(
+                      entry.exploreCategory,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 9.8,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.displayTitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1.1,
+                          letterSpacing: -0.18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.durationLabel,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.74),
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SceneThumbnail extends StatelessWidget {
-  const _SceneThumbnail({required this.scene});
-
-  final SceneModel scene;
-
-  @override
-  Widget build(BuildContext context) {
-    final thumbnail = scene.thumbnailUrl;
-    if (thumbnail.startsWith('assets/')) {
-      return Image.asset(
-        thumbnail,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _ThumbnailFallback(scene: scene),
-      );
-    }
-    if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
-      return Image.network(
-        thumbnail,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _ThumbnailFallback(scene: scene),
-      );
-    }
-    return _ThumbnailFallback(scene: scene);
-  }
-}
-
-class _ThumbnailFallback extends StatelessWidget {
-  const _ThumbnailFallback({required this.scene});
-
-  final SceneModel scene;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.90),
-            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.75),
-          ],
-        ),
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            scene.title,
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.dmSans(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+                ),
+              ],
             ),
           ),
         ),
@@ -541,37 +546,188 @@ class _ThumbnailFallback extends StatelessWidget {
   }
 }
 
-class _EmptyExplorerState extends StatelessWidget {
-  const _EmptyExplorerState();
+class _MiniSceneCard extends StatelessWidget {
+  const _MiniSceneCard({required this.entry, required this.onTap});
+
+  final _SceneEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 112,
+        child: AspectRatio(
+          aspectRatio: 0.86,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.18),
+                  blurRadius: 16,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.network(
+                    entry.scene.thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFF1A2234),
+                    ),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.12),
+                          Colors.black.withValues(alpha: 0.70),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.40),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      child: Text(
+                        entry.durationLabel,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    right: 8,
+                    bottom: 8,
+                    child: Text(
+                      entry.displayTitle.replaceAll('\n', ' '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 11.2,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.15,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
         color: AppThemeTokens.surface(context),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppThemeTokens.border(context)),
       ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.explore_off_rounded,
-            color: AppThemeTokens.tertiaryText(context),
-            size: 28,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Aucune scène à afficher pour le moment.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(
-              color: AppThemeTokens.primaryText(context),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: GoogleFonts.dmSans(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w500,
+          color: AppThemeTokens.secondaryText(context),
+        ),
       ),
     );
   }
+}
+
+class _AmbientGlow extends StatelessWidget {
+  const _AmbientGlow({
+    required this.size,
+    required this.color,
+  });
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: color,
+              blurRadius: size * 0.45,
+              spreadRadius: size * 0.1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryTileData {
+  const _CategoryTileData({
+    required this.label,
+    required this.color,
+    required this.icon,
+    this.darkIcon = false,
+  });
+
+  final String label;
+  final Color color;
+  final IconData icon;
+  final bool darkIcon;
+}
+
+class _SceneEntry {
+  const _SceneEntry({
+    required this.scene,
+    required this.displayTitle,
+    required this.durationLabel,
+    required this.exploreCategory,
+  });
+
+  final SceneModel scene;
+  final String displayTitle;
+  final String durationLabel;
+  final String exploreCategory;
 }
