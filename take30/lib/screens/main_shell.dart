@@ -39,7 +39,6 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final location = GoRouterState.of(context).uri.path;
     final index = _indexForLocation(context);
     final currentUserId =
         ref.watch(authProvider.select((s) => s.user?.id)) ?? 'u1';
@@ -49,9 +48,7 @@ class MainShell extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppThemeTokens.pageBackground(context),
       body: child,
-      bottomNavigationBar: location.startsWith(AppRouter.explore)
-          ? null
-          : Container(
+      bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppThemeTokens.surface(context),
           border: Border(top: BorderSide(color: AppThemeTokens.border(context), width: 0.5)),
