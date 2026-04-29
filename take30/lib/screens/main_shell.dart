@@ -88,7 +88,7 @@ class MainShell extends ConsumerWidget {
                             width: 64,
                             height: 64,
                             child: Image.asset(
-                              'assets/clap logo.png',
+                                '../take 30 images IA/logoclaptransp.png',
                               fit: BoxFit.contain,
                             ),
                           ),
