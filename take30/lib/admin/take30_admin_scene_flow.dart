@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
@@ -439,6 +440,32 @@ extension SceneStatusX on SceneStatus {
       };
 }
 
+List<Map<String, dynamic>> _decodeMarkersJson(String raw) {
+  if (raw.trim().isEmpty) return const [];
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is List) {
+      return decoded
+          .whereType<Map>()
+          .map((m) => m.map((k, v) => MapEntry(k.toString(), v)))
+          .toList();
+    }
+  } catch (_) {
+    // Si l'admin a saisi du JSON invalide, on ignore — la timeline par défaut
+    // sera générée côté lecture.
+  }
+  return const [];
+}
+
+String _encodeMarkersList(dynamic raw) {
+  if (raw is! List) return '[]';
+  try {
+    return const JsonEncoder.withIndent('  ').convert(raw);
+  } catch (_) {
+    return '[]';
+  }
+}
+
 class SceneFormData {
   final String id;
   final SceneStatus status;
@@ -547,6 +574,7 @@ class SceneFormData {
   final DateTime? submittedAt;
   final DateTime? publishedAt;
   final String createdBy;
+  final String markersJson;
 
   const SceneFormData({
     required this.id,
@@ -640,6 +668,7 @@ class SceneFormData {
     required this.submittedAt,
     required this.publishedAt,
     required this.createdBy,
+    this.markersJson = '[]',
   });
 
   String get displayTitle => sceneName.isEmpty ? projectTitle : sceneName;
@@ -754,6 +783,7 @@ class SceneFormData {
       submittedAt: submittedAt ?? this.submittedAt,
       publishedAt: publishedAt ?? this.publishedAt,
       createdBy: createdBy,
+      markersJson: markersJson,
     );
   }
 
@@ -808,6 +838,7 @@ class SceneFormData {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'adminWorkflow': true,
+      'markers': _decodeMarkersJson(markersJson),
       'projectTitle': projectTitle,
       'sceneName': sceneName,
       'sceneNumber': sceneNumber,
@@ -1006,6 +1037,7 @@ class SceneFormData {
           ? null
           : _readAdminDate(publication['publishedAt']),
       createdBy: publication['createdBy'] as String? ?? 'admin_take30',
+      markersJson: _encodeMarkersList(data['markers']),
     );
   }
 }
@@ -1653,6 +1685,7 @@ class _AddScenePageState extends State<AddScenePage> {
   final firstActorActionCtrl = TextEditingController();
   final firstExpectedEmotionCtrl = TextEditingController();
   final lastAiFrameDescriptionCtrl = TextEditingController();
+  final markersJsonCtrl = TextEditingController(text: '[]');
 
   String selectedMainObjective = 'convaincre';
   String selectedDominantEmotion = 'détermination';
@@ -1853,6 +1886,8 @@ class _AddScenePageState extends State<AddScenePage> {
     firstActorActionCtrl.text = data.firstActorAction;
     firstExpectedEmotionCtrl.text = data.firstExpectedEmotion;
     lastAiFrameDescriptionCtrl.text = data.lastAiFrameDescription;
+    markersJsonCtrl.text =
+        data.markersJson.trim().isEmpty ? '[]' : data.markersJson;
 
     selectedMainObjective = data.mainObjective.isEmpty ? selectedMainObjective : data.mainObjective;
     selectedDominantEmotion = data.dominantEmotion.isEmpty
@@ -1962,6 +1997,7 @@ class _AddScenePageState extends State<AddScenePage> {
       firstActorActionCtrl,
       firstExpectedEmotionCtrl,
       lastAiFrameDescriptionCtrl,
+      markersJsonCtrl,
     ]) {
       c.dispose();
     }
@@ -2075,6 +2111,9 @@ class _AddScenePageState extends State<AddScenePage> {
       veoStatus: _normalizedVeoStatusValue(),
       veoOperationId: _veoOperationId,
       veoError: _veoGenerationError,
+      markersJson: markersJsonCtrl.text.trim().isEmpty
+          ? '[]'
+          : markersJsonCtrl.text.trim(),
     );
   }
 
@@ -2796,6 +2835,138 @@ class _AddScenePageState extends State<AddScenePage> {
                             ],
                           ),
                         ],
+                      ],
+                    ),
+                    _section(
+                      '15bis) Montage automatique dialogué (timeline Take60)',
+                      children: [
+                        const Text(
+                          'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur, avec dialogues, ambiances et durées. La somme des durées ne doit pas dépasser 60 secondes. Saisis un tableau JSON. Chaque marqueur supporte: id, type (ai_intro|ai_dialogue|user_dialogue|user_silent_action|ai_reaction|ai_outro), order, durationSeconds, label, dialogue, cameraPlan, character, cueText, videoUrl.',
+                          style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                        ),
+                        TextField(
+                          controller: markersJsonCtrl,
+                          minLines: 10,
+                          maxLines: 22,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                          ),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: '[\n  {\n    "id": "m1",\n    "type": "ai_intro",\n    "order": 0,\n    "durationSeconds": 5,\n    "label": "Plan IA d\'ouverture",\n    "dialogue": "",\n    "cameraPlan": "Plan large"\n  }\n]',
+                          ),
+                        ),
+                        Builder(
+                          builder: (context) {
+                            final markers = _decodeMarkersJson(markersJsonCtrl.text);
+                            final total = markers.fold<int>(
+                              0,
+                              (acc, m) => acc + ((m['durationSeconds'] as num?)?.toInt() ?? 0),
+                            );
+                            final tooLong = total > 60;
+                            return Wrap(
+                              spacing: 12,
+                              runSpacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  'Durée totale: $total/60 s',
+                                  style: TextStyle(
+                                    color: tooLong
+                                        ? const Color(0xFFD32F2F)
+                                        : const Color(0xFF1F2937),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  '${markers.length} marqueur(s)',
+                                  style: const TextStyle(color: Color(0xFF6B7280)),
+                                ),
+                                if (tooLong)
+                                  const Text(
+                                    'Réduis les durées pour rentrer dans 60 s.',
+                                    style: TextStyle(color: Color(0xFFD32F2F)),
+                                  ),
+                                OutlinedButton.icon(
+                                  onPressed: () => setState(() {}),
+                                  icon: const Icon(Icons.calculate_rounded),
+                                  label: const Text('Recalculer'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert([
+                                        {
+                                          'id': 'ai_intro',
+                                          'type': 'ai_intro',
+                                          'order': 0,
+                                          'durationSeconds': 5,
+                                          'label': 'Plan IA d\'ouverture',
+                                          'dialogue': '',
+                                          'cameraPlan': 'Plan large',
+                                        },
+                                        {
+                                          'id': 'user_1',
+                                          'type': 'user_dialogue',
+                                          'order': 1,
+                                          'durationSeconds': 10,
+                                          'label': 'Plan utilisateur 1',
+                                          'dialogue': 'Première réplique',
+                                          'cameraPlan': 'Plan rapproché',
+                                          'character': 'Personnage principal',
+                                          'cueText': 'Joue ta réplique avec calme.',
+                                        },
+                                        {
+                                          'id': 'ai_reaction',
+                                          'type': 'ai_reaction',
+                                          'order': 2,
+                                          'durationSeconds': 10,
+                                          'label': 'Réaction IA',
+                                          'dialogue': '',
+                                          'cameraPlan': 'Champ contre-champ',
+                                        },
+                                        {
+                                          'id': 'user_2',
+                                          'type': 'user_dialogue',
+                                          'order': 3,
+                                          'durationSeconds': 15,
+                                          'label': 'Plan utilisateur 2',
+                                          'dialogue': 'Réplique tournante',
+                                          'cameraPlan': 'Plan moyen',
+                                          'character': 'Personnage principal',
+                                          'cueText': 'Monte en intensité.',
+                                        },
+                                        {
+                                          'id': 'user_3',
+                                          'type': 'user_dialogue',
+                                          'order': 4,
+                                          'durationSeconds': 15,
+                                          'label': 'Plan utilisateur 3',
+                                          'dialogue': 'Conclusion forte',
+                                          'cameraPlan': 'Gros plan visage',
+                                          'character': 'Personnage principal',
+                                          'cueText': 'Finis en regardant l\'objectif.',
+                                        },
+                                        {
+                                          'id': 'ai_outro',
+                                          'type': 'ai_outro',
+                                          'order': 5,
+                                          'durationSeconds': 5,
+                                          'label': 'Plan IA de clôture',
+                                          'dialogue': '',
+                                          'cameraPlan': 'Plan large',
+                                        },
+                                      ]);
+                                    });
+                                  },
+                                  icon: const Icon(Icons.auto_fix_high_rounded),
+                                  label: const Text('Insérer un modèle 60 s'),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                       ],
                     ),
                     _section(

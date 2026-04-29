@@ -1088,10 +1088,15 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
         : const CameraInitResult.unavailable();
   }
 
-  Future<void> startRecording() async {
+  Future<bool> startRecording({int? maxDurationSeconds}) async {
     await _haptics.recordStart();
-    await _camera.startRecording();
-    state = state.copyWith(isRecording: true, elapsed: 0);
+    final started = await _camera.startRecording(
+      maxDurationSeconds: maxDurationSeconds,
+    );
+    if (started) {
+      state = state.copyWith(isRecording: true, elapsed: 0);
+    }
+    return started;
   }
 
   Future<String?> stopRecording() async {
@@ -1105,6 +1110,18 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       );
     }
     return result?.filePath;
+  }
+
+  RecordingResult? consumeCompletedRecording() {
+    final result = _camera.consumeLastRecordingResult();
+    if (result != null) {
+      state = state.copyWith(
+        isRecording: false,
+        recordedPath: result.filePath,
+        elapsed: result.durationSeconds,
+      );
+    }
+    return result;
   }
 
   void flipCamera() {

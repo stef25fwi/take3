@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'take60_guided_flow.dart';
+
+export 'take60_guided_flow.dart';
+
 // ─── Converters helpers ──────────────────────────────────────────────────────
 DateTime _readDate(dynamic v) {
   if (v is Timestamp) return v.toDate();
@@ -9,6 +13,21 @@ DateTime _readDate(dynamic v) {
 }
 
 Timestamp _writeDate(DateTime d) => Timestamp.fromDate(d);
+
+Map<String, dynamic> _readMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return value.map(
+      (key, mapValue) => MapEntry(key.toString(), mapValue),
+    );
+  }
+  return const <String, dynamic>{};
+}
+
+List<Map<String, dynamic>> _readMapList(dynamic value) {
+  if (value is! List) return const <Map<String, dynamic>>[];
+  return value.map((item) => _readMap(item)).toList();
+}
 
 T _enumFromString<T>(List<T> values, String? name, T fallback) {
   if (name == null) return fallback;
@@ -180,11 +199,18 @@ class SceneModel {
     required this.title,
     required this.category,
     required this.thumbnailUrl,
+    this.sceneType = '',
     this.videoUrl,
     this.description = '',
     this.dialogueText = '',
     this.difficulty = '',
     this.durationSeconds = 60,
+    this.editingMode = 'dialogue_auto_cut',
+    this.ambiance = '',
+    this.characterToPlay = '',
+    this.context = '',
+    this.emotionalObjective = '',
+    this.directorInstructions = '',
     this.likesCount = 0,
     this.commentsCount = 0,
     this.sharesCount = 0,
@@ -200,17 +226,27 @@ class SceneModel {
     this.isLiked = false,
     this.tags = const [],
     this.status = 'published',
+    this.adminWorkflow = false,
+    this.audioRules = const Take60AudioRules(),
+    this.markers = const [],
   });
 
   final String id;
   final String title;
   final String category;
   final String thumbnailUrl;
+  final String sceneType;
   final String? videoUrl;
   final String description;
   final String dialogueText;
   final String difficulty;
   final int durationSeconds;
+  final String editingMode;
+  final String ambiance;
+  final String characterToPlay;
+  final String context;
+  final String emotionalObjective;
+  final String directorInstructions;
   final int likesCount;
   final int commentsCount;
   final int sharesCount;
@@ -226,8 +262,19 @@ class SceneModel {
   final bool isLiked;
   final List<String> tags;
   final String status;
+  final bool adminWorkflow;
+  final Take60AudioRules audioRules;
+  final List<Take60SceneMarker> markers;
 
   String get authorId => author.id;
+  int get userPlanCount =>
+      markers.where((marker) => marker.requiresUserRecording).length;
+  bool get isGuidedRecordingReady =>
+      adminWorkflow ||
+      markers.isNotEmpty ||
+      sceneType.trim().isNotEmpty ||
+      characterToPlay.trim().isNotEmpty ||
+      context.trim().isNotEmpty;
 
   SceneModel copyWith({
     bool? isLiked,
@@ -238,11 +285,18 @@ class SceneModel {
       title: title,
       category: category,
       thumbnailUrl: thumbnailUrl,
+      sceneType: sceneType,
       videoUrl: videoUrl,
       description: description,
       dialogueText: dialogueText,
       difficulty: difficulty,
       durationSeconds: durationSeconds,
+      editingMode: editingMode,
+      ambiance: ambiance,
+      characterToPlay: characterToPlay,
+      context: context,
+      emotionalObjective: emotionalObjective,
+      directorInstructions: directorInstructions,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount,
       sharesCount: sharesCount,
@@ -258,6 +312,9 @@ class SceneModel {
       isLiked: isLiked ?? this.isLiked,
       tags: tags,
       status: status,
+      adminWorkflow: adminWorkflow,
+      audioRules: audioRules,
+      markers: markers,
     );
   }
 
@@ -269,17 +326,50 @@ class SceneModel {
 
   factory SceneModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? const <String, dynamic>{};
-    final authorMap = d['authorDenorm'] as Map<String, dynamic>? ?? const {};
+    final authorMap = _readMap(d['authorDenorm']);
+    final actorSheet = _readMap(d['actorSheet']);
+    final aiIntroVideo = _readMap(d['aiIntroVideo']);
+    final rawMarkers = _readMapList(d['markers'] ?? d['guidedMarkers']);
+    final isAdminWorkflow = d['adminWorkflow'] as bool? ?? false;
+    final rawCategory = d['category'] as String? ?? '';
+    final rawGenre = d['genre'] as String? ?? '';
     return SceneModel(
       id: doc.id,
       title: d['title'] as String? ?? '',
-      category: d['category'] as String? ?? '',
+      category: isAdminWorkflow && rawGenre.trim().isNotEmpty
+          ? rawGenre
+          : rawCategory,
       thumbnailUrl: d['thumbnailUrl'] as String? ?? '',
-      videoUrl: d['videoUrl'] as String?,
-      description: d['description'] as String? ?? '',
+      sceneType:
+          d['type'] as String? ??
+          d['sceneType'] as String? ??
+          (isAdminWorkflow ? rawCategory : ''),
+      videoUrl:
+        d['videoUrl'] as String? ?? aiIntroVideo['videoUrl'] as String?,
+      description: d['description'] as String? ?? d['contextSummary'] as String? ?? '',
       dialogueText: d['dialogueText'] as String? ?? '',
       difficulty: d['difficulty'] as String? ?? d['level'] as String? ?? '',
-      durationSeconds: (d['durationSeconds'] as num?)?.toInt() ?? 30,
+      durationSeconds: (d['durationSeconds'] as num?)?.toInt() ?? 60,
+      editingMode: d['editingMode'] as String? ?? 'dialogue_auto_cut',
+      ambiance: d['ambiance'] as String? ??
+        d['dominantEmotion'] as String? ??
+        actorSheet['mainEmotion'] as String? ??
+        '',
+      characterToPlay: d['characterToPlay'] as String? ??
+        actorSheet['characterName'] as String? ??
+        '',
+      context: d['context'] as String? ??
+        d['contextSummary'] as String? ??
+        d['description'] as String? ??
+        '',
+      emotionalObjective: d['emotionalObjective'] as String? ??
+        d['mainObjective'] as String? ??
+        actorSheet['characterIntention'] as String? ??
+        '',
+      directorInstructions: d['directorInstructions'] as String? ??
+        d['director'] as String? ??
+        actorSheet['stagingInstructions'] as String? ??
+        '',
       likesCount: (d['likesCount'] as num?)?.toInt() ?? 0,
       commentsCount: (d['commentsCount'] as num?)?.toInt() ?? 0,
       sharesCount: (d['sharesCount'] as num?)?.toInt() ?? 0,
@@ -302,6 +392,12 @@ class SceneModel {
           .map((e) => e.toString())
           .toList(),
       status: d['status'] as String? ?? 'published',
+      adminWorkflow: isAdminWorkflow,
+      audioRules: Take60AudioRules.fromMap(_readMap(d['audioRules'])),
+      markers: rawMarkers
+          .map(Take60SceneMarker.fromMap)
+          .toList()
+        ..sort((left, right) => left.order.compareTo(right.order)),
     );
   }
 
@@ -309,11 +405,18 @@ class SceneModel {
         'title': title,
         'category': category,
         'thumbnailUrl': thumbnailUrl,
+        'type': sceneType,
         'videoUrl': videoUrl,
         'description': description,
         'dialogueText': dialogueText,
         'difficulty': difficulty,
         'durationSeconds': durationSeconds,
+        'editingMode': editingMode,
+        'ambiance': ambiance,
+        'characterToPlay': characterToPlay,
+        'context': context,
+        'emotionalObjective': emotionalObjective,
+        'directorInstructions': directorInstructions,
         'authorId': author.id,
         'authorDenorm': author.toStub().toMap(),
         'createdBy': createdBy ?? author.id,
@@ -327,6 +430,9 @@ class SceneModel {
         'viewsCount': viewsCount,
         'tags': tags,
         'status': status,
+        'adminWorkflow': adminWorkflow,
+        'audioRules': audioRules.toMap(),
+        'markers': markers.map((marker) => marker.toMap()).toList(),
         'createdAt': _writeDate(createdAt),
         'updatedAt': _writeDate(updatedAt ?? createdAt),
       };

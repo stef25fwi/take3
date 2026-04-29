@@ -43,16 +43,29 @@ class CameraService extends ChangeNotifier {
   CameraState _state = CameraState.uninitialized;
   String? _errorMessage;
   int _elapsedSeconds = 0;
+  int _recordingLimitSeconds = maxRecordingSeconds;
   Timer? _recordingTimer;
+  RecordingResult? _lastRecordingResult;
+  FlashMode _flashMode = FlashMode.off;
 
   CameraController? get controller => _controller;
   CameraState get state => _state;
   String? get errorMessage => _errorMessage;
   int get elapsedSeconds => _elapsedSeconds;
-  int get remainingSeconds => maxRecordingSeconds - _elapsedSeconds;
-  double get progress => _elapsedSeconds / maxRecordingSeconds;
+  int get recordingLimitSeconds => _recordingLimitSeconds;
+  RecordingResult? get lastRecordingResult => _lastRecordingResult;
+  FlashMode get flashMode => _flashMode;
+  int get remainingSeconds => _recordingLimitSeconds - _elapsedSeconds;
+  double get progress =>
+      _recordingLimitSeconds == 0 ? 0 : _elapsedSeconds / _recordingLimitSeconds;
   bool get isRecording => _state == CameraState.recording;
   bool get isReady => _state == CameraState.ready;
+
+  RecordingResult? consumeLastRecordingResult() {
+    final result = _lastRecordingResult;
+    _lastRecordingResult = null;
+    return result;
+  }
 
   Future<bool> initialize() async {
     _setState(CameraState.initializing);
@@ -85,16 +98,23 @@ class CameraService extends ChangeNotifier {
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
     await _controller!.initialize();
+    await _controller!.setFlashMode(FlashMode.off);
+    _flashMode = FlashMode.off;
     _setState(CameraState.ready);
   }
 
-  Future<bool> startRecording() async {
+  Future<bool> startRecording({int? maxDurationSeconds}) async {
     if (_controller == null || !_controller!.value.isInitialized || _state != CameraState.ready) {
       _setError('Caméra non initialisée');
       return false;
     }
 
     try {
+      _lastRecordingResult = null;
+      _recordingLimitSeconds =
+          (maxDurationSeconds == null || maxDurationSeconds <= 0)
+              ? maxRecordingSeconds
+              : maxDurationSeconds.clamp(1, maxRecordingSeconds);
       await _controller!.startVideoRecording();
       _elapsedSeconds = 0;
       _setState(CameraState.recording);
@@ -102,7 +122,7 @@ class CameraService extends ChangeNotifier {
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         _elapsedSeconds++;
         notifyListeners();
-        if (_elapsedSeconds >= maxRecordingSeconds) {
+        if (_elapsedSeconds >= _recordingLimitSeconds) {
           stopRecording();
         }
       });
@@ -124,13 +144,17 @@ class CameraService extends ChangeNotifier {
     try {
       final file = await _controller!.stopVideoRecording();
       _setState(CameraState.stopped);
+      _recordingLimitSeconds = maxRecordingSeconds;
       final resultFile = File(file.path);
       final size = await resultFile.length();
-      return RecordingResult(
+      final result = RecordingResult(
         filePath: file.path,
         durationSeconds: _elapsedSeconds,
         fileSizeBytes: size,
       );
+      _lastRecordingResult = result;
+      notifyListeners();
+      return result;
     } on CameraException catch (error) {
       _setError('Erreur arrêt: ${error.description}');
       return null;
@@ -146,8 +170,27 @@ class CameraService extends ChangeNotifier {
     await _initController(_cameras[_currentCameraIndex]);
   }
 
+  Future<void> toggleFlash() async {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return;
+    }
+
+    final nextMode = _flashMode == FlashMode.torch
+        ? FlashMode.off
+        : FlashMode.torch;
+    try {
+      await _controller!.setFlashMode(nextMode);
+      _flashMode = nextMode;
+      notifyListeners();
+    } on CameraException catch (error) {
+      _setError('Flash indisponible: ${error.description}');
+    }
+  }
+
   Future<void> resetForNewRecording() async {
     _elapsedSeconds = 0;
+    _recordingLimitSeconds = maxRecordingSeconds;
+    _lastRecordingResult = null;
     if (_controller != null && _controller!.value.isInitialized) {
       _setState(CameraState.ready);
     } else {

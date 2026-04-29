@@ -13,6 +13,7 @@ import '../router/router.dart';
 import '../services/camera_service.dart';
 import '../services/permission_service.dart';
 import '../theme/app_theme.dart';
+import 'take60_guided_record_screen.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // RECORD SCREEN — Page 5 Pixel-Perfect (PRD)
@@ -185,6 +186,10 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
 
   @override
   Widget build(BuildContext context) {
+    return Take60GuidedRecordScreen(initialScene: widget.scene);
+  }
+
+  Widget _legacyBuild(BuildContext context) {
     final recordingState = ref.watch(recordingProvider);
     final feedState = ref.watch(feedProvider);
     final cameraService = ref.watch(cameraServiceProvider);
