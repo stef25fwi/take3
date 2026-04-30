@@ -16,7 +16,8 @@
  *   - userSegments       [{markerId,type,videoUrl,durationSeconds}]
  *   - markers            [{markerId,type,order,durationSeconds}]
  *   - audioRules         {keepAiAmbiance,duckUserAudioOverAi,
- *                          normaliseLoudness,crossfadeMillis}
+ *                          normaliseLoudness,crossfadeMillis,
+ *                          equalizer,autoGain}
  *
  * Output:
  *   { renderId, status, finalVideoUrl, thumbnailUrl,
@@ -64,6 +65,40 @@ interface AudioRules {
   duckUserAudioOverAi?: boolean;
   normaliseLoudness?: boolean;
   crossfadeMillis?: number;
+  /** Égalisation 3 bandes + filtres anti-rumble/anti-hiss. Activé par défaut. */
+  equalizer?: boolean;
+  /** Réglage de gain automatique (dynaudnorm). Activé par défaut. */
+  autoGain?: boolean;
+}
+
+/**
+ * Construit la chaîne de filtres audio (EQ → AGC → loudnorm) en fonction des règles.
+ * Retourne une chaîne séparée par des virgules, sans virgule de tête.
+ * Si aucun filtre n'est sélectionné, retourne `"anull"`.
+ */
+function buildAudioChain(rules: AudioRules): string {
+  const eq = rules.equalizer !== false;
+  const agc = rules.autoGain !== false;
+  const loud = rules.normaliseLoudness === true;
+  const parts: string[] = [];
+  if (eq) {
+    // Anti-rumble (proximité, vibrations, vent) + anti-hiss numérique.
+    parts.push("highpass=f=80");
+    parts.push("lowpass=f=15000");
+    // EQ 3 bandes : chaleur (200 Hz +1.5), présence voix (2 kHz +2), brillance (8 kHz +1).
+    parts.push("equalizer=f=200:width_type=o:width=1:g=1.5");
+    parts.push("equalizer=f=2000:width_type=o:width=1:g=2");
+    parts.push("equalizer=f=8000:width_type=o:width=1:g=1");
+  }
+  if (agc) {
+    // dynaudnorm : compression douce + gain automatique pour homogénéiser les niveaux.
+    parts.push("dynaudnorm=f=200:g=15:p=0.95:m=10:r=0");
+  }
+  if (loud) {
+    // Standard EBU R128 (–16 LUFS) en queue de chaîne.
+    parts.push("loudnorm=I=-16:TP=-1.5:LRA=11");
+  }
+  return parts.length === 0 ? "anull" : parts.join(",");
 }
 
 interface RenderRequest {
@@ -226,9 +261,8 @@ async function ffmpegConcat(
   const fadeSec = fadeMs / 1000;
   const useCrossfade = fadeSec > 0 && inputs.length >= 2;
 
-  const audioTail = rules.normaliseLoudness
-    ? ",loudnorm=I=-16:TP=-1.5:LRA=11"
-    : "";
+  // Chaîne unique : EQ → AGC → loudnorm. Réutilisée en fast-path et en filtergraph.
+  const audioChain = buildAudioChain(rules);
 
   let finalDuration = 0;
 
@@ -240,9 +274,7 @@ async function ffmpegConcat(
       inputs.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n")
     );
     finalDuration = durations.reduce((a, b) => a + b, 0);
-    const audioFilter = rules.normaliseLoudness
-      ? "loudnorm=I=-16:TP=-1.5:LRA=11"
-      : "anull";
+    const audioFilter = audioChain;
 
     await new Promise<void>((resolve, reject) => {
       ffmpegLib()
@@ -290,12 +322,8 @@ async function ffmpegConcat(
       prevA = outA;
       offset += durations[i] - safeFade;
     }
-    // Append loudnorm tail to the audio chain if requested.
-    if (audioTail) {
-      filters.push(`[${prevA}]${audioTail.replace(/^,/, "")}[aout]`);
-    } else {
-      filters.push(`[${prevA}]anull[aout]`);
-    }
+    // Append EQ + AGC (+ loudnorm) to the audio chain.
+    filters.push(`[${prevA}]${audioChain}[aout]`);
     finalDuration = offset;
 
     await new Promise<void>((resolve, reject) => {

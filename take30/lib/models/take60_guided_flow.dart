@@ -214,6 +214,10 @@ class Take60AudioRules {
       'keepAiAmbianceDuringUserPlans': keepAiAmbianceDuringUserPlans,
       'normalizeVolumes': normalizeVolumes,
       'applyAudioFades': applyAudioFades,
+      // Mapping vers le contrat backend (renderTake60GuidedScene).
+      'normaliseLoudness': normalizeVolumes,
+      'equalizer': true,
+      'autoGain': true,
     };
   }
 }
