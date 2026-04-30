@@ -13,6 +13,7 @@ import '../screens/explore_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/leaderboard_screen.dart';
 import '../screens/main_shell.dart';
+import '../screens/messages_inbox_screen.dart';
 import '../screens/messages_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/onboarding_screen.dart';
@@ -141,6 +142,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRouter.notifications,
             builder: (_, __) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.messages,
+            builder: (_, __) => const MessagesInboxScreen(),
           ),
           GoRoute(
             path: '${AppRouter.messages}/:userId',

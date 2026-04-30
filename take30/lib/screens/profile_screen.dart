@@ -155,7 +155,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                   .toggleFollow();
                             },
                             onMessageTap: () {
-                              context.go(AppRouter.messagesPath(widget.userId));
+                              context.go(AppRouter.messages);
                             },
                             onShareTap: () {
                               ref
