@@ -21,7 +21,7 @@ final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('sharedPreferencesProvider must be overridden in main().');
 });
-final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) => AuthService());
+final authServiceProvider = ChangeNotifierProvider<AuthServiceBase>((ref) => AuthService());
 final cameraServiceProvider = ChangeNotifierProvider<CameraService>((ref) => CameraService());
 final uploadServiceProvider = ChangeNotifierProvider<VideoUploadService>((ref) => VideoUploadService());
 final notifServiceProvider = Provider<NotificationService>((ref) => NotificationService());
@@ -72,7 +72,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _init();
   }
 
-  final AuthService _auth;
+  final AuthServiceBase _auth;
 
   Future<void> _init() async {
     await _auth.checkPersistedAuth();

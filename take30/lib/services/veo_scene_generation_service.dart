@@ -17,9 +17,12 @@ class VeoSceneGenerationException implements Exception {
 
 class VeoSceneGenerationService {
   VeoSceneGenerationService({FirebaseFunctions? functions})
-      : _functions = functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+    : _functions = functions;
 
-  final FirebaseFunctions _functions;
+  final FirebaseFunctions? _functions;
+
+  FirebaseFunctions get _resolvedFunctions =>
+    _functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
 
   Future<VeoGenerationJob> requestVeoScenePreview({
     required String sceneId,
@@ -28,7 +31,8 @@ class VeoSceneGenerationService {
     String aspectRatio = '16:9',
   }) async {
     try {
-      final callable = _functions.httpsCallable('startVeoSceneGeneration');
+      final callable =
+          _resolvedFunctions.httpsCallable('startVeoSceneGeneration');
       final result = await callable.call(<String, dynamic>{
         'sceneId': sceneId,
         'prompt': prompt,
@@ -59,7 +63,8 @@ class VeoSceneGenerationService {
     required String sceneId,
   }) async {
     try {
-      final callable = _functions.httpsCallable('checkVeoSceneGeneration');
+      final callable =
+          _resolvedFunctions.httpsCallable('checkVeoSceneGeneration');
       final result = await callable.call(<String, dynamic>{'sceneId': sceneId});
       return VeoGenerationJob.fromJson(
         _asMap(result.data),

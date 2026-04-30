@@ -1,12 +1,12 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../models/explorer_filter.dart';
 import '../models/models.dart';
 import '../providers/explorer_providers.dart';
 import '../providers/providers.dart';
@@ -140,58 +140,60 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
-                    _SectionTitle(label: 'Scènes populaires', palette: palette),
-                    const SizedBox(height: 10),
-                    if (visiblePopular.isEmpty)
-                      _EmptyExplorerState(
-                        label: 'Aucune scène populaire pour ce filtre.',
-                        palette: palette,
-                      )
-                    else
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: [
-                            for (var index = 0; index < visiblePopular.length; index++) ...[
-                              _PopularSceneCard(
-                                scene: visiblePopular[index],
-                                palette: palette,
-                                onTap: () => _openScene(visiblePopular[index].resolvedSceneId),
-                              ),
-                              if (index != visiblePopular.length - 1)
-                                const SizedBox(width: 12),
+                    if (kDebugMode) ...[
+                      const SizedBox(height: 16),
+                      _SectionTitle(label: 'Scènes populaires', palette: palette),
+                      const SizedBox(height: 10),
+                      if (visiblePopular.isEmpty)
+                        _EmptyExplorerState(
+                          label: 'Aucune scène populaire pour ce filtre.',
+                          palette: palette,
+                        )
+                      else
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              for (var index = 0; index < visiblePopular.length; index++) ...[
+                                _PopularSceneCard(
+                                  scene: visiblePopular[index],
+                                  palette: palette,
+                                  onTap: () => _openScene(visiblePopular[index].resolvedSceneId),
+                                ),
+                                if (index != visiblePopular.length - 1)
+                                  const SizedBox(width: 12),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    const SizedBox(height: 16),
-                    _SectionTitle(label: 'Nouvelles scènes', palette: palette),
-                    const SizedBox(height: 10),
-                    if (visibleNew.isEmpty)
-                      _EmptyExplorerState(
-                        label: 'Aucune nouvelle scène pour ce filtre.',
-                        palette: palette,
-                      )
-                    else
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        child: Row(
-                          children: [
-                            for (var index = 0; index < visibleNew.length; index++) ...[
-                              _MiniSceneCard(
-                                scene: visibleNew[index],
-                                palette: palette,
-                                onTap: () => _openScene(visibleNew[index].resolvedSceneId),
-                              ),
-                              if (index != visibleNew.length - 1)
-                                const SizedBox(width: 10),
+                      const SizedBox(height: 16),
+                      _SectionTitle(label: 'Nouvelles scènes', palette: palette),
+                      const SizedBox(height: 10),
+                      if (visibleNew.isEmpty)
+                        _EmptyExplorerState(
+                          label: 'Aucune nouvelle scène pour ce filtre.',
+                          palette: palette,
+                        )
+                      else
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              for (var index = 0; index < visibleNew.length; index++) ...[
+                                _MiniSceneCard(
+                                  scene: visibleNew[index],
+                                  palette: palette,
+                                  onTap: () => _openScene(visibleNew[index].resolvedSceneId),
+                                ),
+                                if (index != visibleNew.length - 1)
+                                  const SizedBox(width: 10),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1287,7 +1289,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             DropdownButtonFormField<CountryOption>(
-              value: _country,
+              initialValue: _country,
               items: [
                 for (final c in LocationRegionService.supportedCountries)
                   DropdownMenuItem(value: c, child: Text(c.label)),
@@ -1324,7 +1326,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                       fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               DropdownButtonFormField<RegionOption?>(
-                value: _region,
+                initialValue: _region,
                 items: [
                   const DropdownMenuItem<RegionOption?>(
                     value: null,
@@ -2277,7 +2279,18 @@ class _ExplorerSceneCardV2 extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${scene.category} · ${scene.sceneType}',
+                    scene.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: palette.secondaryText,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${scene.category} · ${scene.genre}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
@@ -2293,6 +2306,7 @@ class _ExplorerSceneCardV2 extends StatelessWidget {
                     children: [
                       _miniPill(
                           '${scene.userPlanCount} plans', palette),
+                      _miniPill(scene.sceneType, palette),
                       _miniPill(scene.difficulty, palette),
                       _miniPill(scene.regionName, palette),
                     ],

@@ -28,7 +28,29 @@ class AuthResult {
   final String? error;
 }
 
-class AuthService extends ChangeNotifier {
+abstract class AuthServiceBase extends ChangeNotifier {
+  UserModel? get currentUser;
+  bool get isAuthenticated;
+  bool get isLoading;
+  String? get error;
+
+  Future<void> checkPersistedAuth();
+  Future<AuthResult> loginWithIdentifier({
+    required String identifier,
+    required String password,
+  });
+  Future<AuthResult> loginDemo();
+  Future<AuthResult> registerWithEmail({
+    required String username,
+    required String email,
+    required String password,
+  });
+  Future<AuthResult> loginWithGoogle();
+  Future<AuthResult> loginWithApple();
+  Future<void> logout();
+}
+
+class AuthService extends AuthServiceBase {
   AuthService._() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
@@ -49,9 +71,16 @@ class AuthService extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  @override
   UserModel? get currentUser => _currentUser;
+
+  @override
   bool get isAuthenticated => _isLocalDemoSession || _auth.currentUser != null;
+
+  @override
   bool get isLoading => _isLoading;
+
+  @override
   String? get error => _error;
 
   Future<void> _onAuthStateChanged(fa.User? fbUser) async {
@@ -258,6 +287,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  @override
   Future<AuthResult> loginWithIdentifier({
     required String identifier,
     required String password,
@@ -300,6 +330,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  @override
   Future<AuthResult> loginDemo() async {
     _setLoading(true);
     final user = _buildLocalDemoUser();
@@ -310,6 +341,7 @@ class AuthService extends ChangeNotifier {
     return AuthResult.success(user);
   }
 
+  @override
   Future<AuthResult> registerWithEmail({
     required String username,
     required String email,
@@ -354,6 +386,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  @override
   Future<AuthResult> loginWithGoogle() async {
     _setLoading(true);
     try {
@@ -396,6 +429,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  @override
   Future<AuthResult> loginWithApple() async {
     _setLoading(true);
     try {
@@ -439,6 +473,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  @override
   Future<void> logout() async {
     _setLoading(true);
     _isLocalDemoSession = false;
@@ -461,6 +496,7 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
   }
 
+  @override
   Future<void> checkPersistedAuth() async {
     final fbUser = _auth.currentUser;
     if (fbUser != null) {

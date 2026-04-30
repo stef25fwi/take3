@@ -31,13 +31,24 @@ void main() {
   testWidgets(
     'step 15 generates then validates intro video and reveals detailed preview',
     (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         MaterialApp(
           home: AddScenePage(
+            enableAdminTools: true,
             veoVideoGenerationService: _FakeVeoVideoGenerationService(),
           ),
         ),
       );
+
+      await tester.tap(
+        find.text('Charger scène test — Interrogatoire police'),
+      );
+      await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
         find.text('15) Vidéo IA d’introduction'),
@@ -46,12 +57,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Prompt VEO3'), findsOneWidget);
+      expect(find.text('Prompt VEO3'), findsWidgets);
       expect(find.text('Valider et générer la preview'), findsOneWidget);
 
+      await tester.scrollUntilVisible(
+        find.text('Valider et générer la preview'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Valider et générer la preview'));
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
 
       expect(
         find.text('Preview générée. Vérifie le raccord final puis valide la vidéo.'),
@@ -60,8 +77,14 @@ void main() {
       expect(find.text('Corriger le prompt'), findsOneWidget);
       expect(find.text('Valider cette vidéo'), findsOneWidget);
 
+      await tester.scrollUntilVisible(
+        find.text('Valider cette vidéo'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump(const Duration(milliseconds: 200));
       await tester.tap(find.text('Valider cette vidéo'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Vidéo validée'), findsOneWidget);
       expect(
@@ -69,7 +92,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Intention de raccord'), findsOneWidget);
-      expect(find.text('Modifier le prompt VEO3'), findsOneWidget);
+      expect(find.textContaining('Prompt VEO3'), findsWidgets);
+      expect(find.textContaining('Timeline guidée — 60 secondes'), findsOneWidget);
+      expect(find.textContaining('Plan 1 — Observation silencieuse'), findsOneWidget);
+      expect(find.textContaining('Plan 2 — Réplique principale'), findsOneWidget);
+      expect(find.textContaining('Plan 3 — Fissure finale'), findsOneWidget);
+      expect(find.textContaining('Vidéo IA'), findsWidgets);
     },
   );
 }

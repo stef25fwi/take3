@@ -114,6 +114,7 @@ class ExplorerScene {
     required this.title,
     required this.subtitle,
     required this.category,
+    required this.genre,
     required this.sceneType,
     required this.difficulty,
     required this.durationSeconds,
@@ -135,6 +136,7 @@ class ExplorerScene {
   final String title;
   final String subtitle;
   final String category;
+  final String genre;
   final String sceneType;
   final String difficulty;
   final int durationSeconds;
@@ -164,21 +166,22 @@ final publishedAdminScenesProvider = StreamProvider<List<SceneFormData>>((ref) {
 
 ExplorerScene _mapAdminSceneToExplorer(SceneFormData scene) {
   final publishedAt = scene.publishedAt ?? scene.updatedAt;
-  final markerDuration = _sumMarkerDuration(scene.markersJson);
+  final markerDuration = computeTimelineDurationSeconds(scene.markersJson);
   final durationSeconds = markerDuration > 0 ? markerDuration : 60;
-  final isNew = DateTime.now().difference(publishedAt).inDays < 7;
+  final isNew = DateTime.now().difference(scene.createdAt).inDays <= 14;
 
   return ExplorerScene(
     id: scene.id,
-    title: scene.displayTitle,
+    title: _titleForAdminScene(scene),
     subtitle: _subtitleForAdminScene(scene),
     category: scene.category.trim().isEmpty ? 'Scène' : scene.category.trim(),
+    genre: scene.genre.trim().isEmpty ? 'Non renseigné' : scene.genre.trim(),
     sceneType: _inferSceneType(scene),
-    difficulty: _humanizeValue(scene.recommendedLevel, fallback: 'Intermédiaire'),
+    difficulty: _difficultyForAdminScene(scene),
     durationSeconds: durationSeconds,
     userPlanCount: _countUserPlanMarkers(scene.markersJson),
-    countryCode: 'FR',
-    countryName: 'France',
+    countryCode: 'GLOBAL',
+    countryName: 'Global',
     regionCode: 'GLOBAL',
     regionName: 'Global',
     thumbnailAsset: _thumbnailAssetForAdminScene(scene),
@@ -191,14 +194,23 @@ ExplorerScene _mapAdminSceneToExplorer(SceneFormData scene) {
   );
 }
 
-String _subtitleForAdminScene(SceneFormData scene) {
-  final sceneType = _inferSceneType(scene);
-  if (sceneType == 'Interrogatoire') {
+String _titleForAdminScene(SceneFormData scene) {
+  if (scene.id == 'scene_test_interrogatoire_police_001') {
     return 'Interrogatoire police';
   }
-  if (scene.projectTitle.trim().isNotEmpty &&
-      scene.projectTitle.trim() != scene.displayTitle.trim()) {
+  if (scene.projectTitle.trim().isNotEmpty) {
     return scene.projectTitle.trim();
+  }
+  return scene.displayTitle.trim();
+}
+
+String _subtitleForAdminScene(SceneFormData scene) {
+  if (scene.id == 'scene_test_interrogatoire_police_001') {
+    return 'Interrogatoire police';
+  }
+  if (scene.sceneName.trim().isNotEmpty &&
+      scene.sceneName.trim() != _titleForAdminScene(scene)) {
+    return scene.sceneName.trim();
   }
   if (scene.contextSummary.trim().isNotEmpty) {
     return scene.contextSummary.trim();
@@ -209,10 +221,17 @@ String _subtitleForAdminScene(SceneFormData scene) {
 String _inferSceneType(SceneFormData scene) {
   final category = scene.category.toLowerCase();
   final textType = scene.textType.toLowerCase();
-  if (category.contains('polic')) return 'Interrogatoire';
+  if (category.contains('polic')) return 'Confrontation / Interrogatoire';
   if (textType.contains('dialogue')) return 'Dialogue';
   if (textType.contains('impro')) return 'Improvisation';
   return 'Monologue';
+}
+
+String _difficultyForAdminScene(SceneFormData scene) {
+  if (scene.playStyles.any((style) => style.toLowerCase() == 'intense')) {
+    return 'Intense';
+  }
+  return _humanizeValue(scene.recommendedLevel, fallback: 'Intermédiaire');
 }
 
 String _thumbnailAssetForAdminScene(SceneFormData scene) {
@@ -248,11 +267,17 @@ List<Map<String, dynamic>> _decodeMarkerList(String raw) {
   return const [];
 }
 
-int _sumMarkerDuration(String raw) {
+int computeTimelineDurationSeconds(String raw) {
   return _decodeMarkerList(raw).fold<int>(
     0,
-    (sum, marker) => sum + ((marker['durationSeconds'] as num?)?.toInt() ?? 0),
+    (sum, marker) => sum + _readDurationSeconds(marker['durationSeconds']),
   );
+}
+
+int _readDurationSeconds(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse('$value') ?? 0;
 }
 
 int _countUserPlanMarkers(String raw) {
@@ -277,6 +302,9 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
         data: (items) => items.map(_mapAdminSceneToExplorer).toList(growable: false),
         orElse: () => const <ExplorerScene>[],
       );
+  if (!kDebugMode) {
+    return liveScenes;
+  }
   final liveIds = liveScenes.map((scene) => scene.id).toSet();
   final demoScenes = [
     ExplorerScene(
@@ -284,6 +312,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'La vérité fissure',
       subtitle: 'Salle d’interrogatoire',
       category: 'Policier',
+      genre: 'Drame / Thriller',
       sceneType: 'Interrogatoire',
       difficulty: 'Intermédiaire',
       durationSeconds: 60,
@@ -305,6 +334,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'Rupture au téléphone',
       subtitle: 'Conversation à cœur ouvert',
       category: 'Drame',
+      genre: 'Drame',
       sceneType: 'Dialogue',
       difficulty: 'Débutant',
       durationSeconds: 60,
@@ -326,6 +356,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'Déclaration d’amour',
       subtitle: 'Premier aveu',
       category: 'Romance',
+      genre: 'Romance',
       sceneType: 'Monologue',
       difficulty: 'Intermédiaire',
       durationSeconds: 60,
@@ -347,6 +378,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'Confrontation',
       subtitle: 'Face à face sous pression',
       category: 'Action',
+      genre: 'Thriller',
       sceneType: 'Conflit',
       difficulty: 'Avancé',
       durationSeconds: 60,
@@ -368,6 +400,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'Audition libre',
       subtitle: 'Self-tape spontanée',
       category: 'Audition',
+      genre: 'Casting',
       sceneType: 'Self-tape',
       difficulty: 'Débutant',
       durationSeconds: 60,
@@ -389,6 +422,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'Café noir, vie blanche',
       subtitle: 'Stand-up café',
       category: 'Comédie',
+      genre: 'Comédie',
       sceneType: 'Stand-up',
       difficulty: 'Intermédiaire',
       durationSeconds: 60,
@@ -410,6 +444,7 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       title: 'Sourire des îles',
       subtitle: 'Souvenirs créoles',
       category: 'Drame',
+      genre: 'Drame',
       sceneType: 'Monologue',
       difficulty: 'Débutant',
       durationSeconds: 60,

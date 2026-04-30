@@ -113,6 +113,7 @@ class Take30App extends ConsumerWidget {
     AppTheme.syncSystemUiForMode(themeMode);
 
     return MaterialApp.router(
+      key: const Key('take30_app_root'),
       debugShowCheckedModeBanner: false,
       title: 'Take 60',
       theme: AppTheme.lightTheme,

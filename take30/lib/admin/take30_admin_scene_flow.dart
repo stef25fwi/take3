@@ -1736,11 +1736,13 @@ class AddScenePage extends StatefulWidget {
     super.key,
     this.initialData,
     this.veoVideoGenerationService,
+    this.veoSceneGenerationService,
     this.enableAdminTools = false,
   });
 
   final SceneFormData? initialData;
   final VeoVideoGenerationService? veoVideoGenerationService;
+  final VeoSceneGenerationService? veoSceneGenerationService;
   final bool enableAdminTools;
 
   @override
@@ -1964,12 +1966,15 @@ class _AddScenePageState extends State<AddScenePage> {
   List<String> _testedPrompts = [];
   SceneStatus _selectedPublicationTarget = SceneStatus.draft;
 
+  bool get _canShowAdminTestTools => widget.enableAdminTools;
+
   @override
   void initState() {
     super.initState();
     _veoVideoGenerationService = widget.veoVideoGenerationService ??
       VeoVideoGenerationServiceFactory.createDefault();
-    _veoSceneGenerationService = VeoSceneGenerationService();
+    _veoSceneGenerationService =
+        widget.veoSceneGenerationService ?? VeoSceneGenerationService();
     _useCallableVeoFlow = widget.veoVideoGenerationService == null;
     _sceneDraftId =
         widget.initialData?.id ?? 'scene_${DateTime.now().millisecondsSinceEpoch}';
@@ -2317,9 +2322,13 @@ class _AddScenePageState extends State<AddScenePage> {
   }
 
   String _currentCreatorId() {
-    return fa.FirebaseAuth.instance.currentUser?.uid ??
-        adminAccessController.value.identifier ??
-        'admin_take30';
+    try {
+      return fa.FirebaseAuth.instance.currentUser?.uid ??
+          adminAccessController.value.identifier ??
+          'admin_take30';
+    } catch (_) {
+      return adminAccessController.value.identifier ?? 'admin_take30';
+    }
   }
 
   String _normalizedVeoStatusValue() {
@@ -2551,7 +2560,7 @@ class _AddScenePageState extends State<AddScenePage> {
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
-                    if (widget.enableAdminTools) ...[
+                    if (_canShowAdminTestTools) ...[
                       Card(
                         color: const Color(0xFFFFF7DC),
                         elevation: 0,
@@ -4072,17 +4081,178 @@ class _SceneDetailPreview extends StatelessWidget {
 
   final SceneFormData scene;
 
+  String get _effectiveVeoPrompt {
+    final prompt = scene.veoPrompt.trim();
+    if (prompt.isNotEmpty) {
+      return prompt;
+    }
+    return scene.aiIntroVideo?.prompt.trim() ?? '';
+  }
+
+  List<_PreviewTimelineMarker>? _parsePreviewTimelineMarkers() {
+    final raw = scene.markersJson.trim();
+    if (raw.isEmpty) {
+      return const [];
+    }
+    try {
+      final decoded = json.decode(raw);
+      if (decoded is! List) {
+        return null;
+      }
+      return decoded
+          .whereType<Map>()
+          .map(
+            (item) => _PreviewTimelineMarker.fromJson(
+              item.map((key, value) => MapEntry('$key', value)),
+            ),
+          )
+          .toList(growable: false);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildPreviewVeoPromptSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Prompt VEO3',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            _PreviewFieldCard(
+              label: 'Prompt vidéo générative',
+              value: _effectiveVeoPrompt.isEmpty
+                  ? 'Aucun prompt VEO3 renseigné.'
+                  : _effectiveVeoPrompt,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewTimelineSection() {
+    final markers = _parsePreviewTimelineMarkers();
+    if (markers == null || markers.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Timeline guidée',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 14),
+              _PreviewFieldCard(
+                label: 'Timeline',
+                value: 'Timeline indisponible ou JSON invalide.',
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final totalSeconds = markers.fold<int>(
+      0,
+      (total, marker) => total + marker.durationSeconds,
+    );
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Timeline guidée — $totalSeconds secondes',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${markers.length} plan(s) séquencés',
+              style: const TextStyle(
+                height: 1.5,
+                color: Color(0xFF4B5563),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Column(
+              children: [
+                for (var index = 0; index < markers.length; index++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildPreviewTimelineCard(index + 1, markers[index]),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreviewTimelineCard(int index, _PreviewTimelineMarker marker) {
+    final fields = <MapEntry<String, String>>[
+      MapEntry('Type', marker.type),
+      MapEntry('Durée', '${marker.durationSeconds} s'),
+      MapEntry('Caméra', marker.cameraPlan),
+      MapEntry('Personnage', marker.character),
+      MapEntry('Dialogue', marker.dialogue),
+      MapEntry('Indication', marker.cueText),
+      MapEntry('Vidéo IA', marker.videoUrl),
+    ].where((entry) => entry.value.trim().isNotEmpty).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Plan $index — ${marker.label.isEmpty ? 'Sans titre' : marker.label}',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: fields
+                .map(
+                  (entry) => SizedBox(
+                    width: 250,
+                    child: _PreviewFieldCard(
+                      label: entry.key,
+                      value: entry.value,
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final timelineMarkers = _decodeMarkersJson(scene.markersJson);
-    final timelineDuration = timelineMarkers.fold<int>(
-      0,
-      (sum, marker) =>
-          sum + ((marker['durationSeconds'] as num?)?.toInt() ?? 0),
-    );
-    final effectiveVeoPrompt = scene.veoPrompt.trim().isNotEmpty
-        ? scene.veoPrompt.trim()
-        : (scene.aiIntroVideo?.prompt ?? '');
     final actorFields = <MapEntry<String, String>>[
       MapEntry('Nom du personnage', scene.characterName),
       MapEntry('Âge apparent', scene.apparentAge),
@@ -4160,27 +4330,7 @@ class _SceneDetailPreview extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Prompt VEO3',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 14),
-                _PreviewFieldCard(
-                  label: 'Prompt vidéo générative',
-                  value: effectiveVeoPrompt.trim().isEmpty
-                      ? 'Aucun prompt VEO3 renseigné.'
-                      : effectiveVeoPrompt,
-                ),
-              ],
-            ),
-          ),
-        ),
+        _buildPreviewVeoPromptSection(),
         const SizedBox(height: 16),
         Card(
           child: Padding(
@@ -4298,45 +4448,7 @@ class _SceneDetailPreview extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Timeline des plans',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '${timelineMarkers.length} plan(s) • ${timelineDuration}s cumulées',
-                  style: const TextStyle(
-                    height: 1.5,
-                    color: Color(0xFF4B5563),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                if (timelineMarkers.isEmpty)
-                  const _PreviewFieldCard(
-                    label: 'Timeline',
-                    value: 'Aucun marker JSON renseigné.',
-                  )
-                else
-                  Column(
-                    children: [
-                      for (final marker in timelineMarkers)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _PreviewMarkerCard(marker: marker),
-                        ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-        ),
+        _buildPreviewTimelineSection(),
       ],
     );
   }
@@ -4412,64 +4524,45 @@ class _PreviewFieldCard extends StatelessWidget {
   }
 }
 
-class _PreviewMarkerCard extends StatelessWidget {
-  const _PreviewMarkerCard({required this.marker});
+class _PreviewTimelineMarker {
+  const _PreviewTimelineMarker({
+    required this.type,
+    required this.durationSeconds,
+    required this.label,
+    required this.cameraPlan,
+    required this.character,
+    required this.dialogue,
+    required this.cueText,
+    required this.videoUrl,
+  });
 
-  final Map<String, dynamic> marker;
+  final String type;
+  final int durationSeconds;
+  final String label;
+  final String cameraPlan;
+  final String character;
+  final String dialogue;
+  final String cueText;
+  final String videoUrl;
 
-  @override
-  Widget build(BuildContext context) {
-    final fields = <MapEntry<String, String>>[
-      MapEntry('Type', marker['type']?.toString() ?? ''),
-      MapEntry('Durée', '${((marker['durationSeconds'] as num?)?.toInt() ?? 0)} s'),
-      MapEntry('Plan caméra', marker['cameraPlan']?.toString() ?? ''),
-      MapEntry('Personnage', marker['character']?.toString() ?? ''),
-      MapEntry('Dialogue', marker['dialogue']?.toString() ?? ''),
-      MapEntry('Consigne', marker['cueText']?.toString() ?? ''),
-      MapEntry('Vidéo IA', marker['videoUrl']?.toString() ?? ''),
-    ].where((entry) => entry.value.trim().isNotEmpty).toList();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            marker['label']?.toString().trim().isNotEmpty == true
-                ? marker['label'].toString()
-                : 'Plan sans titre',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: fields
-                .map(
-                  (entry) => SizedBox(
-                    width: 250,
-                    child: _PreviewFieldCard(
-                      label: entry.key,
-                      value: entry.value,
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
-      ),
+  factory _PreviewTimelineMarker.fromJson(Map<String, dynamic> json) {
+    return _PreviewTimelineMarker(
+      type: '${json['type'] ?? ''}',
+      durationSeconds: _previewToInt(json['durationSeconds']),
+      label: '${json['label'] ?? ''}',
+      cameraPlan: '${json['cameraPlan'] ?? ''}',
+      character: '${json['character'] ?? ''}',
+      dialogue: '${json['dialogue'] ?? ''}',
+      cueText: '${json['cueText'] ?? ''}',
+      videoUrl: '${json['videoUrl'] ?? ''}',
     );
   }
+}
+
+int _previewToInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse('$value') ?? 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -4835,6 +4928,7 @@ class _MarkerRow extends StatelessWidget {
               SizedBox(
                 width: 260,
                 child: DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: types.containsKey(type) ? type : 'ai_dialogue',
                   decoration: const InputDecoration(
                     labelText: 'Type de plan',

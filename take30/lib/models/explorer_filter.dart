@@ -1,7 +1,6 @@
-/// Filtres de la page Explorer.
-///
-/// Modèle immutable utilisé par `explorerFilterProvider` et appliqué
-/// côté `ExplorerService` pour filtrer scènes et classements.
+// Filtres de la page Explorer.
+// Modèle immutable utilisé par explorerFilterProvider pour filtrer
+// scènes et classements côté UI.
 
 enum ExplorerSortMode {
   /// Plus récent en premier (publishedAt desc).
