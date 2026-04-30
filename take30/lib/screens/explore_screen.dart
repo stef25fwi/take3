@@ -350,77 +350,71 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tileBackground = data.isMoreTile
-      ? palette.moreTileBackground
-      : palette.isDark
-        ? const Color.fromRGBO(255, 255, 255, 0.04)
-        : const Color.fromRGBO(255, 255, 255, 0.88);
-    final contentColor = data.isMoreTile ? palette.moreTileForeground : palette.primaryText;
+    const yellow = Color(0xFFFFB800);
+    final tileBackground = data.isMoreTile ? palette.moreTileBackground : yellow;
+    final iconColor =
+        data.isMoreTile ? palette.moreTileForeground : const Color(0xFF0B1020);
     final activeBorder = data.isMoreTile
-      ? palette.tileSelectedBorder
-      : data.color.withValues(alpha: palette.isDark ? 0.90 : 0.55);
+        ? palette.tileSelectedBorder
+        : const Color(0xFF0B1020);
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedScale(
         duration: const Duration(milliseconds: 160),
         scale: selected ? 0.97 : 1,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          height: 54,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          decoration: BoxDecoration(
-            color: tileBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? activeBorder : palette.tileBorder,
-              width: selected ? 1.4 : 0.9,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              data.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                color: palette.primaryText,
+                fontSize: data.label == 'Comédie' ? 10.4 : 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.1,
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: selected ? activeBorder.withValues(alpha: 0.18) : Colors.transparent,
-                blurRadius: 14,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFB800),
-                  shape: BoxShape.circle,
+            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              height: 54,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: tileBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: selected ? activeBorder : palette.tileBorder,
+                  width: selected ? 1.6 : 0.9,
                 ),
-                child: const Icon(
-                  Icons.circle,
-                  size: 0,
-                  color: Colors.transparent,
-                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: selected
+                        ? activeBorder.withValues(alpha: 0.20)
+                        : Colors.transparent,
+                    blurRadius: 14,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-              Transform.translate(
-                offset: const Offset(0, -26),
-                child: Icon(
-                  data.icon,
-                  size: 15,
-                  color: const Color(0xFF0B1020),
-                ),
-              ),
-              Text(
-                data.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
-                  color: contentColor,
-                  fontSize: data.label == 'Comédie' ? 9.4 : 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.08,
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      data.icon,
+                      color: iconColor,
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
