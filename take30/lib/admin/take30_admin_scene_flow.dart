@@ -1040,7 +1040,163 @@ class SceneFormData {
       markersJson: _encodeMarkersList(data['markers']),
     );
   }
+
+  /// Fiche réalisateur préremplie pour la scène test « Interrogatoire police ».
+  /// Utilisée par le bouton admin « Charger scène test » de [AddScenePage].
+  static SceneFormData testPoliceInterrogation() {
+    final now = DateTime.now();
+    return SceneFormData(
+      id: 'scene_test_interrogatoire_police_001',
+      status: SceneStatus.draft,
+      category: 'Policier',
+      genre: 'Drame / Thriller',
+      recommendedLevel: 'intermédiaire',
+      projectTitle: 'Salle d’interrogatoire',
+      sceneName: 'La vérité fissure',
+      sceneNumber: 'SC-INT-03',
+      shootDate: '2026-04-30',
+      location: 'Salle d’interrogatoire — commissariat',
+      director: 'Direction interne Take60',
+      targetDuration: '60 secondes',
+      characterName: 'Malik Renaud',
+      apparentAge: '32 ans',
+      characterGender: 'Homme',
+      profileRole: 'Suspect',
+      relationship: 'Interrogé par un officier hors champ',
+      initialState: 'Fermé, sur la défensive',
+      characterSummary:
+          'Homme calme en apparence mais sous pression intérieure intense.',
+      previousMoment: 'Il vient d’être confronté à une preuve accablante.',
+      whereAreWe: 'Salle d’interrogatoire froide, lumière blanche.',
+      withWho: 'Un policier hors champ.',
+      whyImportant: 'Moment où il peut craquer.',
+      contextSummary: 'La pression monte. Il doit tenir ou céder.',
+      mainObjective: 'cacher la vérité',
+      mainObstacle:
+          'Pression psychologique et preuves présentées par l’enquêteur.',
+      stakes: 'Éviter l’inculpation et garder le contrôle.',
+      dominantEmotion: 'stress',
+      secondaryEmotion: 'colère contenue',
+      intensity: 'progressif',
+      evolutionStart: 'Calme contrôlé.',
+      evolutionMiddle: 'Nervosité visible.',
+      evolutionEnd: 'Fissure émotionnelle.',
+      emotionalNuance:
+          'Ne jamais exploser complètement. Tout doit rester contenu.',
+      playStyles: const ['réaliste', 'cinéma', 'intense', 'minimaliste'],
+      actingDirection:
+          'Moins tu en fais, plus c’est fort. Les yeux parlent plus que les mots.',
+      references:
+          'Interrogatoires de films policiers réalistes, tension psychologique, jeu sobre.',
+      textType: 'dialogue',
+      dialogueText:
+          'Vous n’avez rien contre moi… rien de solide.\n\nVous bluffez.',
+      emphasizedWords: 'rien, solide, bluffez',
+      keyPhrase: 'Vous bluffez.',
+      block1Intention: 'Résister',
+      block1Energy: 'Faible',
+      block1Look: 'Fixe',
+      block1Rhythm: 'Lent',
+      block2Intention: 'Défier',
+      block2Energy: 'Montante',
+      block2Look: 'Instable',
+      block2Rhythm: 'Irrégulier',
+      block3Intention: 'Douter',
+      block3Energy: 'Fragile',
+      block3Look: 'Fuite',
+      block3Rhythm: 'Cassé',
+      startPosition: 'Assis, mains sur la table.',
+      plannedMovement:
+          'Léger mouvement du corps vers l’avant puis retrait.',
+      expectedGestures:
+          'Doigts qui tapent, micro-tensions dans les mains.',
+      usedObjects: 'Table, chaise.',
+      keyActionMoment:
+          'Pause silencieuse avant la phrase : Vous bluffez.',
+      bodyDirection:
+          'Tension dans la mâchoire, épaules légèrement bloquées.',
+      framingType: 'plan rapproché',
+      cameraRelation: 'face caméra',
+      gazePoint: 'Objectif caméra, comme si le policier était en face.',
+      faceDirection:
+          'Micro-expressions, regard dur au début puis regard fuyant à la fin.',
+      globalTempo: 'lent puis instable',
+      silences:
+          'Garder des silences avant et après les phrases importantes.',
+      dramaticRise:
+          'La montée dramatique doit être intérieure, sans cri.',
+      floorMark: 'Position fixe assise.',
+      startCue: 'Regard caméra, respiration lente.',
+      movementCue:
+          'Respiration visible avant la deuxième réplique.',
+      exactEnd: 'Finir sur un regard fuyant, sans ajouter de texte.',
+      idealTextDuration: '20 secondes environ.',
+      technicalConstraints:
+          'Ambiance silencieuse, lumière froide, cadre stable, aucun bruit parasite.',
+      spectatorFeeling:
+          'Le spectateur doit ressentir un malaise et se demander s’il cache réellement quelque chose.',
+      directorFinalNote:
+          'La scène repose sur le non-dit. Chaque silence doit peser plus que les mots.',
+      requestedVideoFormat: '16:9',
+      testedPrompts: const [],
+      aiIntroVideo: null,
+      veoPrompt:
+          'Vidéo cinématique réaliste, salle d’interrogatoire sombre. Lumière froide au-dessus d’une table métallique. Un homme est assis, légèrement en tension. Caméra en plan fixe avec léger zoom progressif. Atmosphère lourde, silence pesant. Style film policier réaliste. Aucun texte, aucun visage identifiable. La scène se termine sur un regard intense vers la caméra.',
+      veoStatus: 'none',
+      veoOperationId: null,
+      veoError: null,
+      visualTransitionPoint: '',
+      emotionalTransitionPoint: '',
+      firstActorAction: '',
+      firstExpectedEmotion: '',
+      lastAiFrameDescription: '',
+      createdAt: now,
+      updatedAt: now,
+      submittedAt: null,
+      publishedAt: null,
+      createdBy: 'admin',
+      markersJson: _kPoliceInterrogationMarkersJson,
+    );
+  }
 }
+
+const String _kPoliceInterrogationMarkersJson = '''
+[
+  {
+    "id": "police_intro",
+    "order": 0,
+    "type": "user_intro",
+    "durationSeconds": 15,
+    "label": "Observation silencieuse",
+    "cameraPlan": "Plan rapproché",
+    "character": "Malik",
+    "dialogue": "",
+    "cueText": "Regarde l’enquêteur, analyse, respire lentement. Ne parle pas."
+  },
+  {
+    "id": "police_dialogue",
+    "order": 1,
+    "type": "user_dialogue",
+    "durationSeconds": 25,
+    "label": "Réplique principale",
+    "cameraPlan": "Face caméra",
+    "character": "Malik",
+    "dialogue": "Vous n’avez rien contre moi… rien de solide.",
+    "cueText": "Reste calme, mais laisse apparaître une tension dans le regard."
+  },
+  {
+    "id": "police_emotion",
+    "order": 2,
+    "type": "user_emotion",
+    "durationSeconds": 20,
+    "label": "Fissure finale",
+    "cameraPlan": "Plan fixe rapproché",
+    "character": "Malik",
+    "dialogue": "Vous bluffez.",
+    "cueText": "Laisse apparaître le doute. Le regard fuit légèrement à la fin."
+  }
+]
+''';
 
 class AdminDashboardPage extends StatelessWidget {
   const AdminDashboardPage({
@@ -1704,6 +1860,7 @@ class _AddScenePageState extends State<AddScenePage> {
     'séduire',
     'se défendre',
     'cacher sa peur',
+    'cacher la vérité',
     'récupérer la confiance',
     'impressionner',
     'faire rire',
@@ -1714,6 +1871,7 @@ class _AddScenePageState extends State<AddScenePage> {
 
   final emotionOptions = const [
     'colère',
+    'colère contenue',
     'tristesse',
     'peur',
     'joie',
@@ -1727,7 +1885,7 @@ class _AddScenePageState extends State<AddScenePage> {
     'espoir',
   ];
 
-  final intensityOptions = const ['faible', 'moyen', 'fort'];
+  final intensityOptions = const ['faible', 'moyen', 'fort', 'progressif'];
 
   final styleOptions = const [
     'très naturel',
@@ -1742,16 +1900,19 @@ class _AddScenePageState extends State<AddScenePage> {
     'humoristique',
     'élégant / premium',
     'nerveux / tendu',
+    'minimaliste',
   ];
 
   final textTypeOptions = const [
     'texte exact à respecter',
     'texte semi-libre',
     'improvisation guidée',
+    'dialogue',
   ];
 
   final framingOptions = const [
     'gros plan',
+    'plan rapproché',
     'plan poitrine',
     'plan taille',
     'plan américain',
@@ -1767,6 +1928,7 @@ class _AddScenePageState extends State<AddScenePage> {
 
   final tempoOptions = const [
     'lent',
+    'lent puis instable',
     'posé',
     'fluide',
     'nerveux',
@@ -1921,6 +2083,21 @@ class _AddScenePageState extends State<AddScenePage> {
     _veoOperationId = data.veoOperationId;
     _veoGenerationError = data.veoError;
     _selectedPublicationTarget = data.status;
+  }
+
+  void _loadPoliceInterrogationTestScene() {
+    setState(() {
+      _hydrateFromDraft(SceneFormData.testPoliceInterrogation());
+      _selectedPublicationTarget = SceneStatus.draft;
+    });
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Scène test interrogatoire police chargée.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
   }
 
   @override
@@ -2371,6 +2548,48 @@ class _AddScenePageState extends State<AddScenePage> {
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
+                    Card(
+                      color: const Color(0xFFFFF7DC),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFE8C56A)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.science_outlined,
+                                color: Color(0xFF8A6A00)),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Outil admin : préremplir le formulaire avec '
+                                'la fiche test « Interrogatoire police » '
+                                '(scène 60 s, 3 plans).',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF5A4500),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton.icon(
+                              onPressed: _loadPoliceInterrogationTestScene,
+                              icon: const Icon(Icons.download),
+                              label: const Text(
+                                'Charger scène test — Interrogatoire police',
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     _section(
                       '1) Informations générales',
                       children: [
@@ -4142,8 +4361,10 @@ class _GuidedTimelineEditorState extends State<_GuidedTimelineEditor> {
     'transition': 'Transition',
     'ai_outro': 'Conclusion IA',
     'final_shot': 'Plan final IA',
+    'user_intro': 'Intro utilisateur',
     'user_dialogue': 'Réplique utilisateur',
     'user_reply': 'Réponse utilisateur',
+    'user_emotion': 'Émotion utilisateur',
     'user_silent_action': 'Action silencieuse utilisateur',
     'close_up': 'Plan rapproché (utilisateur)',
     'medium_shot': 'Plan moyen (utilisateur)',
@@ -4151,8 +4372,10 @@ class _GuidedTimelineEditorState extends State<_GuidedTimelineEditor> {
   };
 
   static const _userTypes = {
+    'user_intro',
     'user_dialogue',
     'user_reply',
+    'user_emotion',
     'user_silent_action',
     'close_up',
     'medium_shot',

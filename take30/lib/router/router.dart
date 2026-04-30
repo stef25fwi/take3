@@ -10,6 +10,7 @@ import '../screens/badges_stats_screen.dart';
 import '../screens/battle_screen.dart';
 import '../screens/daily_challenge_screen.dart';
 import '../screens/explore_screen.dart';
+import '../screens/explorer_ranking_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/leaderboard_screen.dart';
 import '../screens/main_shell.dart';
@@ -41,6 +42,8 @@ class AppRouter {
   static const admin = '/admin';
   static const preview = '/preview';
   static const sceneDetail = '/scene';
+  static const explorerRankingRegional = '/explore/ranking/regional';
+  static const explorerRankingNational = '/explore/ranking/national';
 
   static String profilePath(String userId) => '$profile/$userId';
   static String messagesPath(String userId) => '$messages/$userId';
@@ -161,6 +164,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRouter.leaderboard,
             builder: (_, __) => const LeaderboardScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.explorerRankingRegional,
+            builder: (_, __) => const ExplorerRankingScreen(
+              scope: ExplorerRankingScope.regional,
+            ),
+          ),
+          GoRoute(
+            path: AppRouter.explorerRankingNational,
+            builder: (_, __) => const ExplorerRankingScreen(
+              scope: ExplorerRankingScope.national,
+            ),
           ),
         ],
       ),

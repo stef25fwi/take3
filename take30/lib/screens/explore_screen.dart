@@ -6,9 +6,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../models/explorer_filter.dart';
 import '../models/models.dart';
+import '../providers/explorer_providers.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
+import '../services/location_region_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -71,9 +74,34 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       controller: _searchController,
                       palette: palette,
                       onChanged: (value) => setState(() => _query = value),
-                      onActionTap: _resetFilters,
+                      onActionTap: _openFiltersSheet,
                     ),
                     const SizedBox(height: 14),
+                    _RegionBanner(
+                      palette: palette,
+                      onChange: _openLocationSheet,
+                    ),
+                    const SizedBox(height: 12),
+                    _QuickChipsBar(
+                      palette: palette,
+                      onResetCategory: () =>
+                          setState(() => _selectedCategory = null),
+                    ),
+                    const SizedBox(height: 16),
+                    _RegionalRankingSection(palette: palette),
+                    const SizedBox(height: 18),
+                    _NationalRankingSection(palette: palette),
+                    const SizedBox(height: 18),
+                    _NewScenariosSection(
+                      palette: palette,
+                      onPlay: (id) => _openScene(id),
+                    ),
+                    const SizedBox(height: 18),
+                    _TrendingScenesSection(
+                      palette: palette,
+                      onPlay: (id) => _openScene(id),
+                    ),
+                    const SizedBox(height: 22),
                     _SectionTitle(label: 'Catégories', palette: palette),
                     const SizedBox(height: 10),
                     LayoutBuilder(
@@ -213,6 +241,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       _query = '';
       _selectedCategory = null;
     });
+    ref.read(explorerFilterProvider.notifier).reset();
   }
 
   void _openScene(String? sceneId) {
@@ -220,6 +249,32 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       return;
     }
     context.go(AppRouter.scenePath(sceneId));
+  }
+
+  Future<void> _openLocationSheet() async {
+    final palette = _ExplorerPalette.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: palette.backgroundBase,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => const _LocationPickerSheet(),
+    );
+  }
+
+  Future<void> _openFiltersSheet() async {
+    final palette = _ExplorerPalette.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: palette.backgroundBase,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => _AdvancedFiltersSheet(onReset: _resetFilters),
+    );
   }
 }
 
@@ -1030,4 +1085,1267 @@ String _formatCompact(int n) {
   if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
   if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
   return n.toString();
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Bandeau localisation auto-détectée + accès au sélecteur manuel.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _RegionBanner extends ConsumerWidget {
+  const _RegionBanner({required this.palette, required this.onChange});
+
+  final _ExplorerPalette palette;
+  final VoidCallback onChange;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loc = ref.watch(explorerLocationProvider);
+    final l = loc.location;
+    final hasRegion = l?.hasRegion ?? false;
+    final detectedLine = l == null
+        ? 'Choisis ta région pour voir les classements près de toi.'
+        : hasRegion
+            ? 'Classement détecté : ${l.regionName}, ${l.countryName}'
+            : 'Pays détecté : ${l.countryName}';
+    final secondLine = l == null
+        ? 'La localisation sert uniquement à afficher les classements et scènes proches de toi.'
+        : 'Tu peux modifier ta région à tout moment.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: palette.searchBackground,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.searchBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFB800),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: Color(0xFF0B1020),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  detectedLine,
+                  style: GoogleFonts.dmSans(
+                    color: palette.primaryText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  secondLine,
+                  style: GoogleFonts.dmSans(
+                    color: palette.secondaryText,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: onChange,
+            style: TextButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(0, 32),
+              backgroundColor: palette.isDark
+                  ? const Color.fromRGBO(255, 255, 255, 0.08)
+                  : const Color(0xFFFFF7DC),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            child: Text(
+              'Modifier',
+              style: GoogleFonts.dmSans(
+                color: palette.primaryText,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Bottom sheet : choix manuel pays + région.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _LocationPickerSheet extends ConsumerStatefulWidget {
+  const _LocationPickerSheet();
+
+  @override
+  ConsumerState<_LocationPickerSheet> createState() =>
+      _LocationPickerSheetState();
+}
+
+class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
+  CountryOption? _country;
+  RegionOption? _region;
+
+  @override
+  void initState() {
+    super.initState();
+    final loc = ref.read(explorerLocationProvider).location;
+    if (loc != null) {
+      _country = LocationRegionService.supportedCountries.firstWhere(
+        (c) => c.code == loc.countryCode,
+        orElse: () => const CountryOption('FR', 'France'),
+      );
+      final regions =
+          LocationRegionService.regionsByCountry[_country!.code] ?? const [];
+      if (loc.regionCode != null) {
+        for (final r in regions) {
+          if (r.code == loc.regionCode) {
+            _region = r;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _ExplorerPalette.of(context);
+    final regions =
+        LocationRegionService.regionsByCountry[_country?.code ?? ''] ?? const [];
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 14,
+          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.searchBorder,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Ma région',
+              style: GoogleFonts.dmSans(
+                color: palette.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'La localisation sert uniquement à afficher les classements et '
+              'scènes proches de toi.',
+              style: GoogleFonts.dmSans(
+                color: palette.secondaryText,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text('Pays',
+                style: GoogleFonts.dmSans(
+                    color: palette.primaryText,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<CountryOption>(
+              value: _country,
+              items: [
+                for (final c in LocationRegionService.supportedCountries)
+                  DropdownMenuItem(value: c, child: Text(c.label)),
+              ],
+              onChanged: (v) => setState(() {
+                _country = v;
+                _region = null;
+              }),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: palette.searchBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: palette.searchBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFFFB800), width: 1.4),
+                ),
+              ),
+            ),
+            if (regions.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text('Région',
+                  style: GoogleFonts.dmSans(
+                      color: palette.primaryText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<RegionOption?>(
+                value: _region,
+                items: [
+                  const DropdownMenuItem<RegionOption?>(
+                    value: null,
+                    child: Text('Sans région précise'),
+                  ),
+                  for (final r in regions)
+                    DropdownMenuItem<RegionOption?>(
+                      value: r,
+                      child: Text(r.label),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _region = v),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: palette.searchBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: palette.searchBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                        color: Color(0xFFFFB800), width: 1.4),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () async {
+                      await ref
+                          .read(explorerLocationProvider.notifier)
+                          .redetect();
+                      if (context.mounted) Navigator.of(context).pop();
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: palette.searchBackground,
+                    ),
+                    child: Text(
+                      'Auto-détecter',
+                      style: GoogleFonts.dmSans(
+                        color: palette.primaryText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _country == null
+                        ? null
+                        : () async {
+                            await ref
+                                .read(explorerLocationProvider.notifier)
+                                .setManual(country: _country!, region: _region);
+                            if (context.mounted) Navigator.of(context).pop();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: const Color(0xFFFFB800),
+                      foregroundColor: const Color(0xFF0B1020),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Enregistrer',
+                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Barre de chips rapides.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _QuickChipsBar extends ConsumerWidget {
+  const _QuickChipsBar({required this.palette, required this.onResetCategory});
+
+  final _ExplorerPalette palette;
+  final VoidCallback onResetCategory;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(explorerFilterProvider);
+    final loc = ref.watch(explorerLocationProvider).location;
+    final notifier = ref.read(explorerFilterProvider.notifier);
+
+    final myRegionActive = filter.regionCode != null &&
+        loc != null &&
+        filter.regionCode == loc.regionCode;
+    final myCountryActive = filter.countryCode != null &&
+        loc != null &&
+        filter.countryCode == loc.countryCode;
+
+    final chips = <_ChipSpec>[
+      _ChipSpec(
+        label: 'Ma région',
+        active: myRegionActive,
+        onTap: () {
+          if (loc?.regionCode != null) {
+            notifier.setRegion(myRegionActive ? null : loc!.regionCode);
+            notifier.setCountry(myRegionActive ? null : loc.countryCode);
+          }
+        },
+      ),
+      _ChipSpec(
+        label: 'Mon pays',
+        active: myCountryActive && !myRegionActive,
+        onTap: () {
+          if (loc != null) {
+            notifier.setRegion(null);
+            notifier.setCountry(myCountryActive ? null : loc.countryCode);
+          }
+        },
+      ),
+      _ChipSpec(
+        label: 'Nouveaux scénarios',
+        active: filter.onlyNew,
+        onTap: notifier.toggleOnlyNew,
+      ),
+      _ChipSpec(
+        label: 'Tendances',
+        active: filter.onlyTrending,
+        onTap: notifier.toggleOnlyTrending,
+      ),
+      for (final cat in const ['Drame', 'Comédie', 'Audition', 'Policier'])
+        _ChipSpec(
+          label: cat,
+          active: filter.category?.toLowerCase() == cat.toLowerCase(),
+          onTap: () {
+            final isActive =
+                filter.category?.toLowerCase() == cat.toLowerCase();
+            notifier.setCategory(isActive ? null : cat);
+          },
+        ),
+      _ChipSpec(
+        label: 'Débutant',
+        active: filter.difficulty?.toLowerCase() == 'débutant',
+        onTap: () {
+          final isActive = filter.difficulty?.toLowerCase() == 'débutant';
+          notifier.setDifficulty(isActive ? null : 'Débutant');
+        },
+      ),
+    ];
+
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: chips.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          if (i == chips.length) {
+            return _QuickChip(
+              spec: _ChipSpec(
+                label: 'Réinitialiser',
+                active: false,
+                onTap: () {
+                  notifier.reset();
+                  onResetCategory();
+                },
+              ),
+              palette: palette,
+              isReset: true,
+            );
+          }
+          return _QuickChip(spec: chips[i], palette: palette);
+        },
+      ),
+    );
+  }
+}
+
+class _ChipSpec {
+  const _ChipSpec({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+}
+
+class _QuickChip extends StatelessWidget {
+  const _QuickChip({
+    required this.spec,
+    required this.palette,
+    this.isReset = false,
+  });
+
+  final _ChipSpec spec;
+  final _ExplorerPalette palette;
+  final bool isReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = spec.active;
+    final bg = active
+        ? const Color(0xFFFFB800)
+        : (isReset
+            ? Colors.transparent
+            : palette.searchBackground);
+    final fg = active ? const Color(0xFF0B1020) : palette.primaryText;
+    return GestureDetector(
+      onTap: spec.onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active
+                ? const Color(0xFFFFB800)
+                : palette.searchBorder,
+          ),
+        ),
+        child: Text(
+          spec.label,
+          style: GoogleFonts.dmSans(
+            color: fg,
+            fontSize: 12,
+            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Bottom sheet filtres avancés.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _AdvancedFiltersSheet extends ConsumerWidget {
+  const _AdvancedFiltersSheet({required this.onReset});
+
+  final VoidCallback onReset;
+
+  static const _sceneTypes = [
+    'Interrogatoire',
+    'Dialogue',
+    'Monologue',
+    'Conflit',
+    'Self-tape',
+    'Stand-up',
+  ];
+  static const _categories = [
+    'Drame',
+    'Comédie',
+    'Action',
+    'Romance',
+    'Policier',
+    'Audition',
+  ];
+  static const _difficulties = ['Débutant', 'Intermédiaire', 'Avancé'];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = _ExplorerPalette.of(context);
+    final filter = ref.watch(explorerFilterProvider);
+    final notifier = ref.read(explorerFilterProvider.notifier);
+
+    Widget chipGroup(
+      String label,
+      List<String> options,
+      String? currentValue,
+      ValueChanged<String?> onChange,
+    ) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: GoogleFonts.dmSans(
+                  color: palette.primaryText,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final opt in options)
+                _QuickChip(
+                  palette: palette,
+                  spec: _ChipSpec(
+                    label: opt,
+                    active: currentValue?.toLowerCase() == opt.toLowerCase(),
+                    onTap: () {
+                      final isActive =
+                          currentValue?.toLowerCase() == opt.toLowerCase();
+                      onChange(isActive ? null : opt);
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: palette.searchBorder,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Filtres',
+                style: GoogleFonts.dmSans(
+                  color: palette.primaryText,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 14),
+              chipGroup('Catégorie', _categories, filter.category,
+                  notifier.setCategory),
+              const SizedBox(height: 14),
+              chipGroup('Type de scène', _sceneTypes, filter.sceneType,
+                  notifier.setSceneType),
+              const SizedBox(height: 14),
+              chipGroup('Difficulté', _difficulties, filter.difficulty,
+                  notifier.setDifficulty),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        notifier.reset();
+                        onReset();
+                        Navigator.of(context).pop();
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        backgroundColor: palette.searchBackground,
+                      ),
+                      child: Text(
+                        'Réinitialiser',
+                        style: GoogleFonts.dmSans(
+                          color: palette.primaryText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: const Color(0xFFFFB800),
+                        foregroundColor: const Color(0xFF0B1020),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Appliquer',
+                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Section : Classement régional (top 3 + CTA).
+// ────────────────────────────────────────────────────────────────────────────
+
+class _RegionalRankingSection extends ConsumerWidget {
+  const _RegionalRankingSection({required this.palette});
+
+  final _ExplorerPalette palette;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loc = ref.watch(explorerLocationProvider).location;
+    final entries = (loc != null && loc.hasRegion)
+        ? ref.watch(regionalRankingProvider(
+            (countryCode: loc.countryCode, regionCode: loc.regionCode!)))
+        : const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Classement dans ma région',
+          subtitle: loc?.hasRegion == true
+              ? 'Découvre les acteurs les mieux notés près de toi.'
+              : 'Choisis ta région pour voir les classements près de toi.',
+          ctaLabel: 'Voir tout',
+          onCta: () => context.go(AppRouter.explorerRankingRegional),
+          palette: palette,
+        ),
+        const SizedBox(height: 10),
+        if (entries.isEmpty)
+          _EmptyExplorerState(
+            label: 'Aucun classement régional pour le moment.',
+            palette: palette,
+          )
+        else
+          Column(
+            children: [
+              for (final e in entries.take(3))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _RankingMiniRow(
+                    entry: e,
+                    palette: palette,
+                    badge: 'Top régional',
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Section : Classement national.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _NationalRankingSection extends ConsumerWidget {
+  const _NationalRankingSection({required this.palette});
+
+  final _ExplorerPalette palette;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loc = ref.watch(explorerLocationProvider).location;
+    final entries = loc != null
+        ? ref.watch(nationalRankingProvider(loc.countryCode))
+        : const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Classement national',
+          subtitle: loc != null
+              ? 'Compare ton niveau aux meilleurs acteurs de ${loc.countryName}.'
+              : 'Compare ton niveau aux meilleurs acteurs du pays.',
+          ctaLabel: 'Voir tout',
+          onCta: () => context.go(AppRouter.explorerRankingNational),
+          palette: palette,
+        ),
+        const SizedBox(height: 10),
+        if (entries.isEmpty)
+          _EmptyExplorerState(
+            label: 'Aucun classement national pour le moment.',
+            palette: palette,
+          )
+        else
+          Column(
+            children: [
+              for (final e in entries.take(3))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _RankingMiniRow(
+                    entry: e,
+                    palette: palette,
+                    badge: 'Top national',
+                    showCountry: true,
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _RankingMiniRow extends StatelessWidget {
+  const _RankingMiniRow({
+    required this.entry,
+    required this.palette,
+    required this.badge,
+    this.showCountry = false,
+  });
+
+  final dynamic entry; // RankingEntry
+  final _ExplorerPalette palette;
+  final String badge;
+  final bool showCountry;
+
+  String _fmt(double s) {
+    if (s >= 1000000) return '${(s / 1000000).toStringAsFixed(1)}M';
+    if (s >= 1000) return '${(s / 1000).toStringAsFixed(1)}K';
+    return s.toStringAsFixed(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final highlight = entry.isCurrentUser as bool;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: highlight
+            ? const Color(0xFFFFF7DC)
+            : palette.searchBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: highlight
+              ? const Color(0xFFE8C56A)
+              : palette.searchBorder,
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Text(
+              '#${entry.rank}',
+              style: GoogleFonts.dmSans(
+                color: palette.primaryText,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          UserAvatar(
+            url: entry.avatarUrl as String,
+            userId: entry.userId as String,
+            size: 32,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        entry.displayName as String,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          color: palette.primaryText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if ((entry.rank as int) <= 3) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB800),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          badge,
+                          style: GoogleFonts.dmSans(
+                            color: const Color(0xFF0B1020),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                Text(
+                  showCountry
+                      ? entry.countryName as String
+                      : entry.regionName as String,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    color: palette.secondaryText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${_fmt(entry.totalScore as double)} pts',
+                style: GoogleFonts.dmSans(
+                  color: palette.primaryText,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                '${entry.voteCount} votes',
+                style: GoogleFonts.dmSans(
+                  color: palette.secondaryText,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Section : Nouveaux scénarios.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _NewScenariosSection extends ConsumerWidget {
+  const _NewScenariosSection({required this.palette, required this.onPlay});
+
+  final _ExplorerPalette palette;
+  final ValueChanged<String> onPlay;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scenes = ref.watch(explorerNewScenesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Nouveaux scénarios à jouer',
+          subtitle:
+              'Réponds rapidement aux scènes qui viennent d’être publiées.',
+          palette: palette,
+        ),
+        const SizedBox(height: 10),
+        if (scenes.isEmpty)
+          _EmptyExplorerState(
+            label: 'Aucun scénario disponible pour ce filtre.',
+            palette: palette,
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                for (var i = 0; i < scenes.length; i++) ...[
+                  _ExplorerSceneCardV2(
+                    scene: scenes[i],
+                    palette: palette,
+                    badge: 'Nouveau',
+                    badgeColor: const Color(0xFFFFB800),
+                    onPlay: () => onPlay(scenes[i].id),
+                  ),
+                  if (i != scenes.length - 1) const SizedBox(width: 12),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Section : Tendances.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _TrendingScenesSection extends ConsumerWidget {
+  const _TrendingScenesSection(
+      {required this.palette, required this.onPlay});
+
+  final _ExplorerPalette palette;
+  final ValueChanged<String> onPlay;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scenes = ref.watch(explorerTrendingScenesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Scènes tendance',
+          subtitle: 'Les scènes les plus jouées et partagées du moment.',
+          palette: palette,
+        ),
+        const SizedBox(height: 10),
+        if (scenes.isEmpty)
+          _EmptyExplorerState(
+            label: 'Aucune scène tendance pour ce filtre.',
+            palette: palette,
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                for (var i = 0; i < scenes.length; i++) ...[
+                  _ExplorerSceneCardV2(
+                    scene: scenes[i],
+                    palette: palette,
+                    badge: 'Tendance',
+                    badgeColor: const Color(0xFFE95A74),
+                    onPlay: () => onPlay(scenes[i].id),
+                  ),
+                  if (i != scenes.length - 1) const SizedBox(width: 12),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.palette,
+    this.ctaLabel,
+    this.onCta,
+  });
+
+  final String title;
+  final String subtitle;
+  final _ExplorerPalette palette;
+  final String? ctaLabel;
+  final VoidCallback? onCta;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.dmSans(
+                  color: palette.primaryText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.18,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.dmSans(
+                  color: palette.secondaryText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (ctaLabel != null && onCta != null)
+          TextButton(
+            onPressed: onCta,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 28),
+            ),
+            child: Text(
+              ctaLabel!,
+              style: GoogleFonts.dmSans(
+                color: const Color(0xFFFFB800),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Carte scène v2 — utilisée par les sections Nouveaux + Tendances.
+// ────────────────────────────────────────────────────────────────────────────
+
+class _ExplorerSceneCardV2 extends StatelessWidget {
+  const _ExplorerSceneCardV2({
+    required this.scene,
+    required this.palette,
+    required this.badge,
+    required this.badgeColor,
+    required this.onPlay,
+  });
+
+  final ExplorerScene scene;
+  final _ExplorerPalette palette;
+  final String badge;
+  final Color badgeColor;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPlay,
+      child: Container(
+        width: 220,
+        decoration: BoxDecoration(
+          color: palette.searchBackground,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: palette.searchBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: 110,
+                    width: double.infinity,
+                    child: scene.thumbnailAsset.endsWith('.svg')
+                        ? Container(
+                            color: const Color(0xFF1F4564),
+                            padding: const EdgeInsets.all(8),
+                            child: SvgPicture.asset(
+                              scene.thumbnailAsset,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                        : Image.asset(
+                            scene.thumbnailAsset,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFF1F4564),
+                            ),
+                          ),
+                  ),
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badge,
+                        style: GoogleFonts.dmSans(
+                          color: const Color(0xFF0B1020),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(0, 0, 0, 0.55),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '${scene.durationSeconds}s',
+                        style: GoogleFonts.dmSans(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    scene.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: palette.primaryText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.15,
+                    ),
+                  ),
+                  Text(
+                    '${scene.category} · ${scene.sceneType}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      color: palette.secondaryText,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      _miniPill(
+                          '${scene.userPlanCount} plans', palette),
+                      _miniPill(scene.difficulty, palette),
+                      _miniPill(scene.regionName, palette),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onPlay,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0B1020),
+                        foregroundColor: Colors.white,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Jouer cette scène',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniPill(String label, _ExplorerPalette palette) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: palette.isDark
+            ? const Color.fromRGBO(255, 255, 255, 0.06)
+            : const Color(0xFFF2F4F8),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.dmSans(
+          color: palette.primaryText,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 }
