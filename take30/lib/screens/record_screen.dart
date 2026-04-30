@@ -211,7 +211,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         '${timerMinutes.toString().padLeft(2, '0')}:${timerSeconds.toString().padLeft(2, '0')}';
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _K.surface,
       body: Stack(
         children: [
           // ── Full-screen camera ──
@@ -223,7 +223,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                     : const _CameraFallback(),
           ),
 
-          // ── Top vignette ──
+          // ── Top vignette (light) ──
           Positioned(
             top: 0,
             left: 0,
@@ -235,15 +235,15 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.70),
-                    Colors.black.withValues(alpha: 0.0),
+                    Colors.white.withValues(alpha: 0.78),
+                    Colors.white.withValues(alpha: 0.0),
                   ],
                 ),
               ),
             ),
           ),
 
-          // ── Bottom vignette ──
+          // ── Bottom vignette (light) ──
           Positioned(
             bottom: 0,
             left: 0,
@@ -255,9 +255,9 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withValues(alpha: 0.85),
-                    Colors.black.withValues(alpha: 0.50),
-                    Colors.black.withValues(alpha: 0.0),
+                    Colors.white.withValues(alpha: 0.92),
+                    Colors.white.withValues(alpha: 0.55),
+                    Colors.white.withValues(alpha: 0.0),
                   ],
                   stops: const [0.0, 0.55, 1.0],
                 ),
@@ -362,7 +362,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
   void _showScenePicker() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: _K.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -380,7 +380,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
   void _showEffectsSheet() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: _K.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -395,7 +395,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                  color: _K.ink.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -411,7 +411,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                 style: GoogleFonts.dmSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: _K.ink,
                 ),
               ),
               const SizedBox(height: 6),
@@ -420,7 +420,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
                   fontSize: 13,
-                  color: Colors.white.withValues(alpha: 0.65),
+                  color: _K.ink.withValues(alpha: 0.65),
                 ),
               ),
             ],
@@ -451,13 +451,13 @@ class _TimerPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: isRecording
-                ? _K.red.withValues(alpha: 0.25)
-                : Colors.black.withValues(alpha: 0.35),
+                ? _K.red.withValues(alpha: 0.18)
+                : Colors.white.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isRecording
-                  ? _K.red.withValues(alpha: 0.50)
-                  : Colors.white.withValues(alpha: 0.12),
+                  ? _K.red.withValues(alpha: 0.55)
+                  : _K.ink.withValues(alpha: 0.10),
             ),
           ),
           child: Row(
@@ -485,7 +485,7 @@ class _TimerPill extends StatelessWidget {
                 style: GoogleFonts.dmSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: isRecording ? _K.red : _K.ink,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -524,10 +524,10 @@ class _ScenePill extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 36),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.40),
+              color: Colors.white.withValues(alpha: 0.82),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.10),
+                color: _K.ink.withValues(alpha: 0.08),
               ),
             ),
             child: Row(
@@ -552,7 +552,7 @@ class _ScenePill extends StatelessWidget {
                         style: GoogleFonts.dmSans(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: _K.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -561,7 +561,7 @@ class _ScenePill extends StatelessWidget {
                         style: GoogleFonts.dmSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.55),
+                          color: _K.ink.withValues(alpha: 0.60),
                         ),
                       ),
                     ],
@@ -569,7 +569,7 @@ class _ScenePill extends StatelessWidget {
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: Colors.white.withValues(alpha: 0.40),
+                  color: _K.ink.withValues(alpha: 0.45),
                   size: 20,
                 ),
               ],
@@ -614,8 +614,9 @@ class _RecordButton extends StatelessWidget {
           height: 76,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.55),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.30),
+              color: _K.ink.withValues(alpha: 0.25),
               width: 4,
             ),
             boxShadow: isRecording
@@ -683,15 +684,15 @@ class _SideControl extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: enabled ? 0.10 : 0.05),
+                color: Colors.white.withValues(alpha: enabled ? 0.78 : 0.45),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
+                  color: _K.ink.withValues(alpha: 0.10),
                 ),
               ),
               child: Icon(
                 icon,
-                color: Colors.white.withValues(alpha: enabled ? 0.85 : 0.30),
+                color: _K.ink.withValues(alpha: enabled ? 0.88 : 0.30),
                 size: 22,
               ),
             ),
@@ -700,8 +701,8 @@ class _SideControl extends StatelessWidget {
               label,
               style: GoogleFonts.dmSans(
                 fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Colors.white.withValues(alpha: enabled ? 0.60 : 0.25),
+                fontWeight: FontWeight.w600,
+                color: _K.ink.withValues(alpha: enabled ? 0.78 : 0.30),
               ),
             ),
           ],
@@ -733,17 +734,17 @@ class _CircleButton extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Colors.white.withValues(alpha: 0.78),
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.10),
+                color: _K.ink.withValues(alpha: 0.10),
               ),
             ),
             child: Icon(
               icon,
               color: onTap != null
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.30),
+                  ? _K.ink
+                  : _K.ink.withValues(alpha: 0.30),
               size: 20,
             ),
           ),
@@ -763,17 +764,17 @@ class _CameraLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: _K.surface,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
+            const SizedBox(
               width: 40,
               height: 40,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: _K.yellow.withValues(alpha: 0.70),
+                color: _K.yellow,
               ),
             ),
             const SizedBox(height: 16),
@@ -781,7 +782,7 @@ class _CameraLoading extends StatelessWidget {
               'Préparation caméra…',
               style: GoogleFonts.dmSans(
                 fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.45),
+                color: _K.ink.withValues(alpha: 0.55),
               ),
             ),
           ],
@@ -801,14 +802,14 @@ class _CameraFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: _K.surface,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.videocam_off_rounded,
-              color: Colors.white.withValues(alpha: 0.25),
+              color: _K.ink.withValues(alpha: 0.30),
               size: 56,
             ),
             const SizedBox(height: 12),
@@ -816,7 +817,7 @@ class _CameraFallback extends StatelessWidget {
               'Caméra non disponible',
               style: GoogleFonts.dmSans(
                 fontSize: 15,
-                color: Colors.white.withValues(alpha: 0.40),
+                color: _K.ink.withValues(alpha: 0.55),
               ),
             ),
             const SizedBox(height: 10),
@@ -858,7 +859,7 @@ class _ScenePickerSheet extends ConsumerWidget {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.20),
+            color: _K.ink.withValues(alpha: 0.20),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -868,7 +869,7 @@ class _ScenePickerSheet extends ConsumerWidget {
           style: GoogleFonts.dmSans(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: _K.ink,
           ),
         ),
         const SizedBox(height: 14),
@@ -880,7 +881,7 @@ class _ScenePickerSheet extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.62),
+                      color: _K.ink.withValues(alpha: 0.62),
                     ),
                   ),
                 )
@@ -897,13 +898,13 @@ class _ScenePickerSheet extends ConsumerWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: selected
-                              ? _K.yellow.withValues(alpha: 0.10)
-                              : Colors.white.withValues(alpha: 0.05),
+                              ? _K.yellow.withValues(alpha: 0.14)
+                              : _K.ink.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: selected
-                                ? _K.yellow.withValues(alpha: 0.50)
-                                : Colors.white.withValues(alpha: 0.08),
+                                ? _K.yellow.withValues(alpha: 0.55)
+                                : _K.ink.withValues(alpha: 0.08),
                           ),
                         ),
                         child: Row(
@@ -917,7 +918,7 @@ class _ScenePickerSheet extends ConsumerWidget {
                                   scene.thumbnailUrl,
                                   fit: BoxFit.cover,
                                   errorBuilder: (_, __, ___) =>
-                                      Container(color: const Color(0xFF1A2540)),
+                                      Container(color: _K.ink.withValues(alpha: 0.08)),
                                 ),
                               ),
                             ),
@@ -931,14 +932,14 @@ class _ScenePickerSheet extends ConsumerWidget {
                                     style: GoogleFonts.dmSans(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      color: _K.ink,
                                     ),
                                   ),
                                   Text(
                                     scene.category,
                                     style: GoogleFonts.dmSans(
                                       fontSize: 12,
-                                      color: Colors.white.withValues(alpha: 0.45),
+                                      color: _K.ink.withValues(alpha: 0.55),
                                     ),
                                   ),
                                 ],
@@ -970,4 +971,6 @@ class _K {
   static const red = Color(0xFFFF4757);
   static const yellow = Color(0xFFFFB800);
   static const cyan = Color(0xFF00D4FF);
+  static const ink = Color(0xFF0B1020);
+  static const surface = Color(0xFFF7F8FB);
 }
