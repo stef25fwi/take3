@@ -85,7 +85,6 @@ class _Take60GuidedRecordScreenState
   VideoPlayerController? _previewController;
   Future<void>? _previewInit;
 
-  bool _isRendering = false;
   Take60RenderResult? _renderResult;
   VideoPlayerController? _finalController;
   Future<void>? _finalInit;
@@ -500,7 +499,6 @@ class _Take60GuidedRecordScreenState
     if (_scene == null) return;
     setState(() {
       _stage = _Stage.rendering;
-      _isRendering = true;
       _renderResult = null;
       _statusMessage = 'Montage en cours…';
     });
@@ -512,7 +510,6 @@ class _Take60GuidedRecordScreenState
     if (!mounted) return;
     setState(() {
       _renderResult = result;
-      _isRendering = false;
       _stage = _Stage.finalScreen;
       _statusMessage = null;
     });
@@ -878,7 +875,7 @@ class _Take60GuidedRecordScreenState
             label: 'Consignes de jeu',
             value: scene.directorInstructions,
           ),
-          _DirectorRow(label: 'Durée totale', value: '60 secondes'),
+          const _DirectorRow(label: 'Durée totale', value: '60 secondes'),
           _DirectorRow(
             label: 'Séquences à enregistrer',
             value: '$userPlanCount plan(s) utilisateur',
@@ -1608,7 +1605,7 @@ class _SceneCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 6,
                       children: [
-                        _Pill(label: '60 s'),
+                        const _Pill(label: '60 s'),
                         _Pill(label: scene.difficulty.isEmpty
                             ? 'Difficulté libre'
                             : scene.difficulty),

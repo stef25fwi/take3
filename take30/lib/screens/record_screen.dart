@@ -189,6 +189,8 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
     return Take60GuidedRecordScreen(initialScene: widget.scene);
   }
 
+  // Legacy free-recording UI kept for reference; no longer wired.
+  // ignore: unused_element
   Widget _legacyBuild(BuildContext context) {
     final recordingState = ref.watch(recordingProvider);
     final feedState = ref.watch(feedProvider);
