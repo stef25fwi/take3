@@ -163,6 +163,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                   .shareProfile();
                             },
                           ),
+                          const SizedBox(height: 18),
+                          _InterlocutorsBlock(viewerId: widget.userId),
                           if (isDemoProfile) ...[
                             const SizedBox(height: 14),
                             _ThemeToggleCard(
@@ -896,6 +898,156 @@ class _ThemeToggleCard extends StatelessWidget {
             onChanged: onChanged,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Interlocuteurs (conversations) bloc
+// ──────────────────────────────────────────────────────────────────────────────
+
+class _InterlocutorsBlock extends ConsumerWidget {
+  const _InterlocutorsBlock({required this.viewerId});
+
+  final String viewerId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final conversations = ref.watch(demoConversationsProvider(viewerId));
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final surface = AppThemeTokens.surface(context);
+    final border = AppThemeTokens.border(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.forum_rounded,
+                size: 18,
+                color: primaryText,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Interlocuteurs',
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: primaryText,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${conversations.length}',
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: secondaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (conversations.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              child: Text(
+                'Aucune conversation pour le moment.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  color: secondaryText,
+                ),
+              ),
+            )
+          else
+            ...conversations.map(
+              (summary) => _InterlocutorTile(
+                summary: summary,
+                onTap: () => context.go(
+                  AppRouter.messagesPath(summary.peer.id),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InterlocutorTile extends StatelessWidget {
+  const _InterlocutorTile({required this.summary, required this.onTap});
+
+  final DemoConversationSummary summary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final preview = summary.lastMessage?.text ?? 'Démarrer la conversation';
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          children: [
+            UserAvatar(
+              url: summary.peer.avatarUrl,
+              userId: summary.peer.id,
+              size: 42,
+              showBorder: false,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    summary.peer.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    preview,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: secondaryText,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -2423,4 +2423,35 @@ final demoMessagesProvider = StateNotifierProvider.family<
   return DemoMessagesNotifier(currentUser: currentUser, peerUser: peerUser);
 });
 
+class DemoConversationSummary {
+  const DemoConversationSummary({
+    required this.peer,
+    required this.lastMessage,
+  });
+
+  final UserModel peer;
+  final DemoChatMessage? lastMessage;
+}
+
+const List<String> _demoConversationPeerIds = <String>[
+  'u_demo_feed_a',
+  'u_demo_feed_b',
+  'u_rank_week_1',
+  'u_rank_month_1',
+  'u_rank_global_1',
+];
+
+final demoConversationsProvider =
+    Provider.family<List<DemoConversationSummary>, String>((ref, viewerId) {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  final peerIds =
+      _demoConversationPeerIds.where((id) => id != viewerId).toList();
+  return peerIds.map((peerId) {
+    final peer = _buildDemoProfileUser(peerId, authUser);
+    final messages = ref.watch(demoMessagesProvider(peerId));
+    final last = messages.isEmpty ? null : messages.last;
+    return DemoConversationSummary(peer: peer, lastMessage: last);
+  }).toList();
+});
+
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
