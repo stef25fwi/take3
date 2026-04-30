@@ -2841,132 +2841,10 @@ class _AddScenePageState extends State<AddScenePage> {
                       '15bis) Montage automatique dialogué (timeline Take60)',
                       children: [
                         const Text(
-                          'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur, avec dialogues, ambiances et durées. La somme des durées ne doit pas dépasser 60 secondes. Saisis un tableau JSON. Chaque marqueur supporte: id, type (ai_intro|ai_dialogue|user_dialogue|user_silent_action|ai_reaction|ai_outro), order, durationSeconds, label, dialogue, cameraPlan, character, cueText, videoUrl.',
+                          'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur. Pour chaque plan, choisis le type, la durée, la réplique imposée et le cadrage caméra. La durée totale ne doit pas dépasser 60 secondes.',
                           style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
-                        TextField(
-                          controller: markersJsonCtrl,
-                          minLines: 10,
-                          maxLines: 22,
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                          ),
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            hintText: '[\n  {\n    "id": "m1",\n    "type": "ai_intro",\n    "order": 0,\n    "durationSeconds": 5,\n    "label": "Plan IA d\'ouverture",\n    "dialogue": "",\n    "cameraPlan": "Plan large"\n  }\n]',
-                          ),
-                        ),
-                        Builder(
-                          builder: (context) {
-                            final markers = _decodeMarkersJson(markersJsonCtrl.text);
-                            final total = markers.fold<int>(
-                              0,
-                              (acc, m) => acc + ((m['durationSeconds'] as num?)?.toInt() ?? 0),
-                            );
-                            final tooLong = total > 60;
-                            return Wrap(
-                              spacing: 12,
-                              runSpacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  'Durée totale: $total/60 s',
-                                  style: TextStyle(
-                                    color: tooLong
-                                        ? const Color(0xFFD32F2F)
-                                        : const Color(0xFF1F2937),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  '${markers.length} marqueur(s)',
-                                  style: const TextStyle(color: Color(0xFF6B7280)),
-                                ),
-                                if (tooLong)
-                                  const Text(
-                                    'Réduis les durées pour rentrer dans 60 s.',
-                                    style: TextStyle(color: Color(0xFFD32F2F)),
-                                  ),
-                                OutlinedButton.icon(
-                                  onPressed: () => setState(() {}),
-                                  icon: const Icon(Icons.calculate_rounded),
-                                  label: const Text('Recalculer'),
-                                ),
-                                OutlinedButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert([
-                                        {
-                                          'id': 'ai_intro',
-                                          'type': 'ai_intro',
-                                          'order': 0,
-                                          'durationSeconds': 5,
-                                          'label': 'Plan IA d\'ouverture',
-                                          'dialogue': '',
-                                          'cameraPlan': 'Plan large',
-                                        },
-                                        {
-                                          'id': 'user_1',
-                                          'type': 'user_dialogue',
-                                          'order': 1,
-                                          'durationSeconds': 10,
-                                          'label': 'Plan utilisateur 1',
-                                          'dialogue': 'Première réplique',
-                                          'cameraPlan': 'Plan rapproché',
-                                          'character': 'Personnage principal',
-                                          'cueText': 'Joue ta réplique avec calme.',
-                                        },
-                                        {
-                                          'id': 'ai_reaction',
-                                          'type': 'ai_reaction',
-                                          'order': 2,
-                                          'durationSeconds': 10,
-                                          'label': 'Réaction IA',
-                                          'dialogue': '',
-                                          'cameraPlan': 'Champ contre-champ',
-                                        },
-                                        {
-                                          'id': 'user_2',
-                                          'type': 'user_dialogue',
-                                          'order': 3,
-                                          'durationSeconds': 15,
-                                          'label': 'Plan utilisateur 2',
-                                          'dialogue': 'Réplique tournante',
-                                          'cameraPlan': 'Plan moyen',
-                                          'character': 'Personnage principal',
-                                          'cueText': 'Monte en intensité.',
-                                        },
-                                        {
-                                          'id': 'user_3',
-                                          'type': 'user_dialogue',
-                                          'order': 4,
-                                          'durationSeconds': 15,
-                                          'label': 'Plan utilisateur 3',
-                                          'dialogue': 'Conclusion forte',
-                                          'cameraPlan': 'Gros plan visage',
-                                          'character': 'Personnage principal',
-                                          'cueText': 'Finis en regardant l\'objectif.',
-                                        },
-                                        {
-                                          'id': 'ai_outro',
-                                          'type': 'ai_outro',
-                                          'order': 5,
-                                          'durationSeconds': 5,
-                                          'label': 'Plan IA de clôture',
-                                          'dialogue': '',
-                                          'cameraPlan': 'Plan large',
-                                        },
-                                      ]);
-                                    });
-                                  },
-                                  icon: const Icon(Icons.auto_fix_high_rounded),
-                                  label: const Text('Insérer un modèle 60 s'),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                        _GuidedTimelineEditor(controller: markersJsonCtrl),
                       ],
                     ),
                     _section(
@@ -4229,6 +4107,485 @@ class _PreviewFieldCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: Color(0xFF111827),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// _GuidedTimelineEditor
+// Visual editor for Take60 guided scene markers. Each row exposes the
+// type of plan (AI/user, role…), duration, dialogue, camera framing.
+// Total duration is enforced ≤ 60s with a visible counter and alert.
+// State is mirrored back into [controller.text] as a JSON list, so the
+// existing persistence pipeline (toFirestore → markers field) keeps
+// working unchanged.
+// ─────────────────────────────────────────────────────────────────────────
+class _GuidedTimelineEditor extends StatefulWidget {
+  const _GuidedTimelineEditor({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  State<_GuidedTimelineEditor> createState() => _GuidedTimelineEditorState();
+}
+
+class _GuidedTimelineEditorState extends State<_GuidedTimelineEditor> {
+  static const _markerTypes = <String, String>{
+    'intro_cinema': 'Intro cinéma (IA)',
+    'ai_dialogue': 'Réplique IA',
+    'ai_reply': 'Réponse IA',
+    'ai_reaction': 'Réaction IA',
+    'reaction_shot': 'Plan réaction',
+    'transition': 'Transition',
+    'ai_outro': 'Conclusion IA',
+    'final_shot': 'Plan final IA',
+    'user_dialogue': 'Réplique utilisateur',
+    'user_reply': 'Réponse utilisateur',
+    'user_silent_action': 'Action silencieuse utilisateur',
+    'close_up': 'Plan rapproché (utilisateur)',
+    'medium_shot': 'Plan moyen (utilisateur)',
+    'over_shoulder': 'Sur-épaule (utilisateur)',
+  };
+
+  static const _userTypes = {
+    'user_dialogue',
+    'user_reply',
+    'user_silent_action',
+    'close_up',
+    'medium_shot',
+    'over_shoulder',
+  };
+
+  late List<Map<String, dynamic>> _markers;
+
+  @override
+  void initState() {
+    super.initState();
+    _markers = _decodeMarkersJson(widget.controller.text)
+        .map((m) => Map<String, dynamic>.from(m))
+        .toList();
+    _resequence();
+  }
+
+  void _resequence() {
+    for (var i = 0; i < _markers.length; i++) {
+      _markers[i]['order'] = i;
+      if ((_markers[i]['id'] as String?)?.trim().isEmpty ?? true) {
+        _markers[i]['id'] = 'm_${DateTime.now().millisecondsSinceEpoch}_$i';
+      }
+    }
+  }
+
+  void _commit() {
+    _resequence();
+    widget.controller.text =
+        const JsonEncoder.withIndent('  ').convert(_markers);
+  }
+
+  int get _totalDuration => _markers.fold<int>(
+        0,
+        (acc, m) => acc + ((m['durationSeconds'] as num?)?.toInt() ?? 0),
+      );
+
+  void _addMarker({String type = 'ai_dialogue'}) {
+    setState(() {
+      _markers.add({
+        'id': 'm_${DateTime.now().millisecondsSinceEpoch}',
+        'type': type,
+        'order': _markers.length,
+        'durationSeconds': 8,
+        'label': _markerTypes[type] ?? type,
+        'dialogue': '',
+        'cameraPlan': '',
+        'character': '',
+        'cueText': '',
+      });
+      _commit();
+    });
+  }
+
+  void _remove(int index) {
+    setState(() {
+      _markers.removeAt(index);
+      _commit();
+    });
+  }
+
+  void _move(int index, int delta) {
+    final target = index + delta;
+    if (target < 0 || target >= _markers.length) return;
+    setState(() {
+      final tmp = _markers[index];
+      _markers[index] = _markers[target];
+      _markers[target] = tmp;
+      _commit();
+    });
+  }
+
+  void _update(int index, String key, dynamic value) {
+    setState(() {
+      _markers[index][key] = value;
+      _commit();
+    });
+  }
+
+  void _insertTemplate60s() {
+    setState(() {
+      _markers
+        ..clear()
+        ..addAll([
+          {
+            'id': 'ai_intro',
+            'type': 'intro_cinema',
+            'durationSeconds': 8,
+            'label': 'Intro cinéma',
+            'dialogue': '',
+            'cameraPlan': 'Plan large',
+            'character': '',
+          },
+          {
+            'id': 'user_1',
+            'type': 'user_dialogue',
+            'durationSeconds': 10,
+            'label': 'Plan utilisateur 1',
+            'dialogue': 'Première réplique',
+            'cameraPlan': 'Plan rapproché',
+            'character': 'Personnage principal',
+            'cueText': 'Joue avec calme.',
+          },
+          {
+            'id': 'ai_react',
+            'type': 'ai_reaction',
+            'durationSeconds': 10,
+            'label': 'Réaction IA',
+            'dialogue': '',
+            'cameraPlan': 'Champ contre-champ',
+          },
+          {
+            'id': 'user_2',
+            'type': 'user_dialogue',
+            'durationSeconds': 12,
+            'label': 'Plan utilisateur 2',
+            'dialogue': 'Réplique tournante',
+            'cameraPlan': 'Plan moyen',
+            'character': 'Personnage principal',
+            'cueText': 'Monte en intensité.',
+          },
+          {
+            'id': 'user_3',
+            'type': 'user_reply',
+            'durationSeconds': 12,
+            'label': 'Plan utilisateur final',
+            'dialogue': 'Conclusion forte',
+            'cameraPlan': 'Gros plan visage',
+            'character': 'Personnage principal',
+            'cueText': 'Finis en regardant l\'objectif.',
+          },
+          {
+            'id': 'ai_outro',
+            'type': 'ai_outro',
+            'durationSeconds': 8,
+            'label': 'Plan IA de clôture',
+            'dialogue': '',
+            'cameraPlan': 'Plan large',
+          },
+        ]);
+      _commit();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final total = _totalDuration;
+    final tooLong = total > 60;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_markers.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: const Text(
+              'Aucun plan défini. Ajoute un premier plan ou insère un modèle 60 s.',
+              style: TextStyle(color: Color(0xFF4B5563)),
+            ),
+          )
+        else
+          for (var i = 0; i < _markers.length; i++)
+            _MarkerRow(
+              key: ValueKey(_markers[i]['id'] ?? i),
+              index: i,
+              total: _markers.length,
+              marker: _markers[i],
+              types: _markerTypes,
+              userTypes: _userTypes,
+              onChange: (key, value) => _update(i, key, value),
+              onMoveUp: i == 0 ? null : () => _move(i, -1),
+              onMoveDown:
+                  i == _markers.length - 1 ? null : () => _move(i, 1),
+              onDelete: () => _remove(i),
+            ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              'Durée totale: $total/60 s',
+              style: TextStyle(
+                color: tooLong
+                    ? const Color(0xFFD32F2F)
+                    : const Color(0xFF1F2937),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              '${_markers.length} plan(s)',
+              style: const TextStyle(color: Color(0xFF6B7280)),
+            ),
+            if (tooLong)
+              const Text(
+                'Réduis les durées pour rentrer dans 60 s.',
+                style: TextStyle(color: Color(0xFFD32F2F)),
+              ),
+            FilledButton.icon(
+              onPressed: () => _addMarker(type: 'ai_dialogue'),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Ajouter un plan IA'),
+            ),
+            FilledButton.icon(
+              onPressed: () => _addMarker(type: 'user_dialogue'),
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('Ajouter un plan utilisateur'),
+            ),
+            OutlinedButton.icon(
+              onPressed: _insertTemplate60s,
+              icon: const Icon(Icons.auto_fix_high_rounded),
+              label: const Text('Insérer un modèle 60 s'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MarkerRow extends StatelessWidget {
+  const _MarkerRow({
+    super.key,
+    required this.index,
+    required this.total,
+    required this.marker,
+    required this.types,
+    required this.userTypes,
+    required this.onChange,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onDelete,
+  });
+
+  final int index;
+  final int total;
+  final Map<String, dynamic> marker;
+  final Map<String, String> types;
+  final Set<String> userTypes;
+  final void Function(String key, dynamic value) onChange;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final type = (marker['type'] as String?) ?? 'ai_dialogue';
+    final isUser = userTypes.contains(type);
+    final duration = (marker['durationSeconds'] as num?)?.toInt() ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isUser ? const Color(0xFFFFF7E6) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isUser ? const Color(0xFFFCD34D) : const Color(0xFFBFDBFE),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: isUser
+                    ? const Color(0xFFFFB800)
+                    : const Color(0xFF2563EB),
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isUser ? 'Plan utilisateur' : 'Plan IA',
+                style: TextStyle(
+                  color: isUser
+                      ? const Color(0xFF92400E)
+                      : const Color(0xFF1E3A8A),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                tooltip: 'Monter',
+                onPressed: onMoveUp,
+                icon: const Icon(Icons.arrow_upward_rounded),
+              ),
+              IconButton(
+                tooltip: 'Descendre',
+                onPressed: onMoveDown,
+                icon: const Icon(Icons.arrow_downward_rounded),
+              ),
+              IconButton(
+                tooltip: 'Supprimer',
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: 260,
+                child: DropdownButtonFormField<String>(
+                  initialValue: types.containsKey(type) ? type : 'ai_dialogue',
+                  decoration: const InputDecoration(
+                    labelText: 'Type de plan',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  items: [
+                    for (final entry in types.entries)
+                      DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) onChange('type', value);
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 130,
+                child: TextFormField(
+                  initialValue: duration.toString(),
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Durée (s)',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value.trim()) ?? 0;
+                    onChange('durationSeconds', parsed.clamp(0, 60));
+                  },
+                ),
+              ),
+              SizedBox(
+                width: 240,
+                child: TextFormField(
+                  initialValue: (marker['label'] as String?) ?? '',
+                  decoration: const InputDecoration(
+                    labelText: 'Libellé du plan',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => onChange('label', value),
+                ),
+              ),
+              SizedBox(
+                width: 240,
+                child: TextFormField(
+                  initialValue: (marker['cameraPlan'] as String?) ?? '',
+                  decoration: const InputDecoration(
+                    labelText: 'Plan caméra',
+                    hintText: 'Plan rapproché, large…',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => onChange('cameraPlan', value),
+                ),
+              ),
+              SizedBox(
+                width: 240,
+                child: TextFormField(
+                  initialValue: (marker['character'] as String?) ?? '',
+                  decoration: const InputDecoration(
+                    labelText: 'Personnage',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => onChange('character', value),
+                ),
+              ),
+              SizedBox(
+                width: 480,
+                child: TextFormField(
+                  initialValue: (marker['dialogue'] as String?) ?? '',
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Texte imposé / réplique',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => onChange('dialogue', value),
+                ),
+              ),
+              if (isUser)
+                SizedBox(
+                  width: 480,
+                  child: TextFormField(
+                    initialValue: (marker['cueText'] as String?) ?? '',
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Consigne de jeu',
+                      hintText: 'Ex: monte en intensité, regarde l\'objectif…',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (value) => onChange('cueText', value),
+                  ),
+                ),
+              if (!isUser)
+                SizedBox(
+                  width: 480,
+                  child: TextFormField(
+                    initialValue: (marker['videoUrl'] as String?) ?? '',
+                    decoration: const InputDecoration(
+                      labelText: 'URL vidéo IA (VO3 / Veo)',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (value) => onChange('videoUrl', value),
+                  ),
+                ),
+            ],
           ),
         ],
       ),

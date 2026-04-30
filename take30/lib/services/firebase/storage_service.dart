@@ -12,6 +12,9 @@ class StorageService {
   Reference _sceneRef(String uid, String sceneId) =>
       _storage.ref('scenes/$uid/$sceneId.mp4');
 
+  Reference _guidedSegmentRef(String uid, String sceneId, String markerId) =>
+      _storage.ref('scenes/$uid/${sceneId}_$markerId.mp4');
+
   Reference _thumbRef(String uid, String sceneId) =>
       _storage.ref('thumbnails/$uid/$sceneId.jpg');
 
@@ -34,6 +37,32 @@ class StorageService {
     required Uint8List bytes,
   }) async {
     final ref = _sceneRef(uid, sceneId);
+    final metadata = SettableMetadata(contentType: 'video/mp4');
+    await ref.putData(bytes, metadata);
+    return ref.getDownloadURL();
+  }
+
+  /// Upload one user-recorded segment of a guided scene.
+  /// Path: `scenes/{uid}/{sceneId}_{markerId}.mp4` (fits storage.rules).
+  Future<String> uploadGuidedSegment({
+    required String uid,
+    required String sceneId,
+    required String markerId,
+    required File file,
+  }) async {
+    final ref = _guidedSegmentRef(uid, sceneId, markerId);
+    final metadata = SettableMetadata(contentType: 'video/mp4');
+    await ref.putFile(file, metadata);
+    return ref.getDownloadURL();
+  }
+
+  Future<String> uploadGuidedSegmentBytes({
+    required String uid,
+    required String sceneId,
+    required String markerId,
+    required Uint8List bytes,
+  }) async {
+    final ref = _guidedSegmentRef(uid, sceneId, markerId);
     final metadata = SettableMetadata(contentType: 'video/mp4');
     await ref.putData(bytes, metadata);
     return ref.getDownloadURL();

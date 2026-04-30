@@ -90,6 +90,7 @@ class _Take60GuidedRecordScreenState
   VideoPlayerController? _finalController;
   Future<void>? _finalInit;
   String _publicationStatus = '';
+  bool _videoValidated = false;
   String? _statusMessage;
 
   @override
@@ -156,6 +157,61 @@ class _Take60GuidedRecordScreenState
       _recordings.clear();
       _stage = _Stage.director;
     });
+    // Propose la reprise du brouillon si l'utilisateur en a un en cours.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeOfferDraftResume(scene),
+    );
+  }
+
+  Future<void> _maybeOfferDraftResume(SceneModel scene) async {
+    final draft = await _service.loadDraft(sceneId: scene.id);
+    if (!mounted || draft == null || draft.recordings.isEmpty) return;
+    if (_scene?.id != scene.id) return;
+    final resume = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF111827),
+        title: Text(
+          'Reprendre la scène en cours ?',
+          style: GoogleFonts.dmSans(color: Colors.white),
+        ),
+        content: Text(
+          'Tu as ${draft.recordings.length} plan(s) déjà enregistrés pour « ${draft.sceneTitle} ». '
+          'Veux-tu reprendre où tu t\'étais arrêté ?',
+          style: GoogleFonts.dmSans(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(
+              'Recommencer',
+              style: GoogleFonts.dmSans(color: Colors.white70),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.black,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Reprendre'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (resume == true) {
+      _recordings.clear();
+      for (final rec in draft.recordings) {
+        _recordings[rec.markerId] = rec;
+      }
+      final resumeIndex = draft.currentMarkerIndex
+          .clamp(0, _timeline.isEmpty ? 0 : _timeline.length - 1);
+      setState(() => _currentIndex = resumeIndex);
+    } else {
+      await _service.clearDraft(scene.id);
+    }
   }
 
   void _backToLibrary() {
@@ -492,8 +548,21 @@ class _Take60GuidedRecordScreenState
     setState(() => _publicationStatus = 'Brouillon enregistré.');
   }
 
+  void _validateVideo() {
+    if (_renderResult == null) return;
+    setState(() {
+      _videoValidated = true;
+      _publicationStatus = 'Vidéo validée. Tu peux maintenant publier.';
+    });
+  }
+
   Future<void> _publish() async {
     if (_scene == null || _renderResult == null) return;
+    if (!_videoValidated) {
+      setState(() => _publicationStatus =
+          'Valide d\'abord ta vidéo avant publication.');
+      return;
+    }
     setState(() => _publicationStatus = 'Publication en cours…');
     await _service.saveRenderedProject(
       scene: _scene!,
@@ -934,7 +1003,7 @@ class _Take60GuidedRecordScreenState
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    marker.label,
+                    'Plan IA ${_aiPlanIndexLabel(marker)} / ${_aiPlanCountLabel()} · ${marker.label}',
                     style: GoogleFonts.dmSans(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -1183,6 +1252,21 @@ class _Take60GuidedRecordScreenState
     return idx.toString();
   }
 
+  String _aiPlanCountLabel() {
+    return _timeline.where((m) => !m.requiresUserRecording).length.toString();
+  }
+
+  String _aiPlanIndexLabel(Take60SceneMarker marker) {
+    var idx = 0;
+    for (final m in _timeline) {
+      if (!m.requiresUserRecording) {
+        idx++;
+        if (m.id == marker.id) return idx.toString();
+      }
+    }
+    return idx.toString();
+  }
+
   // ─── Stage: Preview ──────────────────────────────────────────────────
   Widget _buildPreview() {
     final draft = _previewRecording;
@@ -1423,7 +1507,23 @@ class _Take60GuidedRecordScreenState
                 ),
               ),
               FilledButton.icon(
-                onPressed: _publish,
+                onPressed: _videoValidated ? null : _validateVideo,
+                icon: Icon(
+                  _videoValidated ? Icons.check_circle : Icons.check,
+                ),
+                label: Text(
+                  _videoValidated ? 'Vidéo validée' : 'Valider ma vidéo',
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _videoValidated
+                      ? Colors.green.shade600
+                      : Colors.white,
+                  foregroundColor:
+                      _videoValidated ? Colors.white : Colors.black,
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _videoValidated ? _publish : null,
                 icon: const Icon(Icons.publish),
                 label: const Text('Publier'),
                 style: FilledButton.styleFrom(

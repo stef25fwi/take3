@@ -1,18 +1,23 @@
 import 'dart:convert';
+import 'dart:io' show File;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
+import 'firebase/storage_service.dart';
 
 class Take60GuidedSceneService {
   Take60GuidedSceneService._internal()
       : _functions = FirebaseFunctions.instanceFor(region: 'europe-west1'),
         _firestore = FirebaseFirestore.instance,
-        _auth = fa.FirebaseAuth.instance;
+        _auth = fa.FirebaseAuth.instance,
+        _storage = StorageService(FirebaseStorage.instance);
 
   static final Take60GuidedSceneService instance =
       Take60GuidedSceneService._internal();
@@ -20,6 +25,7 @@ class Take60GuidedSceneService {
   final FirebaseFunctions _functions;
   final FirebaseFirestore _firestore;
   final fa.FirebaseAuth _auth;
+  final StorageService _storage;
 
   static const _uuid = Uuid();
   static const _mockAiVideoUrl =
@@ -168,13 +174,39 @@ class Take60GuidedSceneService {
     String? uploadedVideoUrl,
   }) async {
     final now = DateTime.now();
+    String? finalUploadedUrl = uploadedVideoUrl;
+
+    // Try to upload the captured segment to Storage so that the backend
+    // renderer can reach it. On web (no dart:io File) or if upload fails
+    // we silently fall back to the local path — the UI still works in
+    // demo / offline mode.
+    if (finalUploadedUrl == null &&
+        currentUserId != 'guest' &&
+        !kIsWeb &&
+        localTempPath.isNotEmpty &&
+        !localTempPath.startsWith('http')) {
+      try {
+        final file = File(localTempPath);
+        if (await file.exists()) {
+          finalUploadedUrl = await _storage.uploadGuidedSegment(
+            uid: currentUserId,
+            sceneId: scene.id,
+            markerId: marker.id,
+            file: file,
+          );
+        }
+      } catch (_) {
+        // Upload failure is non-fatal — keep local path.
+      }
+    }
+
     final recording = Take60UserRecordingDraft(
       recordingId: _uuid.v4(),
       sceneId: scene.id,
       userId: currentUserId,
       markerId: marker.id,
       localTempPath: localTempPath,
-      uploadedVideoUrl: uploadedVideoUrl,
+      uploadedVideoUrl: finalUploadedUrl,
       durationSeconds: durationSeconds,
       status: status,
       createdAt: now,
@@ -200,18 +232,38 @@ class Take60GuidedSceneService {
     final payload = {
       'sceneId': scene.id,
       'userId': currentUserId,
-      'aiVideoSegments': markers
+      'aiSegments': markers
           .where((marker) => !marker.requiresUserRecording)
           .map(
             (marker) => {
               'markerId': marker.id,
+              'type': marker.type.value,
               'videoUrl': marker.videoUrl ?? scene.videoUrl,
+              'durationSeconds': marker.durationSeconds,
+              'order': marker.order,
+            },
+          )
+          .toList(),
+      'userSegments': recordings
+          .map(
+            (recording) => {
+              'markerId': recording.markerId,
+              'type': 'user_plan',
+              'videoUrl': recording.uploadedVideoUrl ?? recording.localTempPath,
+              'durationSeconds': recording.durationSeconds,
+            },
+          )
+          .toList(),
+      'markers': markers
+          .map(
+            (marker) => {
+              'markerId': marker.id,
+              'type': marker.type.value,
+              'order': marker.order,
               'durationSeconds': marker.durationSeconds,
             },
           )
           .toList(),
-      'userRecordedSegments': recordings.map((recording) => recording.toMap()).toList(),
-      'markers': markers.map((marker) => marker.toMap()).toList(),
       'audioRules': scene.audioRules.toMap(),
       'maxDurationSeconds': scene.durationSeconds,
     };
