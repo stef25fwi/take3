@@ -1253,7 +1253,8 @@ class AdminDashboardPage extends StatelessWidget {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const AddScenePage(),
+                        builder: (_) =>
+                            const AddScenePage(enableAdminTools: true),
                       ),
                     );
                   },
@@ -1735,10 +1736,12 @@ class AddScenePage extends StatefulWidget {
     super.key,
     this.initialData,
     this.veoVideoGenerationService,
+    this.enableAdminTools = false,
   });
 
   final SceneFormData? initialData;
   final VeoVideoGenerationService? veoVideoGenerationService;
+  final bool enableAdminTools;
 
   @override
   State<AddScenePage> createState() => _AddScenePageState();
@@ -2548,48 +2551,50 @@ class _AddScenePageState extends State<AddScenePage> {
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
-                    Card(
-                      color: const Color(0xFFFFF7DC),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Color(0xFFE8C56A)),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.science_outlined,
-                                color: Color(0xFF8A6A00)),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'Outil admin : préremplir le formulaire avec '
-                                'la fiche test « Interrogatoire police » '
-                                '(scène 60 s, 3 plans).',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF5A4500),
+                    if (widget.enableAdminTools) ...[
+                      Card(
+                        color: const Color(0xFFFFF7DC),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Color(0xFFE8C56A)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.science_outlined,
+                                  color: Color(0xFF8A6A00)),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  'Outil admin : préremplir le formulaire avec '
+                                  'la fiche test « Interrogatoire police » '
+                                  '(scène 60 s, 3 plans).',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF5A4500),
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton.icon(
-                              onPressed: _loadPoliceInterrogationTestScene,
-                              icon: const Icon(Icons.download),
-                              label: const Text(
-                                'Charger scène test — Interrogatoire police',
+                              const SizedBox(width: 10),
+                              ElevatedButton.icon(
+                                onPressed: _loadPoliceInterrogationTestScene,
+                                icon: const Icon(Icons.download),
+                                label: const Text(
+                                  'Charger scène test — Interrogatoire police',
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1E1E1E),
+                                  foregroundColor: Colors.white,
+                                ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 12),
+                    ],
                     _section(
                       '1) Informations générales',
                       children: [
@@ -4008,7 +4013,10 @@ class _SceneLibraryCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AddScenePage(initialData: scene),
+                        builder: (_) => AddScenePage(
+                          initialData: scene,
+                          enableAdminTools: true,
+                        ),
                       ),
                     );
                   },
@@ -4066,6 +4074,15 @@ class _SceneDetailPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final timelineMarkers = _decodeMarkersJson(scene.markersJson);
+    final timelineDuration = timelineMarkers.fold<int>(
+      0,
+      (sum, marker) =>
+          sum + ((marker['durationSeconds'] as num?)?.toInt() ?? 0),
+    );
+    final effectiveVeoPrompt = scene.veoPrompt.trim().isNotEmpty
+        ? scene.veoPrompt.trim()
+        : (scene.aiIntroVideo?.prompt ?? '');
     final actorFields = <MapEntry<String, String>>[
       MapEntry('Nom du personnage', scene.characterName),
       MapEntry('Âge apparent', scene.apparentAge),
@@ -4137,6 +4154,28 @@ class _SceneDetailPreview extends StatelessWidget {
                     _PreviewPill(label: 'Audition', value: scene.targetDuration),
                     _PreviewPill(label: 'Statut', value: scene.status.label),
                   ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Prompt VEO3',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 14),
+                _PreviewFieldCard(
+                  label: 'Prompt vidéo générative',
+                  value: effectiveVeoPrompt.trim().isEmpty
+                      ? 'Aucun prompt VEO3 renseigné.'
+                      : effectiveVeoPrompt,
                 ),
               ],
             ),
@@ -4258,6 +4297,46 @@ class _SceneDetailPreview extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Timeline des plans',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '${timelineMarkers.length} plan(s) • ${timelineDuration}s cumulées',
+                  style: const TextStyle(
+                    height: 1.5,
+                    color: Color(0xFF4B5563),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (timelineMarkers.isEmpty)
+                  const _PreviewFieldCard(
+                    label: 'Timeline',
+                    value: 'Aucun marker JSON renseigné.',
+                  )
+                else
+                  Column(
+                    children: [
+                      for (final marker in timelineMarkers)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _PreviewMarkerCard(marker: marker),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -4326,6 +4405,66 @@ class _PreviewFieldCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: Color(0xFF111827),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewMarkerCard extends StatelessWidget {
+  const _PreviewMarkerCard({required this.marker});
+
+  final Map<String, dynamic> marker;
+
+  @override
+  Widget build(BuildContext context) {
+    final fields = <MapEntry<String, String>>[
+      MapEntry('Type', marker['type']?.toString() ?? ''),
+      MapEntry('Durée', '${((marker['durationSeconds'] as num?)?.toInt() ?? 0)} s'),
+      MapEntry('Plan caméra', marker['cameraPlan']?.toString() ?? ''),
+      MapEntry('Personnage', marker['character']?.toString() ?? ''),
+      MapEntry('Dialogue', marker['dialogue']?.toString() ?? ''),
+      MapEntry('Consigne', marker['cueText']?.toString() ?? ''),
+      MapEntry('Vidéo IA', marker['videoUrl']?.toString() ?? ''),
+    ].where((entry) => entry.value.trim().isNotEmpty).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            marker['label']?.toString().trim().isNotEmpty == true
+                ? marker['label'].toString()
+                : 'Plan sans titre',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: fields
+                .map(
+                  (entry) => SizedBox(
+                    width: 250,
+                    child: _PreviewFieldCard(
+                      label: entry.key,
+                      value: entry.value,
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),

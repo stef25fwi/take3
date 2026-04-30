@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../admin/take30_admin_scene_flow.dart'
+  show SceneDraftRepository, SceneFormData, SceneStatus;
 import '../models/explorer_filter.dart';
 import '../models/ranking_entry.dart';
 import '../services/location_region_service.dart';
@@ -150,8 +154,131 @@ class ExplorerScene {
 
 final _now = DateTime.now();
 
+final publishedAdminScenesProvider = StreamProvider<List<SceneFormData>>((ref) {
+  return SceneDraftRepository.watchAll().map(
+    (items) => items
+        .where((scene) => scene.status == SceneStatus.published)
+        .toList(growable: false),
+  );
+});
+
+ExplorerScene _mapAdminSceneToExplorer(SceneFormData scene) {
+  final publishedAt = scene.publishedAt ?? scene.updatedAt;
+  final markerDuration = _sumMarkerDuration(scene.markersJson);
+  final durationSeconds = markerDuration > 0 ? markerDuration : 60;
+  final isNew = DateTime.now().difference(publishedAt).inDays < 7;
+
+  return ExplorerScene(
+    id: scene.id,
+    title: scene.displayTitle,
+    subtitle: _subtitleForAdminScene(scene),
+    category: scene.category.trim().isEmpty ? 'Scène' : scene.category.trim(),
+    sceneType: _inferSceneType(scene),
+    difficulty: _humanizeValue(scene.recommendedLevel, fallback: 'Intermédiaire'),
+    durationSeconds: durationSeconds,
+    userPlanCount: _countUserPlanMarkers(scene.markersJson),
+    countryCode: 'FR',
+    countryName: 'France',
+    regionCode: 'GLOBAL',
+    regionName: 'Global',
+    thumbnailAsset: _thumbnailAssetForAdminScene(scene),
+    publishedAt: publishedAt,
+    playCount: 0,
+    voteCount: 0,
+    averageScore: 0,
+    isNew: isNew,
+    isTrending: false,
+  );
+}
+
+String _subtitleForAdminScene(SceneFormData scene) {
+  final sceneType = _inferSceneType(scene);
+  if (sceneType == 'Interrogatoire') {
+    return 'Interrogatoire police';
+  }
+  if (scene.projectTitle.trim().isNotEmpty &&
+      scene.projectTitle.trim() != scene.displayTitle.trim()) {
+    return scene.projectTitle.trim();
+  }
+  if (scene.contextSummary.trim().isNotEmpty) {
+    return scene.contextSummary.trim();
+  }
+  return scene.category.trim().isEmpty ? 'Scène publiée' : scene.category.trim();
+}
+
+String _inferSceneType(SceneFormData scene) {
+  final category = scene.category.toLowerCase();
+  final textType = scene.textType.toLowerCase();
+  if (category.contains('polic')) return 'Interrogatoire';
+  if (textType.contains('dialogue')) return 'Dialogue';
+  if (textType.contains('impro')) return 'Improvisation';
+  return 'Monologue';
+}
+
+String _thumbnailAssetForAdminScene(SceneFormData scene) {
+  final category = scene.category.toLowerCase();
+  if (category.contains('polic') || category.contains('action')) {
+    return 'assets/scenes/scene_interrogatoire.svg';
+  }
+  if (category.contains('romance')) {
+    return 'assets/scenes/scene_declaration_amour.svg';
+  }
+  return 'assets/scenes/scene_rupture_telephone.svg';
+}
+
+String _humanizeValue(String raw, {required String fallback}) {
+  final value = raw.trim();
+  if (value.isEmpty) return fallback;
+  return value[0].toUpperCase() + value.substring(1);
+}
+
+List<Map<String, dynamic>> _decodeMarkerList(String raw) {
+  if (raw.trim().isEmpty) return const [];
+  try {
+    final decoded = json.decode(raw);
+    if (decoded is List) {
+      return decoded
+          .whereType<Map>()
+          .map((item) => item.map((k, v) => MapEntry('$k', v)))
+          .toList(growable: false);
+    }
+  } catch (_) {
+    return const [];
+  }
+  return const [];
+}
+
+int _sumMarkerDuration(String raw) {
+  return _decodeMarkerList(raw).fold<int>(
+    0,
+    (sum, marker) => sum + ((marker['durationSeconds'] as num?)?.toInt() ?? 0),
+  );
+}
+
+int _countUserPlanMarkers(String raw) {
+  const userMarkerTypes = {
+    'user_intro',
+    'user_dialogue',
+    'user_reply',
+    'user_emotion',
+    'user_silent_action',
+    'close_up',
+    'medium_shot',
+    'over_shoulder',
+  };
+  final count = _decodeMarkerList(raw)
+      .where((marker) => userMarkerTypes.contains(marker['type']))
+      .length;
+  return count == 0 ? 1 : count;
+}
+
 final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
-  return [
+  final liveScenes = ref.watch(publishedAdminScenesProvider).maybeWhen(
+        data: (items) => items.map(_mapAdminSceneToExplorer).toList(growable: false),
+        orElse: () => const <ExplorerScene>[],
+      );
+  final liveIds = liveScenes.map((scene) => scene.id).toSet();
+  final demoScenes = [
     ExplorerScene(
       id: 'scene_test_interrogatoire_police_001',
       title: 'La vérité fissure',
@@ -299,6 +426,10 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       isNew: true,
       isTrending: false,
     ),
+  ];
+  return [
+    ...liveScenes,
+    ...demoScenes.where((scene) => !liveIds.contains(scene.id)),
   ];
 });
 
