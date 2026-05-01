@@ -431,9 +431,46 @@ export const veoStatus = onRequest(
       return;
     }
     const config = getVertexVeoConfig();
-    const apiKeyPresent = (() => {
-      try { return Boolean(VEO_API_KEY.value()); } catch { return false; }
+    const apiKey = (() => {
+      try { return VEO_API_KEY.value() ?? ""; } catch { return ""; }
     })();
+    const apiKeyPresent = Boolean(apiKey);
+
+    // Live probe: GET the model resource to verify project access
+    let modelProbe: Record<string, unknown> = { skipped: true };
+    if (!config.useMock && config.projectId && config.location && config.modelId) {
+      const modelUrl = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}`;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["x-goog-api-key"] = apiKey;
+      } else {
+        try {
+          const tokenRes = await fetch(
+            "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+            { headers: { "Metadata-Flavor": "Google" } }
+          );
+          if (tokenRes.ok) {
+            const t = (await tokenRes.json()) as { access_token?: string };
+            if (t.access_token) headers["Authorization"] = `Bearer ${t.access_token}`;
+          }
+        } catch { /* no ADC */ }
+      }
+      try {
+        const probeRes = await fetch(modelUrl, { method: "GET", headers });
+        const rawText = await probeRes.text();
+        let body: unknown;
+        try { body = JSON.parse(rawText); } catch { body = rawText; }
+        modelProbe = {
+          httpStatus: probeRes.status,
+          ok: probeRes.ok,
+          url: modelUrl,
+          body,
+        };
+      } catch (err: unknown) {
+        modelProbe = { error: String(err), url: modelUrl };
+      }
+    }
+
     res.json({
       ok: true,
       projectId: config.projectId,
@@ -448,6 +485,7 @@ export const veoStatus = onRequest(
         !config.modelId && "VEO_MODEL_ID",
         !apiKeyPresent && "VEO_API_KEY (secret)",
       ].filter(Boolean),
+      modelProbe,
     });
   }
 );
