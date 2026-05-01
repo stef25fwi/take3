@@ -3495,6 +3495,39 @@ class _AddScenePageState extends State<AddScenePage> {
 
   Future<void> _generatePreviewVideo() async {
     final prompt = veoPromptCtrl.text.trim();
+
+    if (_useCallableVeoFlow) {
+      final firebaseUser = fa.FirebaseAuth.instance.currentUser;
+
+      if (firebaseUser == null) {
+        const message =
+            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
+        setState(() {
+          _veoGenerationError = message;
+          _veoGenerationStatus = null;
+          _veoStatusValue = 'failed';
+          _isGeneratingPreview = false;
+        });
+        _showAdminMessage(message, backgroundColor: Colors.red.shade700);
+        return;
+      }
+
+      if (firebaseUser.isAnonymous) {
+        const message =
+            'Compte invité non autorisé pour lancer une génération VEO.';
+        setState(() {
+          _veoGenerationError = message;
+          _veoGenerationStatus = null;
+          _veoStatusValue = 'failed';
+          _isGeneratingPreview = false;
+        });
+        _showAdminMessage(message, backgroundColor: Colors.red.shade700);
+        return;
+      }
+
+      await firebaseUser.getIdToken(true);
+    }
+
     if (prompt.isEmpty) {
       setState(() {
         _veoGenerationError = 'Le prompt VEO3 est obligatoire.';

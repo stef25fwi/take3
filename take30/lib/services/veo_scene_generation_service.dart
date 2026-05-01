@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fa;
 
 import '../models/veo_generation_job.dart';
 
@@ -16,13 +17,41 @@ class VeoSceneGenerationException implements Exception {
 }
 
 class VeoSceneGenerationService {
-  VeoSceneGenerationService({FirebaseFunctions? functions})
-    : _functions = functions;
+  VeoSceneGenerationService({
+    FirebaseFunctions? functions,
+    fa.FirebaseAuth? auth,
+  })  : _functions = functions,
+        _auth = auth;
 
   final FirebaseFunctions? _functions;
+  final fa.FirebaseAuth? _auth;
 
   FirebaseFunctions get _resolvedFunctions =>
-    _functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+      _functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+
+  fa.FirebaseAuth get _resolvedAuth => _auth ?? fa.FirebaseAuth.instance;
+
+  Future<fa.User> _requireFirebaseUserForVeo() async {
+    final user = _resolvedAuth.currentUser;
+
+    if (user == null) {
+      throw const VeoSceneGenerationException(
+        code: 'unauthenticated',
+        message:
+            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.',
+      );
+    }
+
+    if (user.isAnonymous) {
+      throw const VeoSceneGenerationException(
+        code: 'unauthenticated',
+        message: 'Compte invité non autorisé pour lancer une génération VEO.',
+      );
+    }
+
+    await user.getIdToken(true);
+    return user;
+  }
 
   Future<VeoGenerationJob> requestVeoScenePreview({
     required String sceneId,
@@ -31,6 +60,8 @@ class VeoSceneGenerationService {
     String aspectRatio = '16:9',
   }) async {
     try {
+      await _requireFirebaseUserForVeo();
+
       final callable =
           _resolvedFunctions.httpsCallable('startVeoSceneGeneration');
       final result = await callable.call(<String, dynamic>{
@@ -46,6 +77,8 @@ class VeoSceneGenerationService {
         fallbackDurationSeconds: durationSeconds,
         fallbackAspectRatio: aspectRatio,
       );
+    } on VeoSceneGenerationException {
+      rethrow;
     } on FirebaseFunctionsException catch (error) {
       throw VeoSceneGenerationException(
         code: error.code,
@@ -63,6 +96,8 @@ class VeoSceneGenerationService {
     required String sceneId,
   }) async {
     try {
+      await _requireFirebaseUserForVeo();
+
       final callable =
           _resolvedFunctions.httpsCallable('checkVeoSceneGeneration');
       final result = await callable.call(<String, dynamic>{'sceneId': sceneId});
@@ -70,6 +105,8 @@ class VeoSceneGenerationService {
         _asMap(result.data),
         fallbackSceneId: sceneId,
       );
+    } on VeoSceneGenerationException {
+      rethrow;
     } on FirebaseFunctionsException catch (error) {
       throw VeoSceneGenerationException(
         code: error.code,
@@ -95,7 +132,8 @@ class VeoSceneGenerationService {
   static String _messageForCode(String code, String? fallback) {
     switch (code) {
       case 'unauthenticated':
-        return 'Connexion requise pour lancer une génération VEO.';
+        return fallback ??
+            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
       case 'permission-denied':
         return 'Accès refusé: le rôle admin est requis pour VEO.';
       case 'unavailable':
