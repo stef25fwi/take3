@@ -22,11 +22,11 @@ void main() {
 
 const _kAdminIdentifier = String.fromEnvironment(
   'TAKE30_ADMIN_ID',
-  defaultValue: 'admin',
+  defaultValue: 'take60_admin',
 );
 const _kAdminPassword = String.fromEnvironment(
   'TAKE30_ADMIN_PASSWORD',
-  defaultValue: 'Take30Admin2026',
+  defaultValue: 'Take60Admin2026!',
 );
 
 const _kDefaultVeoPrompt =

@@ -51,6 +51,17 @@ abstract class AuthServiceBase extends ChangeNotifier {
 }
 
 class AuthService extends AuthServiceBase {
+  static const String _canonicalAdminEmail = 'admin@take60.local';
+  static const String _canonicalAdminUsername = 'take60_admin';
+  static const Set<String> _adminIdentifierAliases = {
+    'admin',
+    'admin_take60',
+    'take30admin2026',
+    'take60admin2026',
+    'take60_admin',
+    'take 60 admin',
+  };
+
   AuthService._() {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
@@ -251,6 +262,54 @@ class AuthService extends AuthServiceBase {
     return 'user_${fbUser.uid.substring(0, 6)}';
   }
 
+  String _normalizeIdentifier(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  bool _isAdminAlias(String identifier) {
+    final normalized = _normalizeIdentifier(identifier);
+    return _adminIdentifierAliases.contains(normalized);
+  }
+
+  Future<UserModel?> _resolveProfileForIdentifier(String identifier) async {
+    final cleanIdentifier = identifier.trim();
+    final exact = await _api.users.getByUsername(cleanIdentifier);
+    if (exact != null) {
+      return exact;
+    }
+
+    final lowered = cleanIdentifier.toLowerCase();
+    if (lowered != cleanIdentifier) {
+      final loweredMatch = await _api.users.getByUsername(lowered);
+      if (loweredMatch != null) {
+        return loweredMatch;
+      }
+    }
+
+    if (_isAdminAlias(cleanIdentifier)) {
+      return await _api.users.getByUsername(_canonicalAdminUsername) ??
+          await _api.users.getByEmail(_canonicalAdminEmail);
+    }
+
+    return null;
+  }
+
+  String? _resolveEmailForIdentifier({
+    required String identifier,
+    required UserModel? profile,
+  }) {
+    final profileEmail = profile?.email?.trim();
+    if (profileEmail != null && profileEmail.isNotEmpty) {
+      return profileEmail;
+    }
+
+    if ((profile?.isAdmin ?? false) || _isAdminAlias(identifier)) {
+      return _canonicalAdminEmail;
+    }
+
+    return null;
+  }
+
   Future<void> _syncFcmToken(String uid) async {
     if (kIsWeb) return;
     try {
@@ -303,8 +362,11 @@ class AuthService extends AuthServiceBase {
 
     _setLoading(true);
     try {
-      final profile = await _api.users.getByUsername(cleanIdentifier);
-      final profileEmail = profile?.email?.trim();
+      final profile = await _resolveProfileForIdentifier(cleanIdentifier);
+      final profileEmail = _resolveEmailForIdentifier(
+        identifier: cleanIdentifier,
+        profile: profile,
+      );
       if (profileEmail == null || profileEmail.isEmpty) {
         _setLoading(false);
         return const AuthResult.failure(
