@@ -39,16 +39,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: AddScenePage(
-            enableAdminTools: true,
+            initialData: SceneFormData.testPoliceInterrogation(),
             veoVideoGenerationService: _FakeVeoVideoGenerationService(),
           ),
         ),
       );
-
-      await tester.tap(
-        find.text('Charger scène test — Interrogatoire police'),
-      );
-      await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
         find.text('15) Vidéo IA d’introduction'),
@@ -112,16 +107,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: AddScenePage(
-            enableAdminTools: true,
+            initialData: SceneFormData.testPoliceInterrogation(),
             veoVideoGenerationService: _FakeVeoVideoGenerationService(),
           ),
         ),
       );
-
-      await tester.tap(
-        find.text('Charger scène test — Interrogatoire police'),
-      );
-      await tester.pumpAndSettle();
 
       final dynamic state = tester.state(find.byType(AddScenePage));
       state.markersJsonCtrl.text = '{timeline_invalide:';
