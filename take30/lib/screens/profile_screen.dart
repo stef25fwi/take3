@@ -117,6 +117,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
     final themeMode = ref.watch(themeModeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
     final isDemoProfile = _isDemoProfile(liveUser);
+    final iconColor = AppThemeTokens.primaryText(context);
+    final popupColor = AppThemeTokens.chromeSurface(context);
+    final textColor = AppThemeTokens.primaryText(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -126,12 +129,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
         bottom: false,
         child: Column(
           children: [
-            _TopBar(
-              onLogout: _onLogout,
-              onShareTap: () {
-                ref.read(profileProvider(widget.userId).notifier).shareProfile();
-              },
-            ),
             Expanded(
               child: CustomScrollView(
                 slivers: [
@@ -142,7 +139,54 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                       ),
                       child: Column(
                         children: [
-                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: PopupMenuButton<String>(
+                              icon: Icon(
+                                Icons.more_vert_rounded,
+                                color: iconColor,
+                                size: 22,
+                              ),
+                              color: popupColor,
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'leaderboard':
+                                    context.go(AppRouter.leaderboard);
+                                  case 'badges':
+                                    context.go(AppRouter.badges);
+                                  case 'logout':
+                                    _onLogout();
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                PopupMenuItem(
+                                  value: 'leaderboard',
+                                  child: Text(
+                                    'Voir le classement',
+                                    style: GoogleFonts.dmSans(color: textColor),
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'badges',
+                                  child: Text(
+                                    'Badges & stats',
+                                    style: GoogleFonts.dmSans(color: textColor),
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'logout',
+                                  child: Text(
+                                    'Se déconnecter',
+                                    style: GoogleFonts.dmSans(
+                                      color: const Color(0xFFFF6B6B),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
                           _IdentityBloc(user: liveUser),
                           const SizedBox(height: 18),
                           _StatsRow(user: liveUser),
@@ -238,133 +282,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Top Bar
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onLogout, required this.onShareTap});
-
-  final VoidCallback onLogout;
-  final VoidCallback onShareTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconColor = AppThemeTokens.primaryText(context);
-    final popupColor = AppThemeTokens.chromeSurface(context);
-    final textColor = AppThemeTokens.primaryText(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go(AppRouter.home);
-              }
-            },
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: Center(
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: iconColor,
-                  size: 28,
-                ),
-              ),
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: onShareTap,
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: Center(
-                    child: Icon(
-                      Icons.ios_share_rounded,
-                      color: iconColor,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => context.go(AppRouter.explore),
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 44,
-                  height: 44,
-                  child: Center(
-                    child: Icon(
-                      Icons.search_rounded,
-                      color: iconColor,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ),
-              PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  color: iconColor,
-                  size: 22,
-                ),
-                color: popupColor,
-                onSelected: (value) {
-                  switch (value) {
-                    case 'leaderboard':
-                      context.go(AppRouter.leaderboard);
-                    case 'badges':
-                      context.go(AppRouter.badges);
-                    case 'logout':
-                      onLogout();
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'leaderboard',
-                    child: Text(
-                      'Voir le classement',
-                      style: GoogleFonts.dmSans(color: textColor),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'badges',
-                    child: Text(
-                      'Badges & stats',
-                      style: GoogleFonts.dmSans(color: textColor),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'logout',
-                    child: Text(
-                      'Se déconnecter',
-                      style: GoogleFonts.dmSans(
-                        color: const Color(0xFFFF6B6B),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
