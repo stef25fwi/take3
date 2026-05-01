@@ -1,0 +1,364 @@
+===== AUDIT TAKE60 GUIDED RECORDING + VEO3 + FIREBASE STORAGE =====
+Projet analysé : /workspaces/take3/take30
+Fichiers scannés : 86
+
+✅ Page Record / création scène Take60 détectée
+   - /workspaces/take3/take30/lib/router/router.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/theme/app_theme.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/screens/record_screen.dart
+   - /workspaces/take3/take30/lib/screens/preview_publish_screen.dart
+   - /workspaces/take3/take30/lib/screens/explore_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/services/firebase/storage_service.dart
+
+✅ Filtres scène : catégorie / type / difficulté
+   - /workspaces/take3/take30/assets/PLACEMENT_PROMPT.md
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   - /workspaces/take3/take30/lib/providers/explorer_providers.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/screens/explore_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+
+✅ Fiche réalisateur implémentée
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+
+✅ Lecture plan IA / VO3 avant caméra utilisateur
+   - /workspaces/take3/take30/firestore.rules
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/models/veo_generation_job.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/services/connectivity_service.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/services/veo_scene_generation_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+   - /workspaces/take3/take30/lib/admin/models/ai_generated_video.dart
+   ... +1 autres fichiers
+
+✅ Compte à rebours + enregistrement automatique
+   - /workspaces/take3/take30/analysis_options.yaml
+   - /workspaces/take3/take30/assets/PLACEMENT_PROMPT.md
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/test/take60_guided_flow_test.dart
+   - /workspaces/take3/take30/lib/main.dart
+   - /workspaces/take3/take30/lib/firebase_options.dart
+   - /workspaces/take3/take30/lib/router/router.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   - /workspaces/take3/take30/lib/providers/explorer_providers.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   ... +31 autres fichiers
+
+✅ Prévisualisation / rejouer / valider plan
+   - /workspaces/take3/take30/assets/PLACEMENT_PROMPT.md
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/lib/router/router.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/theme/app_theme.dart
+   - /workspaces/take3/take30/lib/theme/take30_screen_themes.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/screens/messages_inbox_screen.dart
+   - /workspaces/take3/take30/lib/screens/record_screen.dart
+   - /workspaces/take3/take30/lib/screens/preview_publish_screen.dart
+   ... +6 autres fichiers
+
+✅ Écran montage final / brouillon / publication
+   - /workspaces/take3/take30/analysis_options.yaml
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/test/take60_guided_flow_test.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   - /workspaces/take3/take30/lib/providers/explorer_providers.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/models/explorer_filter.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/screens/preview_publish_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+   ... +1 autres fichiers
+
+✅ Timeline par markers détectée
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/take60_guided_flow_test.dart
+   - /workspaces/take3/take30/lib/providers/explorer_providers.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+   - /workspaces/take3/take30/lib/services/firebase/storage_service.dart
+
+✅ Statuts de recording utilisateur détectés
+   - /workspaces/take3/take30/test/take60_guided_flow_test.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+
+✅ VEO3 / Veo / Vertex AI câblage détecté
+   - /workspaces/take3/take30/firestore.rules
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/models/veo_generation_job.dart
+   - /workspaces/take3/take30/lib/services/connectivity_service.dart
+   - /workspaces/take3/take30/lib/services/veo_scene_generation_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+   - /workspaces/take3/take30/lib/admin/models/ai_generated_video.dart
+   - /workspaces/take3/take30/lib/admin/services/veo_video_generation_service.dart
+
+✅ Backend / service de génération vidéo détecté
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/services/veo_scene_generation_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+   - /workspaces/take3/take30/lib/services/firebase/scenes_repo.dart
+   - /workspaces/take3/take30/lib/admin/widgets/admin_video_preview.dart
+   - /workspaces/take3/take30/lib/admin/models/ai_generated_video.dart
+   ... +1 autres fichiers
+
+✅ Variables d’environnement VEO / Google Cloud détectées
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+
+✅ Firebase Storage côté Flutter détecté
+   - /workspaces/take3/take30/pubspec.yaml
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/lib/main.dart
+   - /workspaces/take3/take30/lib/firebase_options.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/services/api_service.dart
+   - /workspaces/take3/take30/lib/services/firebase/storage_service.dart
+   - /workspaces/take3/take30/android/app/google-services.json
+
+✅ Stockage des vidéos utilisateur / finales détecté
+   - /workspaces/take3/take30/firestore.rules
+   - /workspaces/take3/take30/assets/PLACEMENT_PROMPT.md
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/test/take60_guided_flow_test.dart
+   - /workspaces/take3/take30/lib/firebase_options.dart
+   - /workspaces/take3/take30/lib/widgets/shared_widgets.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/models/veo_generation_job.dart
+   ... +13 autres fichiers
+
+✅ Firestore / métadonnées vidéo détectés
+   - /workspaces/take3/take30/storage.rules
+   - /workspaces/take3/take30/firestore.rules
+   - /workspaces/take3/take30/pubspec.yaml
+   - /workspaces/take3/take30/assets/PLACEMENT_PROMPT.md
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/test/take60_guided_flow_test.dart
+   - /workspaces/take3/take30/lib/main.dart
+   - /workspaces/take3/take30/lib/widgets/shared_widgets.dart
+   - /workspaces/take3/take30/lib/router/router.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   ... +36 autres fichiers
+
+✅ Moteur de rendu / assemblage vidéo détecté
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+
+✅ Règles audio / mixage détectées
+   - /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+   - /workspaces/take3/take30/lib/models/models.dart
+   - /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+   - /workspaces/take3/take30/lib/screens/profile_screen.dart
+   - /workspaces/take3/take30/lib/screens/preview_publish_screen.dart
+   - /workspaces/take3/take30/lib/screens/splash_screen.dart
+   - /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+   - /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+
+❌ Absence de mocks/fakes/TODO bloquants autour VEO3 / Storage
+   - /workspaces/take3/take30/docs/veo3_implementation_plan.md
+   - /workspaces/take3/take30/test/admin_scene_widget_test.dart
+   - /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+   - /workspaces/take3/take30/lib/providers/providers.dart
+   - /workspaces/take3/take30/lib/admin/services/veo_video_generation_service.dart
+
+===== FICHIERS CLÉS PROBABLES =====
+- /workspaces/take3/take30/firestore.rules
+- /workspaces/take3/take30/assets/PLACEMENT_PROMPT.md
+- /workspaces/take3/take30/docs/veo3_implementation_plan.md
+- /workspaces/take3/take30/test/admin_scene_widget_test.dart
+- /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+- /workspaces/take3/take30/test/take60_guided_flow_test.dart
+- /workspaces/take3/take30/lib/main.dart
+- /workspaces/take3/take30/lib/firebase_options.dart
+- /workspaces/take3/take30/lib/providers/providers.dart
+- /workspaces/take3/take30/lib/providers/explorer_providers.dart
+- /workspaces/take3/take30/lib/models/take60_guided_flow.dart
+- /workspaces/take3/take30/lib/models/models.dart
+- /workspaces/take3/take30/lib/models/veo_generation_job.dart
+- /workspaces/take3/take30/lib/screens/take60_guided_record_screen.dart
+- /workspaces/take3/take30/lib/screens/record_screen.dart
+- /workspaces/take3/take30/lib/screens/preview_publish_screen.dart
+- /workspaces/take3/take30/lib/services/connectivity_service.dart
+- /workspaces/take3/take30/lib/services/take60_guided_scene_service.dart
+- /workspaces/take3/take30/lib/services/api_service.dart
+- /workspaces/take3/take30/lib/services/veo_scene_generation_service.dart
+- /workspaces/take3/take30/lib/services/camera_service.dart
+- /workspaces/take3/take30/lib/admin/take30_admin_scene_flow.dart
+- /workspaces/take3/take30/lib/services/firebase/storage_service.dart
+- /workspaces/take3/take30/lib/admin/models/ai_generated_video.dart
+- /workspaces/take3/take30/lib/admin/services/veo_video_generation_service.dart
+- /workspaces/take3/take30/android/app/google-services.json
+
+===== SCORE AUDIT =====
+17/18 contrôles OK
+🟠 Implémentation partielle ou presque complète.
+   Vérifie surtout les ❌ : ils indiquent les zones manquantes ou non détectées.
+
+===== COMMANDE CONSEILLÉE POUR TEST RÉEL VEO3 =====
+À lancer seulement si les variables d’environnement sont configurées et si le backend possède une route de génération réelle.
+
+Exemple attendu côté backend :
+curl -X POST "$API_BASE_URL/api/veo3/generate" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $SUPER_ADMIN_KEY" \
+  -d '{"sceneId":"audit_scene","prompt":"Plan cinématique réaliste de 5 secondes, aucun texte, aucun logo.","durationSeconds":5}'
+
+===== FLUTTER PUB GET =====
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.69 available)
+  app_links 6.4.1 (7.0.0 available)
+  camera 0.10.6 (0.12.0+1 available)
+  camera_avfoundation 0.9.23+2 (0.10.1 available)
+  camera_platform_interface 2.12.0 (2.13.0 available)
+  cloud_firestore 5.6.12 (6.3.0 available)
+  cloud_firestore_platform_interface 6.6.12 (7.2.0 available)
+  cloud_firestore_web 4.4.12 (5.3.0 available)
+  cloud_functions 5.6.2 (6.2.0 available)
+  cloud_functions_platform_interface 5.8.2 (5.8.12 available)
+  cloud_functions_web 4.11.5 (5.1.5 available)
+  connectivity_plus 6.1.5 (7.1.1 available)
+  device_info_plus 10.1.2 (13.1.0 available)
+  device_info_plus_platform_interface 7.0.3 (8.1.0 available)
+  firebase_app_check 0.3.2+10 (0.4.3 available)
+  firebase_app_check_platform_interface 0.1.1+10 (0.3.0 available)
+  firebase_app_check_web 0.2.0+14 (0.2.4 available)
+  firebase_auth 5.7.0 (6.4.0 available)
+  firebase_auth_platform_interface 7.7.3 (8.1.9 available)
+  firebase_auth_web 5.15.3 (6.1.5 available)
+  firebase_core 3.15.2 (4.7.0 available)
+  firebase_core_web 2.24.1 (3.6.0 available)
+  firebase_messaging 15.2.10 (16.2.0 available)
+  firebase_messaging_platform_interface 4.6.10 (4.7.9 available)
+  firebase_messaging_web 3.10.10 (4.1.5 available)
+  firebase_remote_config 5.5.0 (6.4.0 available)
+  firebase_remote_config_platform_interface 2.0.0 (2.1.2 available)
+  firebase_remote_config_web 1.8.9 (1.10.6 available)
+  firebase_storage 12.4.10 (13.3.0 available)
+  firebase_storage_platform_interface 5.2.10 (5.2.20 available)
+  firebase_storage_web 3.10.17 (3.11.5 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  flutter_local_notifications 17.2.4 (21.0.0 available)
+  flutter_local_notifications_linux 4.0.1 (8.0.0 available)
+  flutter_local_notifications_platform_interface 7.2.0 (11.0.0 available)
+  flutter_riverpod 2.6.1 (3.3.1 available)
+  geocoding 3.0.0 (4.0.0 available)
+  geocoding_android 3.3.1 (5.0.1 available)
+  geocoding_platform_interface 3.2.0 (5.0.0 available)
+  geolocator 13.0.4 (14.0.2 available)
+  geolocator_android 4.6.2 (5.0.2 available)
+  go_router 14.8.1 (17.2.2 available)
+  google_fonts 6.3.3 (8.1.0 available)
+  google_sign_in 6.3.0 (7.2.0 available)
+  google_sign_in_android 6.2.1 (7.2.10 available)
+  google_sign_in_ios 5.9.0 (6.3.0 available)
+  google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+  google_sign_in_web 0.12.4+4 (1.1.3 available)
+  hooks 1.0.2 (1.0.3 available)
+  image_picker 1.2.1 (1.2.2 available)
+  image_picker_android 0.8.13+16 (0.8.13+17 available)
+  intl 0.19.0 (0.20.2 available)
+  lints 4.0.0 (6.1.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.17.0 (1.18.2 available)
+  mime 1.0.6 (2.0.0 available)
+  native_toolchain_c 0.17.6 (0.18.0 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  riverpod 2.6.1 (3.2.1 available)
+  share_plus 12.0.2 (13.1.0 available)
+  share_plus_platform_interface 6.1.0 (7.1.0 available)
+  sign_in_with_apple 6.1.4 (7.0.1 available)
+  sign_in_with_apple_platform_interface 1.1.0 (2.0.0 available)
+  sign_in_with_apple_web 2.1.1 (3.0.0 available)
+  test_api 0.7.10 (0.7.12 available)
+  timezone 0.9.4 (0.11.0 available)
+  vector_graphics 1.1.21 (1.2.0 available)
+  vector_math 2.2.0 (2.3.0 available)
+  vibration 2.1.0 (3.1.8 available)
+  vibration_platform_interface 0.0.3 (0.1.2 available)
+  video_player_platform_interface 6.6.0 (6.7.0 available)
+  vm_service 15.0.2 (15.2.0 available)
+  win32 5.15.0 (6.1.0 available)
+  win32_registry 1.1.5 (3.0.3 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+76 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+
+===== FLUTTER ANALYZE =====
+Analyzing take30...                                             
+No issues found! (ran in 11.7s)
+
+===== FLUTTER TEST =====
+00:00 +0: loading /workspaces/take3/take30/test/explore_screen_widget_test.dart
+00:00 +0: /workspaces/take3/take30/test/explore_screen_widget_test.dart: Explorer affiche un message explicite si la permission est refusee
+00:00 +1: /workspaces/take3/take30/test/explore_screen_widget_test.dart: Explorer permet de choisir une region manuellement
+00:02 +2: loading /workspaces/take3/take30/test/explorer_ranking_location_test.dart
+00:03 +2: /workspaces/take3/take30/test/explorer_ranking_location_test.dart: le classement regional garde uniquement la meme region
+00:03 +3: /workspaces/take3/take30/test/explorer_ranking_location_test.dart: le classement national garde uniquement le meme pays
+00:03 +4: /workspaces/take3/take30/test/explorer_ranking_location_test.dart: le classement global reste visible sans filtre geographique
+00:03 +5: loading /workspaces/take3/take30/test/explorer_filter_location_test.dart
+00:04 +5: /workspaces/take3/take30/test/explorer_filter_location_test.dart: localisation detectee initialise automatiquement le filtre region
+00:04 +6: /workspaces/take3/take30/test/explorer_filter_location_test.dart: une modification utilisateur bloque le reappli automatique suivant
+00:04 +7: /workspaces/take3/take30/test/explorer_filter_location_test.dart: logique du chip Ma region applique pays et region
+00:04 +8: /workspaces/take3/take30/test/explorer_filter_location_test.dart: logique du chip Mon pays applique seulement le pays
+00:04 +9: loading /workspaces/take3/take30/test/admin_scene_widget_test.dart
+00:05 +9: /workspaces/take3/take30/test/admin_scene_widget_test.dart: step 15 generates then validates intro video and reveals detailed preview
+00:08 +10: /workspaces/take3/take30/test/admin_scene_widget_test.dart: preview détail n'écrase pas l'écran si la timeline JSON est invalide
+00:09 +11: loading /workspaces/take3/take30/test/widget_test.dart
+00:10 +11: /workspaces/take3/take30/test/widget_test.dart: l application affiche Take30
+00:12 +12: loading /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+00:12 +12: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: AiGeneratedVideo serializes and deserializes status and metadata
+00:12 +13: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: MockVeoVideoGenerationService returns a generated preview with expected metadata
+00:14 +14: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: SceneFormData stores the admin workflow payload for Firestore
+00:14 +15: loading /workspaces/take3/take30/test/location_region_service_test.dart
+00:15 +15: /workspaces/take3/take30/test/location_region_service_test.dart: permission refusee retourne fallbackManualRequired
+00:15 +16: /workspaces/take3/take30/test/location_region_service_test.dart: placemark Guadeloupe normalise vers France et guadeloupe
+00:15 +17: /workspaces/take3/take30/test/location_region_service_test.dart: placemark Ile-de-France produit un regionCode stable
+00:15 +18: /workspaces/take3/take30/test/location_region_service_test.dart: localisation manuelle sauvegardee court-circuite le GPS
+00:15 +19: /workspaces/take3/take30/test/location_region_service_test.dart: forceRefresh ignore le manuel et relance le GPS
+00:15 +20: /workspaces/take3/take30/test/location_region_service_test.dart: reverse geocoding vide retombe sur la locale systeme
+00:15 +21: loading /workspaces/take3/take30/test/take60_guided_flow_test.dart
+00:16 +21: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60UserRecordingDraft roundtrips through toMap/fromMap
+00:16 +22: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60UserRecordingDraft copyWith updates uploadedVideoUrl while preserving identity
+00:16 +23: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60GuidedFlowDraft roundtrips with nested recordings
+00:16 +24: /workspaces/take3/take30/test/take60_guided_flow_test.dart: sceneRecordingStatusFromString parses known values and falls back to notStarted
+00:16 +25: All tests passed!
+

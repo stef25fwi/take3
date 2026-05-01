@@ -1,0 +1,43 @@
+===== CRÉATION UTILISATEUR TEST FIREBASE + TEST VEO3 =====
+Email test : test.take60.1777600703@take60.app
+
+===== 1. EXTRACTION API KEY =====
+✅ API_KEY trouvée
+
+===== 2. CRÉATION UTILISATEUR TEST VIA FIREBASE AUTH REST =====
+{
+    "kind": "identitytoolkit#SignupNewUserResponse",
+    "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiMzZhYjQxYTczOTJlMTRlNjM1ZmRlM2M2YWYwOWZlYmFhM2YyZDYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGFrZTMwIiwiYXVkIjoidGFrZTMwIiwiYXV0aF90aW1lIjoxNzc3NjAwNzA0LCJ1c2VyX2lkIjoiUXA3eG1MZVhqeFhDaGZsNjBLQmdOOHVXUFJnMiIsInN1YiI6IlFwN3htTGVYanhYQ2hmbDYwS0JnTjh1V1BSZzIiLCJpYXQiOjE3Nzc2MDA3MDQsImV4cCI6MTc3NzYwNDMwNCwiZW1haWwiOiJ0ZXN0LnRha2U2MC4xNzc3NjAwNzAzQHRha2U2MC5hcHAiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidGVzdC50YWtlNjAuMTc3NzYwMDcwM0B0YWtlNjAuYXBwIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.Ah2P30WbxpPQyBQ_sZVIIgwDZC7hM9whmMPpqxPpHN7C6RZM7Yd9dri_QokDAAkEx1Qt1AFYYp5fjwdY9_MnHU2Y8I8H_hc1TzhaxUK7veXQ6KnaZ4kaGqRV4sSrgmaUbD3qW6Pp1TDocsTRKu1NyAqDrKzSqTg7v0dejIaZcQOddB0WFH623C3lVkafNJkV6PxGTGin8TMLAAMmaUwJkZx5uRStDNTJ5TeiEaFumDO6IwP24x7gzMtPwVLNkOc-8fbbpY0gbUxdFA_9MR0I3mFfcyJQU9OZVHwIMDAt9lzUrlh2Mn8Cs6ZTt6H8J8UrTzheHpO5em1yYjy-Cq2Mbw",
+    "email": "test.take60.1777600703@take60.app",
+    "refreshToken": "AMf-vByL-2iifQFIC3662BB80QFwPR7rRgugl57uP22CZ6wHG7JrIsp0l1zzGX2TUGceDNUeG3PgQoGgowAFGpVbA94IX-6qFjhZfajKMAlGOqKcThn8gmixpRQAVQNHzsFMTyWTxfkmotbQhbLpJbt1SCW3sRhH5MrQ0anTQz109Gbpvvel68sVkpvnKoWKetql7775DZHjKw-BcpwYnoK9iuqnUCZTtg",
+    "expiresIn": "3600",
+    "localId": "Qp7xmLeXjxXChfl60KBgN8uWPRg2"
+}
+
+✅ Utilisateur créé
+UID      : Qp7xmLeXjxXChfl60KBgN8uWPRg2
+Email    : test.take60.1777600703@take60.app
+
+===== ⚠️  PRÉREQUIS : RÔLE ADMIN REQUIS =====
+
+La fonction startVeoSceneGeneration est réservée aux admins.
+Pour autoriser cet utilisateur, crée ce document dans Firebase Console :
+
+  Collection : admins
+  Document   : Qp7xmLeXjxXChfl60KBgN8uWPRg2
+  (le document peut être vide)
+
+Ou via Firestore REST :
+  curl -X PATCH \
+    "https://firestore.googleapis.com/v1/projects/take30/databases/(default)/documents/admins/Qp7xmLeXjxXChfl60KBgN8uWPRg2" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"fields":{}}'
+
+Appuie sur Entrée une fois l'admin créé, ou Ctrl+C pour annuler.
+
+===== 3. TEST AUTHENTIFIÉ startVeoSceneGeneration =====
+{"error":{"message":"INTERNAL","status":"INTERNAL"}}
+HTTP_CODE:500
+
+❌ Aucun sceneId retourné. VEO3 n'a pas démarré.

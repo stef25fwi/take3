@@ -16,7 +16,6 @@ import '../router/router.dart';
 import '../services/camera_service.dart';
 import '../services/permission_service.dart';
 import '../services/take60_guided_scene_service.dart';
-import '../theme/app_theme.dart';
 import '../utils/video_player_controller_factory.dart';
 
 /// Take60 Guided Recording Flow — full state machine.
@@ -52,6 +51,9 @@ enum _Stage {
 
 class _Take60GuidedRecordScreenState
     extends ConsumerState<Take60GuidedRecordScreen> {
+  static const _bg = Color(0xFF0B1020);
+  static const _surface = Color(0xFF111827);
+  static const _surfaceMuted = Color(0xFF1A2540);
   static const _accent = Color(0xFFFFB800);
   static const _accent2 = Color(0xFF00D4FF);
   static const _danger = Color(0xFFFF4757);
@@ -88,6 +90,7 @@ class _Take60GuidedRecordScreenState
   Future<void>? _finalInit;
   String _publicationStatus = '';
   bool _videoValidated = false;
+  String? _renderErrorMessage;
   String? _statusMessage;
 
   @override
@@ -118,17 +121,30 @@ class _Take60GuidedRecordScreenState
           displayName: 'Invité',
           avatarUrl: '',
         );
-    final scenes = await _service.loadGuidedScenes(fallbackAuthor: user);
-    if (!mounted) return;
-    setState(() {
-      _scenes = scenes;
-      _loadingLibrary = false;
-      if (_scene != null) {
-        // Si l'écran est ouvert avec une scène pré-sélectionnée, on saute
-        // directement à la fiche réalisateur.
-        _enterDirectorSheet(_scene!);
-      }
-    });
+    try {
+      final scenes = await _service.loadGuidedScenes(fallbackAuthor: user);
+      if (!mounted) return;
+      setState(() {
+        _scenes = scenes;
+        _loadingLibrary = false;
+        if (_scene != null) {
+          // Si l'écran est ouvert avec une scène pré-sélectionnée, on saute
+          // directement à la fiche réalisateur.
+          _enterDirectorSheet(_scene!);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _scenes = const [];
+        _loadingLibrary = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de charger les scènes guidées pour le moment.'),
+        ),
+      );
+    }
   }
 
   List<SceneModel> get _filteredScenes {
@@ -168,22 +184,22 @@ class _Take60GuidedRecordScreenState
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: _dialogSurface(dialogContext),
+        backgroundColor: const Color(0xFF111827),
         title: Text(
           'Reprendre la scène en cours ?',
-          style: GoogleFonts.dmSans(color: _primaryText(dialogContext)),
+          style: GoogleFonts.dmSans(color: Colors.white),
         ),
         content: Text(
           'Tu as ${draft.recordings.length} plan(s) déjà enregistrés pour « ${draft.sceneTitle} ». '
           'Veux-tu reprendre où tu t\'étais arrêté ?',
-          style: GoogleFonts.dmSans(color: _secondaryText(dialogContext)),
+          style: GoogleFonts.dmSans(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
             child: Text(
               'Recommencer',
-              style: GoogleFonts.dmSans(color: _secondaryText(dialogContext)),
+              style: GoogleFonts.dmSans(color: Colors.white70),
             ),
           ),
           FilledButton(
@@ -498,21 +514,30 @@ class _Take60GuidedRecordScreenState
     setState(() {
       _stage = _Stage.rendering;
       _renderResult = null;
+      _renderErrorMessage = null;
       _statusMessage = 'Montage en cours…';
     });
     final scene = _scene!;
-    final result = await _service.renderTake60GuidedScene(
-      scene: scene,
-      recordings: _recordings.values.toList(),
-    );
-    if (!mounted) return;
-    setState(() {
-      _renderResult = result;
-      _stage = _Stage.finalScreen;
-      _statusMessage = null;
-    });
-    if (result.finalVideoUrl.isNotEmpty) {
-      await _initFinalController(result.finalVideoUrl);
+    try {
+      final result = await _service.renderTake60GuidedScene(
+        scene: scene,
+        recordings: _recordings.values.toList(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _renderResult = result;
+        _stage = _Stage.finalScreen;
+        _statusMessage = null;
+      });
+      if (result.finalVideoUrl.isNotEmpty) {
+        await _initFinalController(result.finalVideoUrl);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _renderErrorMessage = error.toString();
+        _statusMessage = null;
+      });
     }
   }
 
@@ -622,28 +647,6 @@ class _Take60GuidedRecordScreenState
     _finalInit = null;
   }
 
-    Color _pageBackground(BuildContext context) =>
-      AppThemeTokens.pageBackground(context);
-
-    Color _surface(BuildContext context) => AppThemeTokens.surface(context);
-
-    Color _surfaceMuted(BuildContext context) =>
-      AppThemeTokens.surfaceMuted(context);
-
-    Color _primaryText(BuildContext context) =>
-      AppThemeTokens.primaryText(context);
-
-    Color _secondaryText(BuildContext context) =>
-      AppThemeTokens.secondaryText(context);
-
-    Color _softBorder(BuildContext context) =>
-      AppThemeTokens.softBorder(context);
-
-    Color _dialogSurface(BuildContext context) =>
-      AppThemeTokens.isDark(context)
-        ? const Color(0xFF111827)
-        : AppThemeTokens.surface(context);
-
   // ── Build ───────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -652,7 +655,7 @@ class _Take60GuidedRecordScreenState
       (_) => _maybeHandleCameraResult(cameraService),
     );
     return Scaffold(
-      backgroundColor: _pageBackground(context),
+      backgroundColor: _bg,
       body: SafeArea(
         child: switch (_stage) {
           _Stage.library => _buildLibrary(),
@@ -697,7 +700,7 @@ class _Take60GuidedRecordScreenState
                   children: [
                     IconButton(
                       onPressed: () => context.go(AppRouter.home),
-                      icon: Icon(Icons.arrow_back, color: _primaryText(context)),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -706,7 +709,7 @@ class _Take60GuidedRecordScreenState
                         style: GoogleFonts.dmSans(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: _primaryText(context),
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -717,7 +720,7 @@ class _Take60GuidedRecordScreenState
                   'Choisis une scène, regarde les plans IA, puis joue tes séquences.',
                   style: GoogleFonts.dmSans(
                     fontSize: 13,
-                    color: _secondaryText(context),
+                    color: Colors.white.withValues(alpha: 0.65),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -743,7 +746,7 @@ class _Take60GuidedRecordScreenState
                   'Aucune scène guidée ne correspond à ces filtres pour le moment.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.dmSans(
-                    color: _secondaryText(context),
+                    color: Colors.white.withValues(alpha: 0.65),
                   ),
                 ),
               ),
@@ -810,40 +813,30 @@ class _Take60GuidedRecordScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: _surface(context),
+        color: _surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _softBorder(context)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           isDense: true,
           value: value,
-          dropdownColor: _surface(context),
+          dropdownColor: _surface,
           hint: Text(
             label,
             style: GoogleFonts.dmSans(
-              color: _secondaryText(context),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
           ),
-          icon: Icon(
-            Icons.expand_more,
-            color: _secondaryText(context),
-            size: 18,
-          ),
-          style: GoogleFonts.dmSans(
-            color: _primaryText(context),
-            fontSize: 13,
-          ),
+          icon: const Icon(Icons.expand_more, color: Colors.white70, size: 18),
+          style: GoogleFonts.dmSans(color: Colors.white, fontSize: 13),
           items: [
             DropdownMenuItem<String?>(
               value: null,
               child: Text(
                 'Tous · $label',
-                style: GoogleFonts.dmSans(
-                  color: _secondaryText(context),
-                  fontSize: 12,
-                ),
+                style: GoogleFonts.dmSans(color: Colors.white70, fontSize: 12),
               ),
             ),
             for (final v in values)
@@ -868,7 +861,7 @@ class _Take60GuidedRecordScreenState
             children: [
               IconButton(
                 onPressed: _backToLibrary,
-                icon: Icon(Icons.arrow_back, color: _primaryText(context)),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -877,7 +870,7 @@ class _Take60GuidedRecordScreenState
                   style: GoogleFonts.dmSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: _primaryText(context),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -915,7 +908,7 @@ class _Take60GuidedRecordScreenState
             'Timeline',
             style: GoogleFonts.dmSans(
               fontWeight: FontWeight.w700,
-              color: _primaryText(context),
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 8),
@@ -936,7 +929,7 @@ class _Take60GuidedRecordScreenState
                     child: Text(
                       '${marker.label} · ${marker.durationSeconds}s',
                       style: GoogleFonts.dmSans(
-                        color: _secondaryText(context),
+                        color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 12,
                       ),
                     ),
@@ -952,8 +945,10 @@ class _Take60GuidedRecordScreenState
                 child: OutlinedButton(
                   onPressed: _backToLibrary,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: _softBorder(context)),
-                    foregroundColor: _primaryText(context),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.2),
+                    ),
+                    foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(50),
                   ),
                   child: const Text('Retour'),
@@ -1303,7 +1298,7 @@ class _Take60GuidedRecordScreenState
           Text(
             'Revoir ce plan',
             style: GoogleFonts.dmSans(
-              color: _primaryText(context),
+              color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
@@ -1349,7 +1344,7 @@ class _Take60GuidedRecordScreenState
             Text(
               'Durée enregistrée: ${draft.durationSeconds}s',
               style: GoogleFonts.dmSans(
-                color: _secondaryText(context),
+                color: Colors.white.withValues(alpha: 0.75),
                 fontSize: 13,
               ),
             ),
@@ -1362,8 +1357,10 @@ class _Take60GuidedRecordScreenState
                   icon: const Icon(Icons.replay),
                   label: const Text('Rejouer la scène'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _primaryText(context),
-                    side: BorderSide(color: _softBorder(context)),
+                    foregroundColor: Colors.white,
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.25),
+                    ),
                     minimumSize: const Size.fromHeight(50),
                   ),
                 ),
@@ -1390,6 +1387,43 @@ class _Take60GuidedRecordScreenState
 
   // ─── Stage: Rendering ────────────────────────────────────────────────
   Widget _buildRendering() {
+    if (_renderErrorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: _danger, size: 40),
+              const SizedBox(height: 16),
+              Text(
+                _renderErrorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(color: Colors.white, fontSize: 14),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: _renderFinalVideo,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Réessayer le rendu'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _renderErrorMessage = null;
+                    _statusMessage = null;
+                    _stage = _Stage.director;
+                  });
+                },
+                child: const Text('Retour au briefing'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1398,10 +1432,7 @@ class _Take60GuidedRecordScreenState
           const SizedBox(height: 16),
           Text(
             _statusMessage ?? 'Montage en cours…',
-            style: GoogleFonts.dmSans(
-              color: _primaryText(context),
-              fontSize: 14,
-            ),
+            style: GoogleFonts.dmSans(color: Colors.white, fontSize: 14),
           ),
         ],
       ),
@@ -1419,7 +1450,7 @@ class _Take60GuidedRecordScreenState
           Text(
             'Montage final',
             style: GoogleFonts.dmSans(
-              color: _primaryText(context),
+              color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
@@ -1428,7 +1459,7 @@ class _Take60GuidedRecordScreenState
           Text(
             'Ta scène Take60 est prête.',
             style: GoogleFonts.dmSans(
-              color: _secondaryText(context),
+              color: Colors.white.withValues(alpha: 0.65),
             ),
           ),
           const SizedBox(height: 16),
@@ -1466,15 +1497,13 @@ class _Take60GuidedRecordScreenState
                     ),
                   )
                 : Container(
-                    color: _surfaceMuted(context),
+                    color: _surfaceMuted,
                     alignment: Alignment.center,
                     child: Text(
                       result == null
                           ? 'Aucun rendu disponible.'
                           : 'Rendu prêt: ${result.durationSeconds}s · ${result.segments.length} segments',
-                      style: GoogleFonts.dmSans(
-                        color: _secondaryText(context),
-                      ),
+                      style: GoogleFonts.dmSans(color: Colors.white70),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -1483,7 +1512,7 @@ class _Take60GuidedRecordScreenState
           Text(
             'Plans utilisateur enregistrés',
             style: GoogleFonts.dmSans(
-              color: _primaryText(context),
+              color: Colors.white,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1495,11 +1524,11 @@ class _Take60GuidedRecordScreenState
                       color: _accent),
                   title: Text(
                     marker.label,
-                    style: GoogleFonts.dmSans(color: _primaryText(context)),
+                    style: GoogleFonts.dmSans(color: Colors.white),
                   ),
                   subtitle: Text(
                     marker.dialogue,
-                    style: GoogleFonts.dmSans(color: _secondaryText(context)),
+                    style: GoogleFonts.dmSans(color: Colors.white60),
                   ),
                   trailing: TextButton(
                     onPressed: () => _replayPlan(marker),
@@ -1528,8 +1557,10 @@ class _Take60GuidedRecordScreenState
                 icon: const Icon(Icons.save_outlined),
                 label: const Text('Enregistrer en brouillon'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: _primaryText(context),
-                  side: BorderSide(color: _softBorder(context)),
+                  foregroundColor: Colors.white,
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
                 ),
               ),
               FilledButton.icon(
@@ -1559,10 +1590,10 @@ class _Take60GuidedRecordScreenState
               ),
               TextButton.icon(
                 onPressed: _backToLibrary,
-                icon: Icon(Icons.home, color: _secondaryText(context)),
+                icon: const Icon(Icons.home, color: Colors.white70),
                 label: Text(
                   'Retour bibliothèque',
-                  style: GoogleFonts.dmSans(color: _secondaryText(context)),
+                  style: GoogleFonts.dmSans(color: Colors.white70),
                 ),
               ),
             ],
@@ -1581,6 +1612,7 @@ class _SceneCard extends StatelessWidget {
   final SceneModel scene;
   final VoidCallback onPlay;
 
+  static const _surface = Color(0xFF111827);
   static const _accent = Color(0xFFFFB800);
 
   @override
@@ -1588,11 +1620,8 @@ class _SceneCard extends StatelessWidget {
     final userPlans = scene.userPlanCount > 0
         ? '${scene.userPlanCount} plan(s) à jouer'
         : 'Plans à jouer définis par l\'admin';
-    final surface = AppThemeTokens.surface(context);
-    final primaryText = AppThemeTokens.primaryText(context);
-    final secondaryText = AppThemeTokens.secondaryText(context);
     return Material(
-      color: surface,
+      color: _surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -1618,7 +1647,7 @@ class _SceneCard extends StatelessWidget {
                     Text(
                       scene.title,
                       style: GoogleFonts.dmSans(
-                        color: primaryText,
+                        color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
@@ -1627,7 +1656,7 @@ class _SceneCard extends StatelessWidget {
                     Text(
                       '${scene.category} · ${scene.sceneType}',
                       style: GoogleFonts.dmSans(
-                        color: secondaryText,
+                        color: Colors.white.withValues(alpha: 0.65),
                         fontSize: 12,
                       ),
                     ),
@@ -1671,20 +1700,17 @@ class _Thumbnail extends StatelessWidget {
 
   final String thumbnailUrl;
 
-  Color _fallbackSurface(BuildContext context) =>
-      AppThemeTokens.surfaceMuted(context);
-
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl.isEmpty) {
-      return Container(color: _fallbackSurface(context));
+      return Container(color: const Color(0xFF1A2540));
     }
     if (thumbnailUrl.startsWith('http')) {
       return Image.network(
         thumbnailUrl,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
-            Container(color: _fallbackSurface(context)),
+            Container(color: const Color(0xFF1A2540)),
       );
     }
     if (thumbnailUrl.startsWith('assets/')) {
@@ -1692,7 +1718,7 @@ class _Thumbnail extends StatelessWidget {
         thumbnailUrl,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
-            Container(color: _fallbackSurface(context)),
+            Container(color: const Color(0xFF1A2540)),
       );
     }
     if (!kIsWeb) {
@@ -1700,10 +1726,10 @@ class _Thumbnail extends StatelessWidget {
         File(thumbnailUrl),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
-            Container(color: _fallbackSurface(context)),
+            Container(color: const Color(0xFF1A2540)),
       );
     }
-    return Container(color: _fallbackSurface(context));
+    return Container(color: const Color(0xFF1A2540));
   }
 }
 
@@ -1714,20 +1740,17 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final softAction = AppThemeTokens.softAction(context);
-    final border = AppThemeTokens.softBorder(context);
-    final secondaryText = AppThemeTokens.secondaryText(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: softAction,
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: border),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Text(
         label,
         style: GoogleFonts.dmSans(
-          color: secondaryText,
+          color: Colors.white.withValues(alpha: 0.85),
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
@@ -1744,14 +1767,11 @@ class _DirectorBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final softAction = AppThemeTokens.softAction(context);
-    final primaryText = AppThemeTokens.primaryText(context);
-    final secondaryText = AppThemeTokens.secondaryText(context);
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: softAction,
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -1760,7 +1780,7 @@ class _DirectorBlock extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.dmSans(
-              color: primaryText,
+              color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w800,
             ),
@@ -1769,7 +1789,7 @@ class _DirectorBlock extends StatelessWidget {
           Text(
             subtitle,
             style: GoogleFonts.dmSans(
-              color: secondaryText,
+              color: Colors.white.withValues(alpha: 0.65),
               fontSize: 12,
             ),
           ),
@@ -1788,7 +1808,6 @@ class _DirectorRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (value.trim().isEmpty) return const SizedBox.shrink();
-    final primaryText = AppThemeTokens.primaryText(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -1807,7 +1826,7 @@ class _DirectorRow extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.dmSans(
-              color: primaryText,
+              color: Colors.white,
               fontSize: 13.5,
               height: 1.45,
             ),
@@ -1833,15 +1852,10 @@ class _CueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overlaySurface = AppThemeTokens.isDark(context)
-        ? Colors.black.withValues(alpha: 0.55)
-        : Colors.white.withValues(alpha: 0.92);
-    final primaryText = AppThemeTokens.primaryText(context);
-    final secondaryText = AppThemeTokens.secondaryText(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: overlaySurface,
+        color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1869,7 +1883,7 @@ class _CueCard extends StatelessWidget {
               Text(
                 duration,
                 style: GoogleFonts.dmSans(
-                  color: primaryText,
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1881,7 +1895,7 @@ class _CueCard extends StatelessWidget {
             Text(
               '« $dialogue »',
               style: GoogleFonts.dmSans(
-                color: primaryText,
+                color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
@@ -1891,7 +1905,7 @@ class _CueCard extends StatelessWidget {
           Text(
             helper,
             style: GoogleFonts.dmSans(
-              color: secondaryText,
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
           ),
@@ -1908,10 +1922,8 @@ class _CenteredLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = AppThemeTokens.pageBackgroundAlt(context);
-    final primaryText = AppThemeTokens.primaryText(context);
     return Container(
-      color: background,
+      color: Colors.black,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1920,7 +1932,7 @@ class _CenteredLoader extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               label,
-              style: GoogleFonts.dmSans(color: primaryText),
+              style: GoogleFonts.dmSans(color: Colors.white),
             ),
           ],
         ),

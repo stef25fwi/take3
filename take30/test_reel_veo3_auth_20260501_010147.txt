@@ -1,0 +1,22 @@
+===== TEST RÉEL AUTHENTIFIÉ VEO3 TAKE60 =====
+Projet : take30
+Region : europe-west1
+
+===== 1. EXTRACTION API KEY FIREBASE WEB =====
+✅ API_KEY trouvée
+
+===== 2. CONNEXION FIREBASE AUTH =====
+❌ Connexion Firebase Auth impossible
+{
+  "error": {
+    "code": 400,
+    "message": "INVALID_EMAIL",
+    "errors": [
+      {
+        "message": "INVALID_EMAIL",
+        "domain": "global",
+        "reason": "invalid"
+      }
+    ]
+  }
+}

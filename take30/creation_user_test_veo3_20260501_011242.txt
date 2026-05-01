@@ -1,0 +1,24 @@
+===== CRÉATION UTILISATEUR TEST FIREBASE + TEST VEO3 =====
+Email test : test.take60.1777597962@take60.app
+
+===== 1. EXTRACTION API KEY =====
+✅ API_KEY trouvée
+
+===== 2. CRÉATION UTILISATEUR TEST VIA FIREBASE AUTH REST =====
+{
+    "error": {
+        "code": 400,
+        "message": "MISSING_PASSWORD",
+        "errors": [
+            {
+                "message": "MISSING_PASSWORD",
+                "domain": "global",
+                "reason": "invalid"
+            }
+        ]
+    }
+}
+
+❌ Création utilisateur impossible.
+Erreur Firebase : MISSING_PASSWORD
+

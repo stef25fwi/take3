@@ -1,0 +1,1317 @@
+===== AUDIT RÉEL VEO3 / FIREBASE STORAGE / BACKEND =====
+Projet : /workspaces/take3/take30
+
+===== 1. FICHIERS VEO / VO3 =====
+./docs/veo3_implementation_plan.md
+./lib/models/veo_generation_job.dart
+./lib/services/firebase/storage_service.dart
+./lib/services/api_service.dart
+./lib/services/veo_scene_generation_service.dart
+./lib/utils/video_player_controller_factory.dart
+./lib/utils/video_player_controller_factory_web.dart
+./lib/utils/video_player_controller_factory_io.dart
+./lib/utils/video_player_controller_factory_stub.dart
+./lib/admin/widgets/admin_video_preview.dart
+./lib/admin/models/ai_generated_video.dart
+./lib/admin/services/veo_video_generation_service.dart
+
+===== 2. LIGNES MOCK / FAKE / PLACEHOLDER / TODO / UNIMPLEMENTED =====
+lib/providers/providers.dart:22:  throw UnimplementedError('sharedPreferencesProvider must be overridden in main().');
+lib/admin/services/veo_video_generation_service.dart:101:class MockVeoVideoGenerationService implements VeoVideoGenerationService {
+lib/admin/services/veo_video_generation_service.dart:102:  const MockVeoVideoGenerationService();
+test/admin_scene_widget_test.dart:7:class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
+test/admin_scene_widget_test.dart:43:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+test/admin_scene_widget_test.dart:116:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+test/admin_scene_workflow_test.dart:33:  group('MockVeoVideoGenerationService', () {
+test/admin_scene_workflow_test.dart:35:      const service = MockVeoVideoGenerationService();
+docs/veo3_implementation_plan.md:132:## TODO Vertex AI / VEO 3
+docs/veo3_implementation_plan.md:153:- TODO : ajuster le schéma exact du body et de la réponse si le modèle VEO activé dans le projet expose un contrat différent de predictLongRunning.
+./docs/veo3_implementation_plan.md:132:## TODO Vertex AI / VEO 3
+./docs/veo3_implementation_plan.md:153:- TODO : ajuster le schéma exact du body et de la réponse si le modèle VEO activé dans le projet expose un contrat différent de predictLongRunning.
+./test/admin_scene_widget_test.dart:7:class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
+./test/admin_scene_widget_test.dart:43:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+./test/admin_scene_widget_test.dart:116:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+./test/admin_scene_workflow_test.dart:33:  group('MockVeoVideoGenerationService', () {
+./test/admin_scene_workflow_test.dart:35:      const service = MockVeoVideoGenerationService();
+./lib/providers/providers.dart:22:  throw UnimplementedError('sharedPreferencesProvider must be overridden in main().');
+./lib/admin/services/veo_video_generation_service.dart:101:class MockVeoVideoGenerationService implements VeoVideoGenerationService {
+./lib/admin/services/veo_video_generation_service.dart:102:  const MockVeoVideoGenerationService();
+./audit_take60_guided_recording_veo3_firebase_20260501_003622.txt:193:❌ Absence de mocks/fakes/TODO bloquants autour VEO3 / Storage
+./audit_take60_guided_recording_veo3_firebase_20260501_003622.txt:349:00:12 +13: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: MockVeoVideoGenerationService returns a generated preview with expected metadata
+./audit_ajout_scene_20260430_224507.txt:93:00:00 +1: MockVeoVideoGenerationService returns a generated preview with expected metadata
+./audit_ajout_scene_20260430_224507.txt:104:00:11 +3: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: MockVeoVideoGenerationService returns a generated preview with expected metadata
+./audit_reel_veo3_storage_backend_20260501_003814.txt:19:lib/providers/providers.dart:22:  throw UnimplementedError('sharedPreferencesProvider must be overridden in main().');
+./audit_reel_veo3_storage_backend_20260501_003814.txt:20:lib/admin/services/veo_video_generation_service.dart:101:class MockVeoVideoGenerationService implements VeoVideoGenerationService {
+./audit_reel_veo3_storage_backend_20260501_003814.txt:21:lib/admin/services/veo_video_generation_service.dart:102:  const MockVeoVideoGenerationService();
+./audit_reel_veo3_storage_backend_20260501_003814.txt:22:test/admin_scene_widget_test.dart:7:class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
+./audit_reel_veo3_storage_backend_20260501_003814.txt:23:test/admin_scene_widget_test.dart:43:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+./audit_reel_veo3_storage_backend_20260501_003814.txt:24:test/admin_scene_widget_test.dart:116:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+./audit_reel_veo3_storage_backend_20260501_003814.txt:25:test/admin_scene_workflow_test.dart:33:  group('MockVeoVideoGenerationService', () {
+./audit_reel_veo3_storage_backend_20260501_003814.txt:26:test/admin_scene_workflow_test.dart:35:      const service = MockVeoVideoGenerationService();
+./audit_reel_veo3_storage_backend_20260501_003814.txt:27:docs/veo3_implementation_plan.md:132:## TODO Vertex AI / VEO 3
+./audit_reel_veo3_storage_backend_20260501_003814.txt:28:docs/veo3_implementation_plan.md:153:- TODO : ajuster le schéma exact du body et de la réponse si le modèle VEO activé dans le projet expose un contrat différent de predictLongRunning.
+./ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme:65:      allowLocationSimulation = "YES">
+
+===== 3. SERVICE VEO ADMIN =====
+     1	import 'dart:async';
+     2	
+     3	import '../models/ai_generated_video.dart';
+     4	import '../../models/veo_generation_job.dart';
+     5	import '../../services/veo_scene_generation_service.dart';
+     6	
+     7	abstract class VeoVideoGenerationService {
+     8	  Future<AiGeneratedVideo> generateSceneIntroVideo({
+     9	    required String sceneDraftId,
+    10	    required String prompt,
+    11	    int durationSeconds = 15,
+    12	    String aspectRatio = '16:9',
+    13	  });
+    14	}
+    15	
+    16	class VeoVideoGenerationServiceFactory {
+    17	  static VeoVideoGenerationService createDefault() {
+    18	    return CloudFunctionsVeoVideoGenerationService();
+    19	  }
+    20	}
+    21	
+    22	class VeoServiceException implements Exception {
+    23	  VeoServiceException(this.message);
+    24	
+    25	  final String message;
+    26	
+    27	  @override
+    28	  String toString() => message;
+    29	}
+    30	
+    31	class CloudFunctionsVeoVideoGenerationService implements VeoVideoGenerationService {
+    32	  CloudFunctionsVeoVideoGenerationService({
+    33	    VeoSceneGenerationService? service,
+    34	    this.pollAttempts = 12,
+    35	    this.pollDelay = const Duration(seconds: 2),
+    36	  }) : _service = service ?? VeoSceneGenerationService();
+    37	
+    38	  final VeoSceneGenerationService _service;
+    39	  final int pollAttempts;
+    40	  final Duration pollDelay;
+    41	
+    42	  @override
+    43	  Future<AiGeneratedVideo> generateSceneIntroVideo({
+    44	    required String sceneDraftId,
+    45	    required String prompt,
+    46	    int durationSeconds = 15,
+    47	    String aspectRatio = '16:9',
+    48	  }) async {
+    49	    try {
+    50	      var job = await _service.requestVeoScenePreview(
+    51	        sceneId: sceneDraftId,
+    52	        prompt: prompt,
+    53	        durationSeconds: durationSeconds,
+    54	        aspectRatio: aspectRatio,
+    55	      );
+    56	
+    57	      for (var attempt = 0; attempt < pollAttempts; attempt++) {
+    58	        if (job.isCompleted) {
+    59	          return _toAiGeneratedVideo(job, prompt, durationSeconds, aspectRatio);
+    60	        }
+    61	        if (job.isFailed) {
+    62	          throw VeoServiceException(
+    63	            job.errorMessage ?? 'Le backend VEO a retourné un échec.',
+    64	          );
+    65	        }
+    66	        await Future<void>.delayed(pollDelay);
+    67	        job = await _service.checkVeoSceneGeneration(sceneId: sceneDraftId);
+    68	      }
+    69	
+    70	      throw VeoServiceException(
+    71	        'La génération VEO prend plus de temps que prévu.',
+    72	      );
+    73	    } on VeoSceneGenerationException catch (error) {
+    74	      throw VeoServiceException(
+    75	        error.message,
+    76	      );
+    77	    }
+    78	  }
+    79	
+    80	  static AiGeneratedVideo _toAiGeneratedVideo(
+    81	    VeoGenerationJob job,
+    82	    String prompt,
+    83	    int durationSeconds,
+    84	    String aspectRatio,
+    85	  ) {
+    86	    final generatedAt = job.updatedAt ?? DateTime.now();
+    87	    return AiGeneratedVideo(
+    88	      provider: 'veo3',
+    89	      prompt: job.prompt.isEmpty ? prompt : job.prompt,
+    90	      videoUrl: job.videoUrl ?? '',
+    91	      thumbnailUrl: job.thumbnailUrl,
+    92	      durationSeconds: job.durationSeconds,
+    93	      aspectRatio: job.aspectRatio.isEmpty ? aspectRatio : job.aspectRatio,
+    94	      status: aiIntroVideoStatusFromString(job.status.value),
+    95	      generatedAt: generatedAt,
+    96	      updatedAt: generatedAt,
+    97	    );
+    98	  }
+    99	}
+   100	
+   101	class MockVeoVideoGenerationService implements VeoVideoGenerationService {
+   102	  const MockVeoVideoGenerationService();
+   103	
+   104	  static const String _mockVideoUrl =
+   105	      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+   106	  static const String _mockThumbnailUrl =
+   107	      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80';
+   108	
+   109	  @override
+   110	  Future<AiGeneratedVideo> generateSceneIntroVideo({
+   111	    required String sceneDraftId,
+   112	    required String prompt,
+   113	    int durationSeconds = 15,
+   114	    String aspectRatio = '16:9',
+   115	  }) async {
+   116	    await Future<void>.delayed(const Duration(seconds: 2));
+   117	
+   118	    final now = DateTime.now();
+   119	
+   120	    return AiGeneratedVideo(
+   121	      provider: 'veo3',
+   122	      prompt: prompt,
+   123	      videoUrl: _mockVideoUrl,
+   124	      thumbnailUrl: _mockThumbnailUrl,
+   125	      durationSeconds: durationSeconds,
+   126	      aspectRatio: aspectRatio,
+   127	      status: AiIntroVideoStatus.generated,
+   128	      generatedAt: now,
+   129	      updatedAt: now,
+   130	    );
+   131	  }
+   132	}
+   133	
+   134	// Ce mock reste utile pour les tests widget/admin. Le flux réel par défaut
+   135	// passe désormais par Firebase Cloud Functions, sans URL ni token dans Flutter.
+
+===== 4. SERVICE VEO SCENE =====
+     1	import 'package:cloud_functions/cloud_functions.dart';
+     2	
+     3	import '../models/veo_generation_job.dart';
+     4	
+     5	class VeoSceneGenerationException implements Exception {
+     6	  const VeoSceneGenerationException({
+     7	    required this.code,
+     8	    required this.message,
+     9	  });
+    10	
+    11	  final String code;
+    12	  final String message;
+    13	
+    14	  @override
+    15	  String toString() => message;
+    16	}
+    17	
+    18	class VeoSceneGenerationService {
+    19	  VeoSceneGenerationService({FirebaseFunctions? functions})
+    20	    : _functions = functions;
+    21	
+    22	  final FirebaseFunctions? _functions;
+    23	
+    24	  FirebaseFunctions get _resolvedFunctions =>
+    25	    _functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+    26	
+    27	  Future<VeoGenerationJob> requestVeoScenePreview({
+    28	    required String sceneId,
+    29	    required String prompt,
+    30	    int durationSeconds = 15,
+    31	    String aspectRatio = '16:9',
+    32	  }) async {
+    33	    try {
+    34	      final callable =
+    35	          _resolvedFunctions.httpsCallable('startVeoSceneGeneration');
+    36	      final result = await callable.call(<String, dynamic>{
+    37	        'sceneId': sceneId,
+    38	        'prompt': prompt,
+    39	        'durationSeconds': durationSeconds,
+    40	        'aspectRatio': aspectRatio,
+    41	      });
+    42	      return VeoGenerationJob.fromJson(
+    43	        _asMap(result.data),
+    44	        fallbackSceneId: sceneId,
+    45	        fallbackPrompt: prompt,
+    46	        fallbackDurationSeconds: durationSeconds,
+    47	        fallbackAspectRatio: aspectRatio,
+    48	      );
+    49	    } on FirebaseFunctionsException catch (error) {
+    50	      throw VeoSceneGenerationException(
+    51	        code: error.code,
+    52	        message: _messageForCode(error.code, error.message),
+    53	      );
+    54	    } catch (_) {
+    55	      throw const VeoSceneGenerationException(
+    56	        code: 'unknown',
+    57	        message: 'La génération VEO a échoué pour une raison inconnue.',
+    58	      );
+    59	    }
+    60	  }
+    61	
+    62	  Future<VeoGenerationJob> checkVeoSceneGeneration({
+    63	    required String sceneId,
+    64	  }) async {
+    65	    try {
+    66	      final callable =
+    67	          _resolvedFunctions.httpsCallable('checkVeoSceneGeneration');
+    68	      final result = await callable.call(<String, dynamic>{'sceneId': sceneId});
+    69	      return VeoGenerationJob.fromJson(
+    70	        _asMap(result.data),
+    71	        fallbackSceneId: sceneId,
+    72	      );
+    73	    } on FirebaseFunctionsException catch (error) {
+    74	      throw VeoSceneGenerationException(
+    75	        code: error.code,
+    76	        message: _messageForCode(error.code, error.message),
+    77	      );
+    78	    } catch (_) {
+    79	      throw const VeoSceneGenerationException(
+    80	        code: 'unknown',
+    81	        message: 'Impossible de vérifier l’état de la génération VEO.',
+    82	      );
+    83	    }
+    84	  }
+    85	
+    86	  Map<String, dynamic> _asMap(dynamic value) {
+    87	    if (value is Map<dynamic, dynamic>) {
+    88	      return value.map(
+    89	        (key, entry) => MapEntry(key.toString(), entry),
+    90	      );
+    91	    }
+    92	    return const <String, dynamic>{};
+    93	  }
+    94	
+    95	  static String _messageForCode(String code, String? fallback) {
+    96	    switch (code) {
+    97	      case 'unauthenticated':
+    98	        return 'Connexion requise pour lancer une génération VEO.';
+    99	      case 'permission-denied':
+   100	        return 'Accès refusé: le rôle admin est requis pour VEO.';
+   101	      case 'unavailable':
+   102	        return 'Le backend VEO est temporairement indisponible.';
+   103	      case 'internal':
+   104	        return 'Le backend VEO a rencontré une erreur interne.';
+   105	      case 'deadline-exceeded':
+   106	      case 'timeout':
+   107	        return 'Le backend VEO a dépassé le délai attendu.';
+   108	      case 'unknown':
+   109	        return fallback ?? 'Erreur inconnue pendant la génération VEO.';
+   110	      default:
+   111	        return fallback ?? 'Erreur VEO: $code';
+   112	    }
+   113	  }
+   114	}
+
+===== 5. API SERVICE =====
+     1	import 'dart:io';
+     2	
+     3	import 'package:cloud_firestore/cloud_firestore.dart';
+     4	import 'package:cloud_functions/cloud_functions.dart';
+     5	import 'package:firebase_auth/firebase_auth.dart' as fa;
+     6	import 'package:firebase_storage/firebase_storage.dart';
+     7	
+     8	import '../models/models.dart';
+     9	import 'firebase/comments_repo.dart';
+    10	import 'firebase/daily_challenge_repo.dart';
+    11	import 'firebase/duels_repo.dart';
+    12	import 'firebase/firestore_refs.dart';
+    13	import 'firebase/leaderboard_repo.dart';
+    14	import 'firebase/notifications_repo.dart';
+    15	import 'firebase/scenes_repo.dart';
+    16	import 'firebase/storage_service.dart';
+    17	import 'firebase/users_repo.dart';
+    18	
+    19	/// Façade unifiée pour la couche données Firestore/Storage/Functions.
+    20	/// Garde `ApiService()` comme singleton, utilisé par les providers.
+    21	class ApiService {
+    22	  ApiService._internal() {
+    23	    _db = FirebaseFirestore.instance;
+    24	    _auth = fa.FirebaseAuth.instance;
+    25	    _functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+    26	    _storage = FirebaseStorage.instance;
+    27	
+    28	    refs = FirestoreRefs(_db);
+    29	    users = UsersRepo(refs, _functions);
+    30	    scenes = ScenesRepo(refs, _functions);
+    31	    comments = CommentsRepo(refs);
+    32	    notifications = NotificationsRepo(refs);
+    33	    duels = DuelsRepo(refs);
+    34	    dailyChallenge = DailyChallengeRepo(refs);
+    35	    leaderboard = LeaderboardRepo(refs);
+    36	    storage = StorageService(_storage);
+    37	  }
+    38	
+    39	  static final ApiService _instance = ApiService._internal();
+    40	  factory ApiService() => _instance;
+    41	
+    42	  late final FirebaseFirestore _db;
+    43	  late final fa.FirebaseAuth _auth;
+    44	  late final FirebaseFunctions _functions;
+    45	  late final FirebaseStorage _storage;
+    46	
+    47	  late final FirestoreRefs refs;
+    48	  late final UsersRepo users;
+    49	  late final ScenesRepo scenes;
+    50	  late final CommentsRepo comments;
+    51	  late final NotificationsRepo notifications;
+    52	  late final DuelsRepo duels;
+    53	  late final DailyChallengeRepo dailyChallenge;
+    54	  late final LeaderboardRepo leaderboard;
+    55	  late final StorageService storage;
+    56	
+    57	  UserModel? _currentUser;
+    58	
+    59	  bool get isAuthenticated => _auth.currentUser != null;
+    60	  UserModel? get currentUser => _currentUser;
+    61	  String? get currentUid => _auth.currentUser?.uid;
+    62	
+    63	  Future<UserModel?> refreshCurrentUser() async {
+    64	    final uid = _auth.currentUser?.uid;
+    65	    if (uid == null) {
+    66	      _currentUser = null;
+    67	      return null;
+    68	    }
+    69	    _currentUser = await users.getById(uid);
+    70	    return _currentUser;
+    71	  }
+    72	
+    73	  void setCurrentUser(UserModel? user) {
+    74	    _currentUser = user;
+    75	  }
+    76	
+    77	  // ─── Compat (anciennes signatures) ────────────────────────────────────────
+    78	
+    79	  Future<List<SceneModel>> getFeed({int page = 0}) =>
+    80	      scenes.getFeed(limit: 30);
+    81	
+    82	  Future<List<SceneModel>> getPopularScenes(String category) =>
+    83	      scenes.getPopular(category: category == 'all' ? null : category);
+    84	
+    85	  Future<List<CategoryModel>> getCategories() async {
+    86	    final snap = await refs.categories.orderBy('order').get();
+    87	    return snap.docs.map((d) => d.data()).toList();
+    88	  }
+    89	
+    90	  Future<bool> likeScene(String sceneId) async {
+    91	    final uid = currentUid;
+    92	    if (uid == null) return false;
+    93	    return scenes.toggleLike(sceneId, uid);
+    94	  }
+    95	
+    96	  Future<bool> followUser(String userId) => users.toggleFollow(userId);
+    97	
+    98	  Future<List<LeaderboardEntry>> getLeaderboard(String period) =>
+    99	      leaderboard.list(period);
+   100	
+   101	  Future<UserModel?> getProfile(String userId) => users.getById(userId);
+   102	
+   103	  Future<List<SceneModel>> getUserScenes(String userId) =>
+   104	      scenes.getByAuthor(userId);
+   105	
+   106	  Future<List<BadgeModel>> getBadges(String userId) async {
+   107	    final snap = await refs.userDoc(userId).collection('badges').get();
+   108	    return snap.docs.map((d) => BadgeModel.fromFirestore(d)).toList();
+   109	  }
+   110	
+   111	  Future<DuelModel?> getCurrentDuel() => duels.getCurrent();
+   112	
+   113	  Future<DuelModel?> vote(String duelId, int choice) async {
+   114	    final uid = currentUid;
+   115	    if (uid == null) return null;
+   116	    await duels.vote(duelId: duelId, uid: uid, choice: choice);
+   117	    return duels.getById(duelId);
+   118	  }
+   119	
+   120	  Future<List<NotificationModel>> getNotifications() async {
+   121	    final uid = currentUid;
+   122	    if (uid == null) return const [];
+   123	    return notifications.listForUser(uid);
+   124	  }
+   125	
+   126	  Future<DailyChallengeModel?> getDailyChallenge() =>
+   127	      dailyChallenge.getToday();
+   128	
+   129	  /// Upload vidéo + création doc `scenes/{id}`.
+   130	  /// Les compteurs sont tenus côté Cloud Function `onSceneCreate`.
+   131	  Future<SceneModel?> uploadScene({
+   132	    required String videoPath,
+   133	    required String title,
+   134	    required String category,
+   135	    required int durationSeconds,
+   136	    required List<String> tags,
+   137	  }) async {
+   138	    final uid = currentUid;
+   139	    if (uid == null) return null;
+   140	    final user = _currentUser ?? await users.getById(uid);
+   141	    if (user == null) return null;
+   142	
+   143	    final sceneId = refs.scenes.doc().id;
+   144	    final videoUrl = await storage.uploadVideo(
+   145	      uid: uid,
+   146	      sceneId: sceneId,
+   147	      file: File(videoPath),
+   148	    );
+   149	
+   150	    final scene = SceneModel(
+   151	      id: sceneId,
+   152	      title: title,
+   153	      category: category,
+   154	      thumbnailUrl: '',
+   155	      videoUrl: videoUrl,
+   156	      durationSeconds: durationSeconds,
+   157	      author: user,
+   158	      createdAt: DateTime.now(),
+   159	      tags: tags,
+   160	    );
+   161	
+   162	    await scenes.create(scene);
+   163	    return scene;
+   164	  }
+   165	}
+
+===== 6. STORAGE SERVICE FIREBASE =====
+     1	import 'dart:io';
+     2	import 'dart:typed_data';
+     3	
+     4	import 'package:firebase_storage/firebase_storage.dart';
+     5	
+     6	/// Chemins alignés avec `storage.rules`.
+     7	class StorageService {
+     8	  StorageService(this._storage);
+     9	
+    10	  final FirebaseStorage _storage;
+    11	
+    12	  Reference _sceneRef(String uid, String sceneId) =>
+    13	      _storage.ref('scenes/$uid/$sceneId.mp4');
+    14	
+    15	  Reference _guidedSegmentRef(String uid, String sceneId, String markerId) =>
+    16	      _storage.ref('scenes/$uid/${sceneId}_$markerId.mp4');
+    17	
+    18	  Reference _thumbRef(String uid, String sceneId) =>
+    19	      _storage.ref('thumbnails/$uid/$sceneId.jpg');
+    20	
+    21	  Reference _avatarRef(String uid) => _storage.ref('avatars/$uid.jpg');
+    22	
+    23	  Future<String> uploadVideo({
+    24	    required String uid,
+    25	    required String sceneId,
+    26	    required File file,
+    27	  }) async {
+    28	    final ref = _sceneRef(uid, sceneId);
+    29	    final metadata = SettableMetadata(contentType: 'video/mp4');
+    30	    await ref.putFile(file, metadata);
+    31	    return ref.getDownloadURL();
+    32	  }
+    33	
+    34	  Future<String> uploadVideoBytes({
+    35	    required String uid,
+    36	    required String sceneId,
+    37	    required Uint8List bytes,
+    38	  }) async {
+    39	    final ref = _sceneRef(uid, sceneId);
+    40	    final metadata = SettableMetadata(contentType: 'video/mp4');
+    41	    await ref.putData(bytes, metadata);
+    42	    return ref.getDownloadURL();
+    43	  }
+    44	
+    45	  /// Upload one user-recorded segment of a guided scene.
+    46	  /// Path: `scenes/{uid}/{sceneId}_{markerId}.mp4` (fits storage.rules).
+    47	  Future<String> uploadGuidedSegment({
+    48	    required String uid,
+    49	    required String sceneId,
+    50	    required String markerId,
+    51	    required File file,
+    52	  }) async {
+    53	    final ref = _guidedSegmentRef(uid, sceneId, markerId);
+    54	    final metadata = SettableMetadata(contentType: 'video/mp4');
+    55	    await ref.putFile(file, metadata);
+    56	    return ref.getDownloadURL();
+    57	  }
+    58	
+    59	  Future<String> uploadGuidedSegmentBytes({
+    60	    required String uid,
+    61	    required String sceneId,
+    62	    required String markerId,
+    63	    required Uint8List bytes,
+    64	  }) async {
+    65	    final ref = _guidedSegmentRef(uid, sceneId, markerId);
+    66	    final metadata = SettableMetadata(contentType: 'video/mp4');
+    67	    await ref.putData(bytes, metadata);
+    68	    return ref.getDownloadURL();
+    69	  }
+    70	
+    71	  Future<String> uploadThumbnail({
+    72	    required String uid,
+    73	    required String sceneId,
+    74	    required Uint8List bytes,
+    75	  }) async {
+    76	    final ref = _thumbRef(uid, sceneId);
+    77	    final metadata = SettableMetadata(contentType: 'image/jpeg');
+    78	    await ref.putData(bytes, metadata);
+    79	    return ref.getDownloadURL();
+    80	  }
+    81	
+    82	  Future<String> uploadAvatar({
+    83	    required String uid,
+    84	    required Uint8List bytes,
+    85	  }) async {
+    86	    final ref = _avatarRef(uid);
+    87	    final metadata = SettableMetadata(contentType: 'image/jpeg');
+    88	    await ref.putData(bytes, metadata);
+    89	    return ref.getDownloadURL();
+    90	  }
+    91	
+    92	  Future<void> deleteScene({required String uid, required String sceneId}) async {
+    93	    await Future.wait([
+    94	      _sceneRef(uid, sceneId).delete().catchError((_) {}),
+    95	      _thumbRef(uid, sceneId).delete().catchError((_) {}),
+    96	    ]);
+    97	  }
+    98	}
+
+===== 7. GUIDED SCENE SERVICE =====
+     1	import 'dart:convert';
+     2	import 'dart:io' show File;
+     3	
+     4	import 'package:cloud_firestore/cloud_firestore.dart';
+     5	import 'package:cloud_functions/cloud_functions.dart';
+     6	import 'package:firebase_auth/firebase_auth.dart' as fa;
+     7	import 'package:firebase_storage/firebase_storage.dart';
+     8	import 'package:flutter/foundation.dart' show kIsWeb;
+     9	import 'package:shared_preferences/shared_preferences.dart';
+    10	import 'package:uuid/uuid.dart';
+    11	
+    12	import '../models/models.dart';
+    13	import 'firebase/storage_service.dart';
+    14	
+    15	class Take60GuidedSceneService {
+    16	  Take60GuidedSceneService._internal()
+    17	      : _functions = FirebaseFunctions.instanceFor(region: 'europe-west1'),
+    18	        _firestore = FirebaseFirestore.instance,
+    19	        _auth = fa.FirebaseAuth.instance,
+    20	        _storage = StorageService(FirebaseStorage.instance);
+    21	
+    22	  static final Take60GuidedSceneService instance =
+    23	      Take60GuidedSceneService._internal();
+    24	
+    25	  final FirebaseFunctions _functions;
+    26	  final FirebaseFirestore _firestore;
+    27	  final fa.FirebaseAuth _auth;
+    28	  final StorageService _storage;
+    29	
+    30	  static const _uuid = Uuid();
+    31	  static const _mockAiVideoUrl =
+    32	      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+    33	  static const _mockThumbnailUrl = 'assets/scenes/scene_interrogatoire.svg';
+    34	
+    35	  String get currentUserId => _auth.currentUser?.uid ?? 'guest';
+    36	
+    37	  Future<List<SceneModel>> loadGuidedScenes({
+    38	    required UserModel fallbackAuthor,
+    39	  }) async {
+    40	    try {
+    41	      final snapshot = await _firestore
+    42	          .collection('scenes')
+    43	          .where('adminWorkflow', isEqualTo: true)
+    44	          .where('status', isEqualTo: 'published')
+    45	          .limit(32)
+    46	          .get();
+    47	
+    48	      final guidedScenes = snapshot.docs
+    49	          .map(SceneModel.fromFirestore)
+    50	          .where((scene) => scene.isGuidedRecordingReady)
+    51	          .toList();
+    52	
+    53	      if (guidedScenes.isNotEmpty) {
+    54	        return guidedScenes;
+    55	      }
+    56	    } catch (_) {
+    57	      // Fallback handled below.
+    58	    }
+    59	
+    60	    return fallbackScenes(author: fallbackAuthor);
+    61	  }
+    62	
+    63	  List<Take60SceneMarker> buildTimeline(SceneModel scene) {
+    64	    if (scene.markers.isNotEmpty) {
+    65	      final markers = [...scene.markers]
+    66	        ..sort((left, right) => left.order.compareTo(right.order));
+    67	      return markers;
+    68	    }
+    69	
+    70	    final userCharacter = scene.characterToPlay.isEmpty
+    71	        ? 'Utilisateur'
+    72	        : scene.characterToPlay;
+    73	    final aiCharacter = userCharacter.toLowerCase() == 'voyou'
+    74	        ? 'Policière'
+    75	        : 'Réplique IA';
+    76	    final dialogueLines = _extractDialogueLines(scene.dialogueText);
+    77	    const durations = <int>[12, 8, 10, 8, 12, 10];
+    78	    final labels = <String>[
+    79	      'Plan VO3 1 — intro cinéma',
+    80	      'Plan utilisateur 1 — réplique',
+    81	      'Plan VO3 2 — réaction',
+    82	      'Plan utilisateur 2 — réponse',
+    83	      'Plan VO3 3 — tension',
+    84	      'Plan utilisateur final — dernière réplique',
+    85	    ];
+    86	    final markerTypes = <GuidedMarkerType>[
+    87	      GuidedMarkerType.aiPlan,
+    88	      GuidedMarkerType.userPlan,
+    89	      GuidedMarkerType.reactionShot,
+    90	      GuidedMarkerType.userPlan,
+    91	      GuidedMarkerType.aiReply,
+    92	      GuidedMarkerType.finalShot,
+    93	    ];
+    94	    final markers = <Take60SceneMarker>[];
+    95	    var start = 0;
+    96	
+    97	    for (var index = 0; index < durations.length; index++) {
+    98	      final duration = durations[index];
+    99	      final type = markerTypes[index];
+   100	      final requiresUserRecording = type.requiresUserRecording ||
+   101	          type == GuidedMarkerType.finalShot;
+   102	      markers.add(
+   103	        Take60SceneMarker(
+   104	          id: 'default_${scene.id}_$index',
+   105	          order: index + 1,
+   106	          type: type == GuidedMarkerType.finalShot
+   107	              ? GuidedMarkerType.userPlan
+   108	              : type,
+   109	          startSeconds: start,
+   110	          endSeconds: start + duration,
+   111	          durationSeconds: duration,
+   112	          source: requiresUserRecording ? 'user_video' : 'ai_video',
+   113	          character: requiresUserRecording ? userCharacter : aiCharacter,
+   114	          dialogue: dialogueLines[index % dialogueLines.length],
+   115	          cameraPlan: index.isEven ? 'medium_shot' : 'close_up',
+   116	          label: labels[index],
+   117	          videoUrl: requiresUserRecording
+   118	              ? null
+   119	              : (scene.videoUrl?.isNotEmpty == true
+   120	                  ? scene.videoUrl
+   121	                  : _mockAiVideoUrl),
+   122	          cueText: requiresUserRecording
+   123	              ? 'Joue ta réplique maintenant.'
+   124	              : 'Regarde la scène IA.',
+   125	        ),
+   126	      );
+   127	      start += duration;
+   128	    }
+   129	
+   130	    return markers;
+   131	  }
+   132	
+   133	  Future<Take60GuidedFlowDraft?> loadDraft({required String sceneId}) async {
+   134	    final prefs = await SharedPreferences.getInstance();
+   135	    final raw = prefs.getString(_draftKey(sceneId));
+   136	    if (raw == null || raw.isEmpty) {
+   137	      return null;
+   138	    }
+   139	    return Take60GuidedFlowDraft.fromMap(
+   140	      jsonDecode(raw) as Map<String, dynamic>,
+   141	    );
+   142	  }
+   143	
+   144	  Future<void> saveDraft({
+   145	    required SceneModel scene,
+   146	    required int currentMarkerIndex,
+   147	    required SceneRecordingStatus status,
+   148	    required List<Take60UserRecordingDraft> recordings,
+   149	  }) async {
+   150	    final draft = Take60GuidedFlowDraft(
+   151	      sceneId: scene.id,
+   152	      sceneTitle: scene.title,
+   153	      userId: currentUserId,
+   154	      currentMarkerIndex: currentMarkerIndex,
+   155	      status: status,
+   156	      recordings: recordings,
+   157	      updatedAt: DateTime.now(),
+   158	    );
+   159	    final prefs = await SharedPreferences.getInstance();
+   160	    await prefs.setString(_draftKey(scene.id), jsonEncode(draft.toMap()));
+   161	  }
+   162	
+   163	  Future<void> clearDraft(String sceneId) async {
+   164	    final prefs = await SharedPreferences.getInstance();
+   165	    await prefs.remove(_draftKey(sceneId));
+   166	  }
+   167	
+   168	  Future<Take60UserRecordingDraft> persistRecording({
+   169	    required SceneModel scene,
+   170	    required Take60SceneMarker marker,
+   171	    required String localTempPath,
+   172	    required int durationSeconds,
+   173	    required UserPlanStatus status,
+   174	    String? uploadedVideoUrl,
+   175	  }) async {
+   176	    final now = DateTime.now();
+   177	    String? finalUploadedUrl = uploadedVideoUrl;
+   178	
+   179	    // Try to upload the captured segment to Storage so that the backend
+   180	    // renderer can reach it. On web (no dart:io File) or if upload fails
+   181	    // we silently fall back to the local path — the UI still works in
+   182	    // demo / offline mode.
+   183	    if (finalUploadedUrl == null &&
+   184	        currentUserId != 'guest' &&
+   185	        !kIsWeb &&
+   186	        localTempPath.isNotEmpty &&
+   187	        !localTempPath.startsWith('http')) {
+   188	      try {
+   189	        final file = File(localTempPath);
+   190	        if (await file.exists()) {
+   191	          finalUploadedUrl = await _storage.uploadGuidedSegment(
+   192	            uid: currentUserId,
+   193	            sceneId: scene.id,
+   194	            markerId: marker.id,
+   195	            file: file,
+   196	          );
+   197	        }
+   198	      } catch (_) {
+   199	        // Upload failure is non-fatal — keep local path.
+   200	      }
+   201	    }
+   202	
+   203	    final recording = Take60UserRecordingDraft(
+   204	      recordingId: _uuid.v4(),
+   205	      sceneId: scene.id,
+   206	      userId: currentUserId,
+   207	      markerId: marker.id,
+   208	      localTempPath: localTempPath,
+   209	      uploadedVideoUrl: finalUploadedUrl,
+   210	      durationSeconds: durationSeconds,
+   211	      status: status,
+   212	      createdAt: now,
+   213	      updatedAt: now,
+   214	    );
+   215	
+   216	    if (currentUserId != 'guest') {
+   217	      await _firestore
+   218	          .collection('take60_user_recordings')
+   219	          .doc(recording.recordingId)
+   220	          .set(recording.toMap(), SetOptions(merge: true))
+   221	          .catchError((_) {});
+   222	    }
+   223	
+   224	    return recording;
+   225	  }
+   226	
+   227	  Future<Take60RenderResult> renderTake60GuidedScene({
+   228	    required SceneModel scene,
+   229	    required List<Take60UserRecordingDraft> recordings,
+   230	  }) async {
+   231	    final markers = buildTimeline(scene);
+   232	    final payload = {
+   233	      'sceneId': scene.id,
+   234	      'userId': currentUserId,
+   235	      'aiSegments': markers
+   236	          .where((marker) => !marker.requiresUserRecording)
+   237	          .map(
+   238	            (marker) => {
+   239	              'markerId': marker.id,
+   240	              'type': marker.type.value,
+   241	              'videoUrl': marker.videoUrl ?? scene.videoUrl,
+   242	              'durationSeconds': marker.durationSeconds,
+   243	              'order': marker.order,
+   244	            },
+   245	          )
+   246	          .toList(),
+   247	      'userSegments': recordings
+   248	          .map(
+   249	            (recording) => {
+   250	              'markerId': recording.markerId,
+   251	              'type': 'user_plan',
+   252	              'videoUrl': recording.uploadedVideoUrl ?? recording.localTempPath,
+   253	              'durationSeconds': recording.durationSeconds,
+   254	            },
+   255	          )
+   256	          .toList(),
+   257	      'markers': markers
+   258	          .map(
+   259	            (marker) => {
+   260	              'markerId': marker.id,
+   261	              'type': marker.type.value,
+   262	              'order': marker.order,
+   263	              'durationSeconds': marker.durationSeconds,
+   264	            },
+   265	          )
+   266	          .toList(),
+   267	      'audioRules': scene.audioRules.toMap(),
+   268	      'maxDurationSeconds': scene.durationSeconds,
+   269	    };
+   270	
+   271	    try {
+   272	      final callable = _functions.httpsCallable('renderTake60GuidedScene');
+   273	      final result = await callable.call(payload);
+   274	      return Take60RenderResult.fromMap(
+   275	        Map<String, dynamic>.from(result.data as Map),
+   276	      );
+   277	    } on FirebaseFunctionsException {
+   278	      return _buildLocalRender(scene: scene, recordings: recordings, markers: markers);
+   279	    } catch (_) {
+   280	      return _buildLocalRender(scene: scene, recordings: recordings, markers: markers);
+   281	    }
+   282	  }
+   283	
+   284	  Future<void> saveRenderedProject({
+   285	    required SceneModel scene,
+   286	    required List<Take60UserRecordingDraft> recordings,
+   287	    required Take60RenderResult renderResult,
+   288	    required String status,
+   289	  }) async {
+   290	    final now = DateTime.now();
+   291	    final projectId = '${currentUserId}_${scene.id}';
+   292	    final payload = <String, dynamic>{
+   293	      'projectId': projectId,
+   294	      'sceneId': scene.id,
+   295	      'sceneTitle': scene.title,
+   296	      'category': scene.category,
+   297	      'sceneType': scene.sceneType,
+   298	      'userId': currentUserId,
+   299	      'status': status,
+   300	      'renderResult': renderResult.toMap(),
+   301	      'recordings': recordings.map((recording) => recording.toMap()).toList(),
+   302	      'updatedAt': now.toIso8601String(),
+   303	      'publishedAt': status == 'published' ? now.toIso8601String() : null,
+   304	    };
+   305	
+   306	    if (currentUserId == 'guest') {
+   307	      final prefs = await SharedPreferences.getInstance();
+   308	      await prefs.setString(
+   309	        'take60_guided_project_$projectId',
+   310	        jsonEncode(payload),
+   311	      );
+   312	      return;
+   313	    }
+   314	
+   315	    await _firestore
+   316	        .collection('take60_guided_projects')
+   317	        .doc(projectId)
+   318	        .set(payload, SetOptions(merge: true));
+   319	  }
+   320	
+   321	  List<SceneModel> fallbackScenes({required UserModel author}) {
+   322	    return [
+   323	      SceneModel(
+   324	        id: 'take60_scene_001',
+   325	        title: 'Contrôle sous tension',
+   326	        category: 'Policier',
+   327	        thumbnailUrl: 'assets/scenes/scene_interrogatoire.svg',
+   328	        sceneType: 'Dialogue',
+   329	        difficulty: 'Intermédiaire',
+   330	        durationSeconds: 60,
+   331	        editingMode: 'dialogue_auto_cut',
+   332	        ambiance: 'Tension urbaine réaliste',
+   333	        characterToPlay: 'Voyou',
+   334	        context:
+   335	            'Une policière interpelle un jeune homme après une infraction devant une école.',
+   336	        emotionalObjective: 'Jouer la provocation puis la peur.',
+   337	        directorInstructions:
+   338	            'Regarde la caméra comme si la policière était devant toi. Garde une attitude nerveuse.',
+   339	        dialogueText:
+   340	            'Non, j’ai rien fait moi.\nJ’étais pressé, c’est tout.\nD’accord… j’ai compris.',
+   341	        videoUrl: _mockAiVideoUrl,
+   342	        author: author,
+   343	        createdAt: DateTime.now(),
+   344	        tags: const ['Policier', 'Dialogue', 'Intermédiaire'],
+   345	        adminWorkflow: true,
+   346	        audioRules: const Take60AudioRules(),
+   347	        markers: const [
+   348	          Take60SceneMarker(
+   349	            id: 'marker_001',
+   350	            order: 1,
+   351	            type: GuidedMarkerType.aiPlan,
+   352	            startSeconds: 0,
+   353	            endSeconds: 15,
+   354	            durationSeconds: 15,
+   355	            source: 'ai_video',
+   356	            character: 'Policière',
+   357	            dialogue: 'Vous savez pourquoi je vous ai arrêté ?',
+   358	            cameraPlan: 'medium_shot',
+   359	            label: 'Plan IA 1 / 6',
+   360	            videoUrl: _mockAiVideoUrl,
+   361	            cueText: 'Prépare-toi, ton passage arrive après cette vidéo.',
+   362	          ),
+   363	          Take60SceneMarker(
+   364	            id: 'marker_002',
+   365	            order: 2,
+   366	            type: GuidedMarkerType.userPlan,
+   367	            startSeconds: 15,
+   368	            endSeconds: 23,
+   369	            durationSeconds: 8,
+   370	            source: 'user_video',
+   371	            character: 'Voyou',
+   372	            dialogue: 'Non, j’ai rien fait moi.',
+   373	            cameraPlan: 'close_up',
+   374	            label: 'Plan utilisateur 1 / 3',
+   375	            cueText: 'Joue ta réplique maintenant.',
+   376	          ),
+   377	          Take60SceneMarker(
+   378	            id: 'marker_003',
+   379	            order: 3,
+   380	            type: GuidedMarkerType.reactionShot,
+
+===== 8. RECHERCHE APPELS RÉELS HTTP / FUNCTIONS / VERTEX / STORAGE =====
+lib/main.dart:56:    FirebaseFunctions.instanceFor(region: 'europe-west1')
+lib/main.dart:58:    await FirebaseStorage.instance.useStorageEmulator(host, 9199);
+lib/providers/providers.dart:17:import '../services/upload_service.dart';
+lib/providers/providers.dart:26:final uploadServiceProvider = ChangeNotifierProvider<VideoUploadService>((ref) => VideoUploadService());
+lib/providers/providers.dart:1036:    this._upload,
+lib/providers/providers.dart:1045:  final VideoUploadService _upload;
+lib/providers/providers.dart:1177:    final scene = await _upload.uploadScene(
+lib/providers/providers.dart:1199:    _upload.reset();
+lib/providers/providers.dart:1240:    ref.read(uploadServiceProvider),
+lib/providers/providers.dart:2255:      final user = await _api.getProfile(userId);
+lib/providers/providers.dart:2282:  Future<void> shareProfile() async {
+lib/providers/providers.dart:2287:    await _share.shareProfile(state.user!);
+lib/models/take60_guided_flow.dart:181:class Take60AudioRules {
+lib/models/take60_guided_flow.dart:182:  const Take60AudioRules({
+lib/models/take60_guided_flow.dart:186:    this.applyAudioFades = true,
+lib/models/take60_guided_flow.dart:192:  final bool applyAudioFades;
+lib/models/take60_guided_flow.dart:194:  factory Take60AudioRules.fromMap(Map<String, dynamic>? json) {
+lib/models/take60_guided_flow.dart:196:    return Take60AudioRules(
+lib/models/take60_guided_flow.dart:202:              data['keepAiAudioOnUserPlans'] as bool? ??
+lib/models/take60_guided_flow.dart:205:      applyAudioFades: data['applyAudioFades'] as bool? ??
+lib/models/take60_guided_flow.dart:206:          data['applyShortAudioFades'] as bool? ??
+lib/models/take60_guided_flow.dart:216:      'applyAudioFades': applyAudioFades,
+lib/models/take60_guided_flow.dart:316:    this.uploadedVideoUrl,
+lib/models/take60_guided_flow.dart:324:  final String? uploadedVideoUrl;
+lib/models/take60_guided_flow.dart:332:    String? uploadedVideoUrl,
+lib/models/take60_guided_flow.dart:343:      uploadedVideoUrl: uploadedVideoUrl ?? this.uploadedVideoUrl,
+lib/models/take60_guided_flow.dart:358:      uploadedVideoUrl: json['uploadedVideoUrl'] as String?,
+lib/models/take60_guided_flow.dart:375:      'uploadedVideoUrl': uploadedVideoUrl,
+lib/models/take60_guided_flow.dart:391:    required this.audioMode,
+lib/models/take60_guided_flow.dart:399:  final String audioMode;
+lib/models/take60_guided_flow.dart:408:      audioMode: json['audioMode'] as String? ?? '',
+lib/models/take60_guided_flow.dart:419:      'audioMode': audioMode,
+lib/models/models.dart:230:    this.audioRules = const Take60AudioRules(),
+lib/models/models.dart:266:  final Take60AudioRules audioRules;
+lib/models/models.dart:316:      audioRules: audioRules,
+lib/models/models.dart:396:      audioRules: Take60AudioRules.fromMap(_readMap(d['audioRules'])),
+lib/models/models.dart:434:        'audioRules': audioRules.toMap(),
+lib/firebase_options.dart:39:    storageBucket: 'take30.firebasestorage.app',
+lib/firebase_options.dart:55:    storageBucket: 'take30.firebasestorage.app',
+lib/firebase_options.dart:69:    storageBucket: 'take30.firebasestorage.app',
+lib/screens/take60_guided_record_screen.dart:439:    final source = draft.uploadedVideoUrl?.isNotEmpty == true
+lib/screens/take60_guided_record_screen.dart:440:        ? draft.uploadedVideoUrl!
+lib/screens/take60_guided_record_screen.dart:1665:      return Image.file(
+lib/screens/take60_guided_record_screen.dart:1666:        File(thumbnailUrl),
+lib/screens/profile_screen.dart:119:    final isDemoProfile = _isDemoProfile(liveUser);
+lib/screens/profile_screen.dart:132:                ref.read(profileProvider(widget.userId).notifier).shareProfile();
+lib/screens/profile_screen.dart:163:                                  .shareProfile();
+lib/screens/profile_screen.dart:922:bool _isDemoProfile(UserModel user) {
+lib/screens/preview_publish_screen.dart:44:    ref.read(uploadServiceProvider).reset();
+lib/screens/preview_publish_screen.dart:175:    final uploadService = ref.watch(uploadServiceProvider);
+lib/screens/preview_publish_screen.dart:176:    final uploadProgress = uploadService.progress;
+lib/screens/preview_publish_screen.dart:177:    final isPublishing = uploadService.isUploading;
+lib/screens/preview_publish_screen.dart:267:                          uploadProgress.message ?? 'Publication...',
+lib/screens/preview_publish_screen.dart:274:                          '${(uploadProgress.progress * 100).toInt()}%',
+lib/screens/preview_publish_screen.dart:287:                        value: uploadProgress.progress,
+lib/screens/explore_screen.dart:1112:      authorName: 'Take30 Studio',
+lib/services/take60_guided_scene_service.dart:17:      : _functions = FirebaseFunctions.instanceFor(region: 'europe-west1'),
+lib/services/take60_guided_scene_service.dart:20:        _storage = StorageService(FirebaseStorage.instance);
+lib/services/take60_guided_scene_service.dart:25:  final FirebaseFunctions _functions;
+lib/services/take60_guided_scene_service.dart:174:    String? uploadedVideoUrl,
+lib/services/take60_guided_scene_service.dart:177:    String? finalUploadedUrl = uploadedVideoUrl;
+lib/services/take60_guided_scene_service.dart:179:    // Try to upload the captured segment to Storage so that the backend
+lib/services/take60_guided_scene_service.dart:180:    // renderer can reach it. On web (no dart:io File) or if upload fails
+lib/services/take60_guided_scene_service.dart:183:    if (finalUploadedUrl == null &&
+lib/services/take60_guided_scene_service.dart:189:        final file = File(localTempPath);
+lib/services/take60_guided_scene_service.dart:191:          finalUploadedUrl = await _storage.uploadGuidedSegment(
+lib/services/take60_guided_scene_service.dart:199:        // Upload failure is non-fatal — keep local path.
+lib/services/take60_guided_scene_service.dart:209:      uploadedVideoUrl: finalUploadedUrl,
+lib/services/take60_guided_scene_service.dart:252:              'videoUrl': recording.uploadedVideoUrl ?? recording.localTempPath,
+lib/services/take60_guided_scene_service.dart:267:      'audioRules': scene.audioRules.toMap(),
+lib/services/take60_guided_scene_service.dart:272:      final callable = _functions.httpsCallable('renderTake60GuidedScene');
+lib/services/take60_guided_scene_service.dart:277:    } on FirebaseFunctionsException {
+lib/services/take60_guided_scene_service.dart:346:        audioRules: const Take60AudioRules(),
+lib/services/take60_guided_scene_service.dart:501:          ? (recording?.uploadedVideoUrl?.isNotEmpty == true
+lib/services/take60_guided_scene_service.dart:502:              ? recording!.uploadedVideoUrl!
+lib/services/take60_guided_scene_service.dart:514:      final audioMode = marker.requiresUserRecording
+lib/services/take60_guided_scene_service.dart:515:          ? scene.audioRules.hasGlobalAiAmbiance &&
+lib/services/take60_guided_scene_service.dart:516:                  scene.audioRules.keepAiAmbianceDuringUserPlans
+lib/services/take60_guided_scene_service.dart:528:          audioMode: audioMode,
+lib/services/auth_service.dart:96:    final profile = await _loadOrCreateProfile(fbUser);
+lib/services/auth_service.dart:102:  Future<UserModel?> _loadOrCreateProfile(
+lib/services/auth_service.dart:115:          await _api.users.updateProfile(fbUser.uid, {'email': email});
+lib/services/auth_service.dart:170:          await _api.users.createProfile(migrated);
+lib/services/auth_service.dart:179:    final fallback = _buildFallbackProfile(
+lib/services/auth_service.dart:186:      await _api.users.createProfile(fallback);
+lib/services/auth_service.dart:196:  UserModel _buildFallbackProfile(
+lib/services/auth_service.dart:276:      final user = await _loadOrCreateProfile(cred.user!);
+lib/services/auth_service.dart:319:      final user = await _loadOrCreateProfile(cred.user!);
+lib/services/auth_service.dart:375:      await _api.users.createProfile(user);
+lib/services/auth_service.dart:400:        final user = await _loadOrCreateProfile(cred.user!);
+lib/services/auth_service.dart:419:      final user = await _loadOrCreateProfile(cred.user!);
+lib/services/auth_service.dart:451:      final user = await _loadOrCreateProfile(cred.user!);
+lib/services/auth_service.dart:503:      final user = await _loadOrCreateProfile(fbUser) ??
+lib/services/auth_service.dart:504:          _buildFallbackProfile(fbUser);
+lib/services/firebase/scenes_repo.dart:11:  final FirebaseFunctions _functions;
+lib/services/firebase/scenes_repo.dart:95:    await _functions.httpsCallable('pingSceneView').call({'sceneId': sceneId});
+lib/services/firebase/storage_service.dart:10:  final FirebaseStorage _storage;
+lib/services/firebase/storage_service.dart:23:  Future<String> uploadVideo({
+lib/services/firebase/storage_service.dart:30:    await ref.putFile(file, metadata);
+lib/services/firebase/storage_service.dart:31:    return ref.getDownloadURL();
+lib/services/firebase/storage_service.dart:34:  Future<String> uploadVideoBytes({
+lib/services/firebase/storage_service.dart:41:    await ref.putData(bytes, metadata);
+lib/services/firebase/storage_service.dart:42:    return ref.getDownloadURL();
+lib/services/firebase/storage_service.dart:45:  /// Upload one user-recorded segment of a guided scene.
+lib/services/firebase/storage_service.dart:47:  Future<String> uploadGuidedSegment({
+lib/services/firebase/storage_service.dart:55:    await ref.putFile(file, metadata);
+lib/services/firebase/storage_service.dart:56:    return ref.getDownloadURL();
+lib/services/firebase/storage_service.dart:59:  Future<String> uploadGuidedSegmentBytes({
+lib/services/firebase/storage_service.dart:67:    await ref.putData(bytes, metadata);
+lib/services/firebase/storage_service.dart:68:    return ref.getDownloadURL();
+lib/services/firebase/storage_service.dart:71:  Future<String> uploadThumbnail({
+lib/services/firebase/storage_service.dart:78:    await ref.putData(bytes, metadata);
+lib/services/firebase/storage_service.dart:79:    return ref.getDownloadURL();
+lib/services/firebase/storage_service.dart:82:  Future<String> uploadAvatar({
+lib/services/firebase/storage_service.dart:88:    await ref.putData(bytes, metadata);
+lib/services/firebase/storage_service.dart:89:    return ref.getDownloadURL();
+lib/services/firebase/users_repo.dart:11:  final FirebaseFunctions _functions;
+lib/services/firebase/users_repo.dart:67:  Future<void> createProfile(UserModel user) async {
+lib/services/firebase/users_repo.dart:71:  Future<void> updateProfile(String uid, Map<String, dynamic> patch) async {
+lib/services/firebase/users_repo.dart:92:        .httpsCallable('toggleFollow')
+lib/services/api_service.dart:25:    _functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+lib/services/api_service.dart:26:    _storage = FirebaseStorage.instance;
+lib/services/api_service.dart:44:  late final FirebaseFunctions _functions;
+lib/services/api_service.dart:45:  late final FirebaseStorage _storage;
+lib/services/api_service.dart:101:  Future<UserModel?> getProfile(String userId) => users.getById(userId);
+lib/services/api_service.dart:129:  /// Upload vidéo + création doc `scenes/{id}`.
+lib/services/api_service.dart:131:  Future<SceneModel?> uploadScene({
+lib/services/api_service.dart:144:    final videoUrl = await storage.uploadVideo(
+lib/services/api_service.dart:147:      file: File(videoPath),
+lib/services/share_service.dart:30:  Future<void> shareProfile(UserModel user) async {
+lib/services/veo_scene_generation_service.dart:19:  VeoSceneGenerationService({FirebaseFunctions? functions})
+lib/services/veo_scene_generation_service.dart:22:  final FirebaseFunctions? _functions;
+lib/services/veo_scene_generation_service.dart:24:  FirebaseFunctions get _resolvedFunctions =>
+lib/services/veo_scene_generation_service.dart:25:    _functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+lib/services/veo_scene_generation_service.dart:35:          _resolvedFunctions.httpsCallable('startVeoSceneGeneration');
+lib/services/veo_scene_generation_service.dart:49:    } on FirebaseFunctionsException catch (error) {
+lib/services/veo_scene_generation_service.dart:67:          _resolvedFunctions.httpsCallable('checkVeoSceneGeneration');
+lib/services/veo_scene_generation_service.dart:73:    } on FirebaseFunctionsException catch (error) {
+lib/services/camera_service.dart:97:      enableAudio: true,
+lib/services/camera_service.dart:148:      final resultFile = File(file.path);
+lib/services/upload_service.dart:6:enum UploadState {
+lib/services/upload_service.dart:9:  uploading,
+lib/services/upload_service.dart:15:class UploadProgress {
+lib/services/upload_service.dart:16:  const UploadProgress({
+lib/services/upload_service.dart:24:  final UploadState state;
+lib/services/upload_service.dart:31:class VideoUploadService extends ChangeNotifier {
+lib/services/upload_service.dart:32:  VideoUploadService._();
+lib/services/upload_service.dart:34:  static final VideoUploadService _instance = VideoUploadService._();
+lib/services/upload_service.dart:36:  factory VideoUploadService() => _instance;
+lib/services/upload_service.dart:38:  UploadProgress _progress = const UploadProgress(state: UploadState.idle);
+lib/services/upload_service.dart:40:  UploadProgress get progress => _progress;
+lib/services/upload_service.dart:42:  bool get isUploading => _progress.state == UploadState.uploading ||
+lib/services/upload_service.dart:43:      _progress.state == UploadState.compressing ||
+lib/services/upload_service.dart:44:      _progress.state == UploadState.processing;
+lib/services/upload_service.dart:46:  Future<SceneModel?> uploadScene({
+lib/services/upload_service.dart:55:      _setProgress(UploadState.compressing, 0.1, 'Compression...');
+lib/services/upload_service.dart:57:      _setProgress(UploadState.uploading, 0.45, 'Upload...');
+lib/services/upload_service.dart:61:        _setProgress(UploadState.uploading, value, 'Upload...');
+lib/services/upload_service.dart:64:      _setProgress(UploadState.processing, 0.92, 'Traitement...');
+lib/services/upload_service.dart:65:      final scene = await ApiService().uploadScene(
+lib/services/upload_service.dart:79:      _setProgress(UploadState.complete, 1.0, 'Publié !', result: scene);
+lib/services/upload_service.dart:82:      _setProgress(UploadState.error, 0, null, error: 'Erreur upload: $error');
+lib/services/upload_service.dart:88:    _progress = const UploadProgress(state: UploadState.idle);
+lib/services/upload_service.dart:93:    UploadState state,
+lib/services/upload_service.dart:99:    _progress = UploadProgress(
+lib/utils/video_player_controller_factory_web.dart:9:      ? Uri.parse(normalized)
+lib/utils/video_player_controller_factory_web.dart:10:      : Uri.parse(normalized);
+lib/utils/video_player_controller_factory_io.dart:11:    return VideoPlayerController.networkUrl(Uri.parse(normalized));
+lib/utils/video_player_controller_factory_io.dart:13:  return VideoPlayerController.file(File(normalized));
+lib/utils/video_player_controller_factory_stub.dart:4:  return VideoPlayerController.networkUrl(Uri.parse(source));
+lib/admin/widgets/admin_video_preview.dart:40:    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+lib/admin/models/ai_generated_video.dart:4:  generated,
+lib/admin/models/ai_generated_video.dart:15:    case 'generated':
+lib/admin/models/ai_generated_video.dart:16:      return AiIntroVideoStatus.generated;
+lib/admin/models/ai_generated_video.dart:30:        AiIntroVideoStatus.generated => 'generated',
+lib/admin/models/ai_generated_video.dart:38:        AiIntroVideoStatus.generated => 'Générée',
+lib/admin/models/ai_generated_video.dart:44:class AiGeneratedVideo {
+lib/admin/models/ai_generated_video.dart:45:  const AiGeneratedVideo({
+lib/admin/models/ai_generated_video.dart:53:    required this.generatedAt,
+lib/admin/models/ai_generated_video.dart:64:  final DateTime generatedAt;
+lib/admin/models/ai_generated_video.dart:69:  AiGeneratedVideo copyWith({
+lib/admin/models/ai_generated_video.dart:77:    DateTime? generatedAt,
+lib/admin/models/ai_generated_video.dart:80:    return AiGeneratedVideo(
+lib/admin/models/ai_generated_video.dart:88:      generatedAt: generatedAt ?? this.generatedAt,
+lib/admin/models/ai_generated_video.dart:101:        'generatedAt': generatedAt.toIso8601String(),
+lib/admin/models/ai_generated_video.dart:105:  factory AiGeneratedVideo.fromJson(Map<String, dynamic> json) {
+lib/admin/models/ai_generated_video.dart:106:    return AiGeneratedVideo(
+lib/admin/models/ai_generated_video.dart:114:      generatedAt: DateTime.tryParse(json['generatedAt'] as String? ?? '') ??
+lib/admin/take30_admin_scene_flow.dart:15:import 'models/ai_generated_video.dart';
+lib/admin/take30_admin_scene_flow.dart:700:  final AiGeneratedVideo? aiIntroVideo;
+lib/admin/take30_admin_scene_flow.dart:826:    AiGeneratedVideo? aiIntroVideo,
+lib/admin/take30_admin_scene_flow.dart:1043:              'generatedAt': Timestamp.fromDate(aiIntroVideo!.generatedAt),
+lib/admin/take30_admin_scene_flow.dart:1166:          : AiGeneratedVideo(
+lib/admin/take30_admin_scene_flow.dart:1177:              generatedAt: _readAdminDate(aiIntroVideo['generatedAt']),
+lib/admin/take30_admin_scene_flow.dart:2126:  AiGeneratedVideo? _generatedPreviewVideo;
+lib/admin/take30_admin_scene_flow.dart:2127:  AiGeneratedVideo? _validatedPreviewVideo;
+lib/admin/take30_admin_scene_flow.dart:2247:    _generatedPreviewVideo = data.aiIntroVideo;
+lib/admin/take30_admin_scene_flow.dart:2356:    final currentVideo = (_validatedPreviewVideo ?? _generatedPreviewVideo)
+lib/admin/take30_admin_scene_flow.dart:2360:              : (_generatedPreviewVideo?.status ?? AiIntroVideoStatus.generated),
+lib/admin/take30_admin_scene_flow.dart:2512:    if (_validatedPreviewVideo != null || _generatedPreviewVideo != null) {
+lib/admin/take30_admin_scene_flow.dart:2533:  AiGeneratedVideo _buildAiVideoFromJob(VeoGenerationJob job, String prompt) {
+lib/admin/take30_admin_scene_flow.dart:2534:    final generatedAt = job.updatedAt ?? DateTime.now();
+lib/admin/take30_admin_scene_flow.dart:2535:    return AiGeneratedVideo(
+lib/admin/take30_admin_scene_flow.dart:2542:      status: AiIntroVideoStatus.generated,
+lib/admin/take30_admin_scene_flow.dart:2543:      generatedAt: generatedAt,
+lib/admin/take30_admin_scene_flow.dart:2544:      updatedAt: generatedAt,
+lib/admin/take30_admin_scene_flow.dart:2562:          _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+lib/admin/take30_admin_scene_flow.dart:2676:  Future<void> _generateScene() {
+lib/admin/take30_admin_scene_flow.dart:3188:                          onPressed: _isGeneratingPreview ? null : _generatePreviewVideo,
+lib/admin/take30_admin_scene_flow.dart:3211:                        if (_generatedPreviewVideo != null) ...[
+lib/admin/take30_admin_scene_flow.dart:3213:                            videoUrl: _generatedPreviewVideo!.videoUrl,
+lib/admin/take30_admin_scene_flow.dart:3214:                            thumbnailUrl: _generatedPreviewVideo!.thumbnailUrl,
+lib/admin/take30_admin_scene_flow.dart:3230:                                    : _validateGeneratedVideo,
+lib/admin/take30_admin_scene_flow.dart:3291:                                  _isGeneratingPreview ? null : _generatePreviewVideo,
+lib/admin/take30_admin_scene_flow.dart:3329:                                _generateScene();
+lib/admin/take30_admin_scene_flow.dart:3339:                                _generateScene();
+lib/admin/take30_admin_scene_flow.dart:3381:                  onPressed: _generateScene,
+lib/admin/take30_admin_scene_flow.dart:3557:  Future<void> _generatePreviewVideo() async {
+lib/admin/take30_admin_scene_flow.dart:3603:            _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+lib/admin/take30_admin_scene_flow.dart:3617:      final generated = await _veoVideoGenerationService.generateSceneIntroVideo(
+lib/admin/take30_admin_scene_flow.dart:3631:        _generatedPreviewVideo = generated;
+lib/admin/take30_admin_scene_flow.dart:3670:      _veoStatusValue = _generatedPreviewVideo == null ? 'none' : _veoStatusValue;
+lib/admin/take30_admin_scene_flow.dart:3676:  Future<void> _validateGeneratedVideo() async {
+lib/admin/take30_admin_scene_flow.dart:3677:    final preview = _generatedPreviewVideo;
+lib/admin/services/veo_video_generation_service.dart:3:import '../models/ai_generated_video.dart';
+lib/admin/services/veo_video_generation_service.dart:8:  Future<AiGeneratedVideo> generateSceneIntroVideo({
+lib/admin/services/veo_video_generation_service.dart:43:  Future<AiGeneratedVideo> generateSceneIntroVideo({
+lib/admin/services/veo_video_generation_service.dart:59:          return _toAiGeneratedVideo(job, prompt, durationSeconds, aspectRatio);
+lib/admin/services/veo_video_generation_service.dart:80:  static AiGeneratedVideo _toAiGeneratedVideo(
+lib/admin/services/veo_video_generation_service.dart:86:    final generatedAt = job.updatedAt ?? DateTime.now();
+lib/admin/services/veo_video_generation_service.dart:87:    return AiGeneratedVideo(
+lib/admin/services/veo_video_generation_service.dart:95:      generatedAt: generatedAt,
+lib/admin/services/veo_video_generation_service.dart:96:      updatedAt: generatedAt,
+lib/admin/services/veo_video_generation_service.dart:110:  Future<AiGeneratedVideo> generateSceneIntroVideo({
+lib/admin/services/veo_video_generation_service.dart:120:    return AiGeneratedVideo(
+lib/admin/services/veo_video_generation_service.dart:127:      status: AiIntroVideoStatus.generated,
+lib/admin/services/veo_video_generation_service.dart:128:      generatedAt: now,
+
+===== 9. DOSSIERS BACKEND / FUNCTIONS =====
+❌ Dossier absent : functions
+❌ Dossier absent : backend
+❌ Dossier absent : server
+❌ Dossier absent : api
+
+===== 10. PACKAGE BACKEND / FUNCTIONS =====
+
+===== 11. VARIABLES ENV DISPONIBLES DANS LE SHELL, SANS AFFICHER LES SECRETS =====
+❌ API_BASE_URL absent
+❌ SUPER_ADMIN_KEY absent
+❌ GOOGLE_CLOUD_PROJECT absent
+❌ VERTEX_AI_LOCATION absent
+❌ VEO_MODEL absent
+❌ GOOGLE_APPLICATION_CREDENTIALS absent
+❌ FIREBASE_ADMIN_PROJECT_ID absent
+❌ FIREBASE_ADMIN_CLIENT_EMAIL absent
+❌ FIREBASE_ADMIN_PRIVATE_KEY absent
+
+===== 12. FIREBASE CONFIG =====
+❌ .firebaserc absent
+
+--- firebase.json ---
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "take30",
+          "appId": "1:803573468710:android:ce9222631b588d1939a0e7",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "take30",
+          "configurations": {
+            "android": "1:803573468710:android:ce9222631b588d1939a0e7",
+            "ios": "1:803573468710:ios:6e4b37c4744f651739a0e7",
+            "web": "1:803573468710:web:3aef887be4785feb39a0e7"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
+
+===== 13. STORAGE RULES =====
+     1	rules_version = '2';
+     2	
+     3	service firebase.storage {
+     4	  match /b/{bucket}/o {
+     5	    function signedIn() { return request.auth != null; }
+     6	    function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
+     7	
+     8	    match /scenes/{userId}/{fileName} {
+     9	      allow read: if true;
+    10	      allow write: if isOwner(userId)
+    11	        && request.resource.size < 300 * 1024 * 1024
+    12	        && request.resource.contentType.matches('video/.*');
+    13	    }
+    14	
+    15	    match /thumbnails/{userId}/{fileName} {
+    16	      allow read: if true;
+    17	      allow write: if isOwner(userId)
+    18	        && request.resource.size < 10 * 1024 * 1024
+    19	        && request.resource.contentType.matches('image/.*');
+    20	    }
+    21	
+    22	    match /avatars/{fileName} {
+    23	      allow read: if true;
+    24	      allow write: if signedIn()
+    25	        && fileName == request.auth.uid + '.jpg'
+    26	        && request.resource.size < 5 * 1024 * 1024
+    27	        && request.resource.contentType.matches('image/.*');
+    28	    }
+    29	
+    30	    match /{allPaths=**} {
+    31	      allow read, write: if false;
+    32	    }
+    33	  }
+    34	}
+
+===== 14. FIRESTORE RULES EXTRAIT VIDEO / VEO / RECORDINGS =====
+22:    function sameSceneOwner() {
+25:    function sceneCriticalFieldsUnchanged() {
+26:      return request.resource.data.veoStatus == resource.data.veoStatus &&
+27:        request.resource.data.veoPrompt == resource.data.veoPrompt &&
+28:        request.resource.data.veoOperationId == resource.data.veoOperationId &&
+29:        request.resource.data.veoError == resource.data.veoError &&
+30:        request.resource.data.videoUrl == resource.data.videoUrl &&
+59:    match /scenes/{sceneId} {
+61:      allow create: if signedIn() && (sameSceneOwner() || isAdmin());
+63:        (signedIn() && resource.data.authorId == request.auth.uid && sceneCriticalFieldsUnchanged());
+
+===== 15. VERDICT AUTOMATIQUE SIMPLE =====
+Appels backend/API/Vertex détectés : 19
+Mocks/fakes/placeholders détectés : 8
+Appels Firebase Storage détectés : 88
+🟠 Il existe des traces de câblage réel. Vérifier les lignes ci-dessus pour confirmer que le service n'est pas mocké.
+
+✅ Rapport généré : audit_reel_veo3_storage_backend_20260501_003814.txt
