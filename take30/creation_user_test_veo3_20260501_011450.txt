@@ -1,0 +1,27 @@
+===== CRÉATION UTILISATEUR TEST FIREBASE + TEST VEO3 =====
+Email test : test.take60.1777598090@take60.app
+
+===== 1. EXTRACTION API KEY =====
+✅ API_KEY trouvée : AIzaSyBM6Wr064fmsyEl...
+
+===== 2. CRÉATION UTILISATEUR TEST VIA FIREBASE AUTH REST =====
+{
+    "kind": "identitytoolkit#SignupNewUserResponse",
+    "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJiMzZhYjQxYTczOTJlMTRlNjM1ZmRlM2M2YWYwOWZlYmFhM2YyZDYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdGFrZTMwIiwiYXVkIjoidGFrZTMwIiwiYXV0aF90aW1lIjoxNzc3NTk4MDkxLCJ1c2VyX2lkIjoidEJwVmF5Nld1SmNYQVF6UmhYZXd2TGF5WWRDMyIsInN1YiI6InRCcFZheTZXdUpjWEFRelJoWGV3dkxheVlkQzMiLCJpYXQiOjE3Nzc1OTgwOTEsImV4cCI6MTc3NzYwMTY5MSwiZW1haWwiOiJ0ZXN0LnRha2U2MC4xNzc3NTk4MDkwQHRha2U2MC5hcHAiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidGVzdC50YWtlNjAuMTc3NzU5ODA5MEB0YWtlNjAuYXBwIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.pDDCTBrrOjIB8VSCWNeV6VETjG5Q1kKf2K9Mh08Q4zqr3rfiGZ1VASV6uUfyCl1zpL4TMTUYR4e8HMaI0hOf5zM3VFAkrKxIhzdmnZiwEWTxXl5d7W3vBkQtTX0Jf0GbpLIdAIombfHFAmmB2SZY07yaWqCc_WNWKZzXtP7QfVJdfxZd3xvFEv6wC3K05CCZcYbX6jtFvsOEAgO-g7Qjvcs3m83X1s-AaMnNArkrpZnhC90ANxjbL5T7zhwFV7_LRyg3of5wijWGxdrBCmNlzhZFaWR5CFK7zIZ1jsD7Qux89j4jVLQ39Gae2_XP-Ltm9NeB8NVHwk5Vzf8kD_z41w",
+    "email": "test.take60.1777598090@take60.app",
+    "refreshToken": "AMf-vBzYrx1XmHU_b4rSCzR-66i3-j3pNACCaocuQn02APho9Q7ohQHGgWTYkX1fRLQydGiXrbl3DwQGdED2XFH4omKkluXUq34yLegynjnO0iRF1q49m4V0nhVIwVL3lCyj7_OkYBoKuN8QRTX15bzV9BgzzHVOj6XLX-2_TBbrO3nE_heruZ4k77f2PRcjlypNBziDx-CY_5d-zi8lN78VSTUiJXID0Q",
+    "expiresIn": "3600",
+    "localId": "tBpVay6WuJcXAQzRhXewvLayYdC3"
+}
+
+✅ Utilisateur test créé
+UID : tBpVay6WuJcXAQzRhXewvLayYdC3
+Email : test.take60.1777598090@take60.app
+Mot de passe temporaire : Take60Test!2026
+
+===== 3. TEST AUTHENTIFIÉ startVeoSceneGeneration =====
+Host not in allowlist
+HTTP_CODE:403
+
+❌ Aucun jobId retourné.
+Donc l'utilisateur est créé, mais VEO3 ne démarre pas encore correctement.
