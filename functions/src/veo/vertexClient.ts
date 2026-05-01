@@ -165,14 +165,18 @@ async function callVertexJson(
   init: { method: string; body?: string },
   apiKey: string
 ): Promise<Record<string, any>> {
-  const token = await getAccessToken();
+  // Vertex AI refuses requests that combine an API key with a Bearer token.
+  // Use the API key alone when provided; fall back to ADC Bearer token otherwise.
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) {
+    headers["x-goog-api-key"] = apiKey;
+  } else {
+    headers["Authorization"] = `Bearer ${await getAccessToken()}`;
+  }
+
   const response = await fetch(url, {
     method: init.method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
+    headers,
     body: init.body,
   });
 

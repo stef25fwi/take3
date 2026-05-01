@@ -1,6 +1,7 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/v2";
 
 export const VEO_API_KEY = defineSecret("VEO_API_KEY");
 
@@ -74,10 +75,16 @@ export async function isAdminUid(uid: string): Promise<boolean> {
     db().doc(`admins/${uid}`).get(),
     db().doc(`users/${uid}`).get(),
   ]);
+  const userData = userSnap.data() as Record<string, unknown> | undefined;
+  logger.info("isAdminUid", {
+    uid,
+    adminExists: adminSnap.exists,
+    userIsAdmin: userData?.isAdmin,
+    userRole: userData?.role,
+  });
   if (adminSnap.exists) {
     return true;
   }
-  const userData = userSnap.data() as Record<string, unknown> | undefined;
   return userData?.isAdmin === true || userData?.role === "admin";
 }
 

@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 /**
  * Take30 — Cloud Functions (v2)
  *
@@ -415,6 +415,80 @@ export const computeLeaderboard = onSchedule("every 60 minutes", async () => {
 
 export { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
 export { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)
+//   GET /veoStatus?token=<DIAG_TOKEN>
+// ═══════════════════════════════════════════════════════════════════════════
+import { getVertexVeoConfig, VEO_API_KEY } from "./veo/shared";
+
+export const veoStatus = onRequest(
+  { secrets: [VEO_API_KEY], cors: true, invoker: "public", region: "europe-west1" },
+  async (req, res) => {
+    const DIAG_TOKEN = process.env.DIAG_TOKEN ?? "veo3-diag-2026";
+    if (req.query["token"] !== DIAG_TOKEN) {
+      res.status(401).json({ error: "Token invalide." });
+      return;
+    }
+    const config = getVertexVeoConfig();
+    const apiKey = (() => {
+      try { return VEO_API_KEY.value() ?? ""; } catch { return ""; }
+    })();
+    const apiKeyPresent = Boolean(apiKey);
+
+    // Live probe: GET the model resource to verify project access
+    let modelProbe: Record<string, unknown> = { skipped: true };
+    if (!config.useMock && config.projectId && config.location && config.modelId) {
+      const modelUrl = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}`;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (apiKey) {
+        headers["x-goog-api-key"] = apiKey;
+      } else {
+        try {
+          const tokenRes = await fetch(
+            "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+            { headers: { "Metadata-Flavor": "Google" } }
+          );
+          if (tokenRes.ok) {
+            const t = (await tokenRes.json()) as { access_token?: string };
+            if (t.access_token) headers["Authorization"] = `Bearer ${t.access_token}`;
+          }
+        } catch { /* no ADC */ }
+      }
+      try {
+        const probeRes = await fetch(modelUrl, { method: "GET", headers });
+        const rawText = await probeRes.text();
+        let body: unknown;
+        try { body = JSON.parse(rawText); } catch { body = rawText; }
+        modelProbe = {
+          httpStatus: probeRes.status,
+          ok: probeRes.ok,
+          url: modelUrl,
+          body,
+        };
+      } catch (err: unknown) {
+        modelProbe = { error: String(err), url: modelUrl };
+      }
+    }
+
+    res.json({
+      ok: true,
+      projectId: config.projectId,
+      location: config.location || null,
+      modelId: config.modelId || null,
+      outputBucket: config.outputBucket,
+      useMock: config.useMock,
+      veoApiKeyPresent: apiKeyPresent,
+      missingVars: [
+        !config.projectId && "GOOGLE_CLOUD_PROJECT",
+        !config.location && "VERTEX_LOCATION",
+        !config.modelId && "VEO_MODEL_ID",
+        !apiKeyPresent && "VEO_API_KEY (secret)",
+      ].filter(Boolean),
+      modelProbe,
+    });
+  }
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // renderTake60GuidedScene — real FFmpeg pipeline lives in ./take60.

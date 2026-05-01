@@ -5,12 +5,113 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, visibleForTesting;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/models.dart';
 import 'firebase/storage_service.dart';
+
+class Take60GuidedSceneException implements Exception {
+  const Take60GuidedSceneException({
+    required this.code,
+    required this.message,
+  });
+
+  final String code;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+const _debugMockAiVideoUrl =
+    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+
+final _privateIpv4Pattern = RegExp(
+  r'^(10\.|127\.|0\.0\.0\.0|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)',
+);
+
+@visibleForTesting
+bool isTake60RenderableRemoteVideoUrl(
+  String? rawUrl, {
+  bool allowDebugMock = false,
+}) {
+  final url = rawUrl?.trim() ?? '';
+  if (url.isEmpty) {
+    return false;
+  }
+  if (allowDebugMock && url == _debugMockAiVideoUrl) {
+    return true;
+  }
+  if (url == _debugMockAiVideoUrl ||
+      url.startsWith('assets/') ||
+      url.startsWith('/') ||
+      url.startsWith('file:') ||
+      url.startsWith('content:') ||
+      url.startsWith('blob:') ||
+      url.startsWith('data:')) {
+    return false;
+  }
+
+  final uri = Uri.tryParse(url);
+  if (uri == null ||
+      uri.host.trim().isEmpty ||
+      (!uri.isScheme('http') && !uri.isScheme('https'))) {
+    return false;
+  }
+
+  final host = uri.host.toLowerCase();
+  if (host == 'localhost' || _privateIpv4Pattern.hasMatch(host)) {
+    return false;
+  }
+  return true;
+}
+
+@visibleForTesting
+void validateTake60RenderRequest({
+  required SceneModel scene,
+  required List<Take60SceneMarker> markers,
+  required List<Take60UserRecordingDraft> recordings,
+  bool allowDebugMockAi = false,
+}) {
+  final recordingsByMarker = <String, Take60UserRecordingDraft>{
+    for (final recording in recordings) recording.markerId: recording,
+  };
+
+  for (final marker in markers) {
+    if (marker.requiresUserRecording) {
+      final recording = recordingsByMarker[marker.id];
+      if (recording == null) {
+        throw Take60GuidedSceneException(
+          code: 'missing-user-segment',
+          message:
+              'Le plan utilisateur ${marker.label} doit être enregistré avant le rendu final.',
+        );
+      }
+      if (!isTake60RenderableRemoteVideoUrl(recording.uploadedVideoUrl)) {
+        throw Take60GuidedSceneException(
+          code: 'segment-upload-required',
+          message:
+              'Le plan utilisateur ${marker.label} doit être téléversé sur Storage avant le rendu final.',
+        );
+      }
+      continue;
+    }
+
+    final aiVideoUrl = (marker.videoUrl ?? scene.videoUrl)?.trim();
+    if (!isTake60RenderableRemoteVideoUrl(
+      aiVideoUrl,
+      allowDebugMock: allowDebugMockAi,
+    )) {
+      throw Take60GuidedSceneException(
+        code: 'invalid-ai-segment',
+        message:
+            'Le segment IA ${marker.label} n’a pas d’URL vidéo distante exploitable pour le rendu final.',
+      );
+    }
+  }
+}
 
 class Take60GuidedSceneService {
   Take60GuidedSceneService._internal()
@@ -28,9 +129,6 @@ class Take60GuidedSceneService {
   final StorageService _storage;
 
   static const _uuid = Uuid();
-  static const _mockAiVideoUrl =
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
-  static const _mockThumbnailUrl = 'assets/scenes/scene_interrogatoire.svg';
 
   String get currentUserId => _auth.currentUser?.uid ?? 'guest';
 
@@ -54,10 +152,13 @@ class Take60GuidedSceneService {
         return guidedScenes;
       }
     } catch (_) {
-      // Fallback handled below.
+      if (kDebugMode) {
+        return fallbackScenes(author: fallbackAuthor);
+      }
+      return const [];
     }
 
-    return fallbackScenes(author: fallbackAuthor);
+    return kDebugMode ? fallbackScenes(author: fallbackAuthor) : const [];
   }
 
   List<Take60SceneMarker> buildTimeline(SceneModel scene) {
@@ -118,7 +219,7 @@ class Take60GuidedSceneService {
               ? null
               : (scene.videoUrl?.isNotEmpty == true
                   ? scene.videoUrl
-                  : _mockAiVideoUrl),
+                : _resolveAiVideoUrl(scene.videoUrl)),
           cueText: requiresUserRecording
               ? 'Joue ta réplique maintenant.'
               : 'Regarde la scène IA.',
@@ -229,6 +330,11 @@ class Take60GuidedSceneService {
     required List<Take60UserRecordingDraft> recordings,
   }) async {
     final markers = buildTimeline(scene);
+    validateTake60RenderRequest(
+      scene: scene,
+      markers: markers,
+      recordings: recordings,
+    );
     final payload = {
       'sceneId': scene.id,
       'userId': currentUserId,
@@ -238,7 +344,7 @@ class Take60GuidedSceneService {
             (marker) => {
               'markerId': marker.id,
               'type': marker.type.value,
-              'videoUrl': marker.videoUrl ?? scene.videoUrl,
+              'videoUrl': (marker.videoUrl ?? scene.videoUrl)?.trim(),
               'durationSeconds': marker.durationSeconds,
               'order': marker.order,
             },
@@ -249,7 +355,7 @@ class Take60GuidedSceneService {
             (recording) => {
               'markerId': recording.markerId,
               'type': 'user_plan',
-              'videoUrl': recording.uploadedVideoUrl ?? recording.localTempPath,
+              'videoUrl': recording.uploadedVideoUrl,
               'durationSeconds': recording.durationSeconds,
             },
           )
@@ -274,10 +380,16 @@ class Take60GuidedSceneService {
       return Take60RenderResult.fromMap(
         Map<String, dynamic>.from(result.data as Map),
       );
-    } on FirebaseFunctionsException {
-      return _buildLocalRender(scene: scene, recordings: recordings, markers: markers);
+    } on FirebaseFunctionsException catch (error) {
+      throw Take60GuidedSceneException(
+        code: error.code,
+        message: error.message ?? 'Le rendu final Take60 a échoué côté backend.',
+      );
     } catch (_) {
-      return _buildLocalRender(scene: scene, recordings: recordings, markers: markers);
+      throw const Take60GuidedSceneException(
+        code: 'unknown',
+        message: 'Le rendu final Take60 a échoué pour une raison inconnue.',
+      );
     }
   }
 
@@ -338,7 +450,7 @@ class Take60GuidedSceneService {
             'Regarde la caméra comme si la policière était devant toi. Garde une attitude nerveuse.',
         dialogueText:
             'Non, j’ai rien fait moi.\nJ’étais pressé, c’est tout.\nD’accord… j’ai compris.',
-        videoUrl: _mockAiVideoUrl,
+        videoUrl: _debugMockAiVideoUrl,
         author: author,
         createdAt: DateTime.now(),
         tags: const ['Policier', 'Dialogue', 'Intermédiaire'],
@@ -357,7 +469,7 @@ class Take60GuidedSceneService {
             dialogue: 'Vous savez pourquoi je vous ai arrêté ?',
             cameraPlan: 'medium_shot',
             label: 'Plan IA 1 / 6',
-            videoUrl: _mockAiVideoUrl,
+            videoUrl: _debugMockAiVideoUrl,
             cueText: 'Prépare-toi, ton passage arrive après cette vidéo.',
           ),
           Take60SceneMarker(
@@ -386,7 +498,7 @@ class Take60GuidedSceneService {
             dialogue: 'Vous venez de griller un feu rouge devant une école.',
             cameraPlan: 'reaction_shot',
             label: 'Plan IA 2 / 6',
-            videoUrl: _mockAiVideoUrl,
+            videoUrl: _debugMockAiVideoUrl,
             cueText: 'Regarde la scène IA.',
           ),
           Take60SceneMarker(
@@ -416,7 +528,7 @@ class Take60GuidedSceneService {
                 'Être pressé ne justifie pas de mettre des enfants en danger.',
             cameraPlan: 'close_up',
             label: 'Plan IA 3 / 6',
-            videoUrl: _mockAiVideoUrl,
+            videoUrl: _debugMockAiVideoUrl,
             cueText: 'Regarde la scène IA.',
           ),
           Take60SceneMarker(
@@ -453,7 +565,7 @@ class Take60GuidedSceneService {
             'Laisse le doute te traverser avant de reprendre le contrôle.',
         dialogueText:
             'Je croyais vraiment que c’était pour moi.\nVous auriez pu me prévenir plus tôt.\nJe vais quand même finir cette scène.',
-        videoUrl: _mockAiVideoUrl,
+        videoUrl: _debugMockAiVideoUrl,
         author: author,
         createdAt: DateTime.now(),
         tags: const ['Drame', 'Audition', 'Intense'],
@@ -477,7 +589,7 @@ class Take60GuidedSceneService {
             'Reste proche de la caméra, comme si tu cherchais enfin le courage.',
         dialogueText:
             'Je ne savais pas quand te le dire.\nChaque fois que tu souris, je perds mes mots.\nAlors je vais juste te le dire maintenant.',
-        videoUrl: _mockAiVideoUrl,
+        videoUrl: _debugMockAiVideoUrl,
         author: author,
         createdAt: DateTime.now(),
         tags: const ['Romance', 'Face caméra', 'Facile'],
@@ -486,63 +598,16 @@ class Take60GuidedSceneService {
     ];
   }
 
-  Take60RenderResult _buildLocalRender({
-    required SceneModel scene,
-    required List<Take60UserRecordingDraft> recordings,
-    required List<Take60SceneMarker> markers,
-  }) {
-    final segments = <Take60PlaybackSegment>[];
-    var totalDuration = 0;
-
-    for (final marker in markers) {
-      final recording = recordings.where((item) => item.markerId == marker.id).fold<
-          Take60UserRecordingDraft?>(null, (previous, current) => current);
-      final sourceUrl = marker.requiresUserRecording
-          ? (recording?.uploadedVideoUrl?.isNotEmpty == true
-              ? recording!.uploadedVideoUrl!
-              : recording?.localTempPath ?? '')
-          : (marker.videoUrl?.isNotEmpty == true
-              ? marker.videoUrl!
-              : scene.videoUrl?.isNotEmpty == true
-                  ? scene.videoUrl!
-                  : _mockAiVideoUrl);
-
-      if (sourceUrl.isEmpty) {
-        continue;
-      }
-
-      final audioMode = marker.requiresUserRecording
-          ? scene.audioRules.hasGlobalAiAmbiance &&
-                  scene.audioRules.keepAiAmbianceDuringUserPlans
-              ? 'user_plus_ambiance'
-              : 'user_only'
-          : 'ai_only';
-
-      segments.add(
-        Take60PlaybackSegment(
-          markerId: marker.id,
-          label: marker.label,
-          videoUrl: sourceUrl,
-          durationSeconds: marker.durationSeconds,
-          source: marker.source,
-          audioMode: audioMode,
-        ),
-      );
-      totalDuration += marker.durationSeconds;
-    }
-
-    final boundedDuration = totalDuration.clamp(0, scene.durationSeconds);
-    return Take60RenderResult(
-      finalVideoUrl: segments.isEmpty ? '' : segments.first.videoUrl,
-      thumbnailUrl: scene.thumbnailUrl.isEmpty ? _mockThumbnailUrl : scene.thumbnailUrl,
-      durationSeconds: boundedDuration,
-      renderStatus: 'preview_ready',
-      segments: segments,
-    );
-  }
-
   String _draftKey(String sceneId) =>
       'take60_guided_draft_${currentUserId}_$sceneId';
+
+  String? _resolveAiVideoUrl(String? sceneVideoUrl) {
+    final trimmed = sceneVideoUrl?.trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+    return kDebugMode ? _debugMockAiVideoUrl : null;
+  }
 
   List<String> _extractDialogueLines(String rawDialogue) {
     final normalized = rawDialogue
