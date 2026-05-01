@@ -81,18 +81,20 @@ class MainShell extends ConsumerWidget {
                     behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Transform.translate(
-                          offset: const Offset(0, -12),
-                          child: SizedBox(
-                            width: 64,
-                            height: 64,
+                        SizedBox(
+                          width: 64,
+                          height: 58,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 6),
                             child: Image.asset(
-                                '../take 30 images IA/clapback.png',
+                              '../take 30 images IA/clapback.png',
                               fit: BoxFit.contain,
                             ),
                           ),
                         ),
+                        const SizedBox(height: 1),
                         Text(
                           'Record',
                           style: GoogleFonts.dmSans(
@@ -157,7 +159,7 @@ class _Tab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 22, color: color),
+            Icon(icon, size: 24, color: color),
             const SizedBox(height: 3),
             Text(
               label,
