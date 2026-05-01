@@ -84,8 +84,8 @@ class MainShell extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         SizedBox(
-                          width: 64,
-                          height: 58,
+                          width: 68,
+                          height: 60,
                           child: Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Image.asset(

@@ -197,7 +197,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) {
       return;
     }
-    context.go(AppRouter.auth);
+    context.go(AppRouter.onboarding);
   }
 
   @override

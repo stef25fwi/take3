@@ -266,29 +266,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: authState.isLoading
-                    ? null
-                    : () => context.go('${AppRouter.auth}?tab=login&mode=admin&redirect=${Uri.encodeComponent(AppRouter.admin)}'),
-                child: Text(
-                  'Accès admin →',
-                  style: GoogleFonts.dmSans(
-                    color: AppColors.yellow,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.go('/onboarding'),
-                child: Text(
-                  '← Retour',
-                  style: GoogleFonts.dmSans(
-                    color: AppThemeTokens.secondaryText(context),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
               const SizedBox(height: 20),
               ],
             ),

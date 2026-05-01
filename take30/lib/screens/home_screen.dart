@@ -10,6 +10,7 @@ import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/take30_logo.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -170,29 +171,7 @@ class _HomeHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Accueil',
-              style: GoogleFonts.dmSans(
-                fontSize: 25,
-                fontWeight: FontWeight.w700,
-                color: AppThemeTokens.primaryText(context),
-                letterSpacing: -0.55,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Ton espace premium de création',
-              style: GoogleFonts.dmSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
-                color: AppThemeTokens.secondaryText(context),
-              ),
-            ),
-          ],
-        ),
+        const Take30Logo(height: 23),
         Row(
           children: [
             if (canOpenAdmin) ...[

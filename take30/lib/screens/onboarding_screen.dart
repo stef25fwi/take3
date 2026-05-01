@@ -116,17 +116,6 @@ class OnboardingScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
-              TextButton(
-                onPressed: () => context.go('${AppRouter.auth}?tab=login'),
-                child: Text(
-                  'Se connecter',
-                  style: T30Text.bodyMedium.copyWith(
-                    color: AppThemeTokens.secondaryText(context),
-                    fontSize: 15,
-                  ),
-                ),
-              ),
               ],
             ),
           ),
