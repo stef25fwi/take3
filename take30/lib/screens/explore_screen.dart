@@ -2303,6 +2303,13 @@ class _ExplorerSceneCardV2 extends StatelessWidget {
           color: palette.searchBackground,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: palette.searchBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
