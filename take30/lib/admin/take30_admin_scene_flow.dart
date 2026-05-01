@@ -10,6 +10,7 @@ import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../models/veo_generation_job.dart';
+import '../services/location_region_service.dart';
 import '../services/veo_scene_generation_service.dart';
 import 'models/ai_generated_video.dart';
 import 'services/veo_video_generation_service.dart';
@@ -54,6 +55,139 @@ String _formatAdminDate(DateTime? value) {
     return '-';
   }
   return DateFormat('dd/MM/yyyy • HH:mm').format(value);
+}
+
+class _SceneGeoMetadata {
+  const _SceneGeoMetadata({
+    required this.countryCode,
+    required this.countryName,
+    required this.regionCode,
+    required this.regionName,
+  });
+
+  final String countryCode;
+  final String countryName;
+  final String regionCode;
+  final String regionName;
+}
+
+_SceneGeoMetadata _deriveSceneGeoMetadata({
+  String? countryCode,
+  String? countryName,
+  String? regionCode,
+  String? regionName,
+  String location = '',
+  String whereAreWe = '',
+}) {
+  final explicitCountryCode = (countryCode ?? '').trim();
+  final explicitRegionName = (regionName ?? '').trim();
+  if (explicitCountryCode.isNotEmpty || explicitRegionName.isNotEmpty) {
+    final resolvedCountryCode = explicitCountryCode.isEmpty
+        ? 'GLOBAL'
+        : _normalizeSceneCountryCode(explicitCountryCode);
+    final resolvedCountryName = (countryName ?? '').trim().isEmpty
+        ? (resolvedCountryCode == 'FR' ? 'France' : 'Global')
+        : countryName!.trim();
+    final resolvedRegionName = explicitRegionName.isEmpty
+        ? ((regionCode ?? '').trim().toLowerCase() == 'global' ? 'Global' : '')
+        : explicitRegionName;
+    final resolvedRegionCode = (regionCode ?? '').trim().isEmpty
+        ? (resolvedRegionName.isEmpty
+            ? 'global'
+            : normalizeRegionCode(resolvedCountryCode, resolvedRegionName))
+        : _normalizeSceneRegionCode(
+            regionCode!,
+            resolvedCountryCode,
+            resolvedRegionName,
+          );
+    return _SceneGeoMetadata(
+      countryCode: resolvedCountryCode,
+      countryName: resolvedCountryName,
+      regionCode: resolvedRegionCode,
+      regionName: resolvedRegionName.isEmpty ? 'Global' : resolvedRegionName,
+    );
+  }
+
+  final haystack = '${location.toLowerCase()} ${whereAreWe.toLowerCase()}';
+  const frenchRegions = <String, String>{
+    'guadeloupe': 'Guadeloupe',
+    'martinique': 'Martinique',
+    'guyane': 'Guyane',
+    'la réunion': 'La Réunion',
+    'la reunion': 'La Réunion',
+    'mayotte': 'Mayotte',
+    'île-de-france': 'Île-de-France',
+    'ile-de-france': 'Île-de-France',
+    'île de france': 'Île-de-France',
+    'ile de france': 'Île-de-France',
+    'nouvelle-aquitaine': 'Nouvelle-Aquitaine',
+    'occitanie': 'Occitanie',
+    'provence-alpes-côte d’azur': 'Provence-Alpes-Côte d’Azur',
+    'provence-alpes-cote d’azur': 'Provence-Alpes-Côte d’Azur',
+    'provence alpes cote d azur': 'Provence-Alpes-Côte d’Azur',
+    'auvergne-rhône-alpes': 'Auvergne-Rhône-Alpes',
+    'auvergne-rhone-alpes': 'Auvergne-Rhône-Alpes',
+    'bretagne': 'Bretagne',
+    'normandie': 'Normandie',
+    'hauts-de-france': 'Hauts-de-France',
+    'grand est': 'Grand Est',
+    'pays de la loire': 'Pays de la Loire',
+    'centre-val de loire': 'Centre-Val de Loire',
+    'bourgogne-franche-comté': 'Bourgogne-Franche-Comté',
+    'bourgogne-franche-comte': 'Bourgogne-Franche-Comté',
+    'corse': 'Corse',
+  };
+
+  for (final entry in frenchRegions.entries) {
+    if (haystack.contains(entry.key)) {
+      return _SceneGeoMetadata(
+        countryCode: 'FR',
+        countryName: 'France',
+        regionCode: normalizeRegionCode('FR', entry.value),
+        regionName: entry.value,
+      );
+    }
+  }
+
+  return const _SceneGeoMetadata(
+    countryCode: 'GLOBAL',
+    countryName: 'Global',
+    regionCode: 'global',
+    regionName: 'Global',
+  );
+}
+
+String _normalizeSceneCountryCode(String value) {
+  switch (value.trim().toUpperCase()) {
+    case 'GP':
+    case 'MQ':
+    case 'GF':
+    case 'RE':
+    case 'YT':
+      return 'FR';
+    case '':
+      return 'GLOBAL';
+    default:
+      return value.trim().toUpperCase();
+  }
+}
+
+String _normalizeSceneRegionCode(
+  String raw,
+  String countryCode,
+  String regionName,
+) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return regionName.isEmpty ? 'global' : normalizeRegionCode(countryCode, regionName);
+  }
+  if (trimmed.toLowerCase() == 'global') {
+    return 'global';
+  }
+  if (trimmed.contains('_')) {
+    return trimmed.toLowerCase();
+  }
+  return normalizeRegionCode(countryCode, regionName.isEmpty ? trimmed : regionName);
 }
 
 class AdminSession {
@@ -478,6 +612,10 @@ class SceneFormData {
   final String sceneNumber;
   final String shootDate;
   final String location;
+  final String countryCode;
+  final String countryName;
+  final String regionCode;
+  final String regionName;
   final String director;
   final String targetDuration;
 
@@ -587,6 +725,10 @@ class SceneFormData {
     required this.sceneNumber,
     required this.shootDate,
     required this.location,
+    this.countryCode = 'GLOBAL',
+    this.countryName = 'Global',
+    this.regionCode = 'global',
+    this.regionName = 'Global',
     required this.director,
     required this.targetDuration,
     required this.characterName,
@@ -702,6 +844,10 @@ class SceneFormData {
       sceneNumber: sceneNumber,
       shootDate: shootDate,
       location: location,
+      countryCode: countryCode,
+      countryName: countryName,
+      regionCode: regionCode,
+      regionName: regionName,
       director: director,
       targetDuration: targetDuration,
       characterName: characterName,
@@ -844,6 +990,10 @@ class SceneFormData {
       'sceneNumber': sceneNumber,
       'shootDate': shootDate,
       'location': location,
+      'countryCode': countryCode,
+      'countryName': countryName,
+      'regionCode': regionCode,
+      'regionName': regionName,
       'director': director,
       'targetDuration': targetDuration,
       'dominantEmotion': dominantEmotion,
@@ -915,6 +1065,14 @@ class SceneFormData {
     final aiIntroVideo = data['aiIntroVideo'] as Map<String, dynamic>?;
     final raccord = data['raccord'] as Map<String, dynamic>? ?? const {};
     final publication = data['publication'] as Map<String, dynamic>? ?? const {};
+    final geo = _deriveSceneGeoMetadata(
+      countryCode: data['countryCode'] as String?,
+      countryName: data['countryName'] as String?,
+      regionCode: data['regionCode'] as String?,
+      regionName: data['regionName'] as String?,
+      location: data['location'] as String? ?? '',
+      whereAreWe: data['whereAreWe'] as String? ?? '',
+    );
 
     return SceneFormData(
       id: id,
@@ -927,6 +1085,10 @@ class SceneFormData {
       sceneNumber: data['sceneNumber'] as String? ?? '',
       shootDate: data['shootDate'] as String? ?? '',
       location: data['location'] as String? ?? '',
+      countryCode: geo.countryCode,
+      countryName: geo.countryName,
+      regionCode: geo.regionCode,
+      regionName: geo.regionName,
       director: data['director'] as String? ?? '',
       targetDuration: data['targetDuration'] as String? ?? '',
       characterName: actorSheet['characterName'] as String? ?? '',
@@ -2199,6 +2361,14 @@ class _AddScenePageState extends State<AddScenePage> {
           prompt: veoPromptCtrl.text.trim(),
           updatedAt: now,
         );
+    final geo = _deriveSceneGeoMetadata(
+      countryCode: widget.initialData?.countryCode,
+      countryName: widget.initialData?.countryName,
+      regionCode: widget.initialData?.regionCode,
+      regionName: widget.initialData?.regionName,
+      location: locationCtrl.text.trim(),
+      whereAreWe: whereAreWeCtrl.text.trim(),
+    );
 
     return SceneFormData(
       id: _sceneDraftId,
@@ -2211,6 +2381,10 @@ class _AddScenePageState extends State<AddScenePage> {
       sceneNumber: sceneNumberCtrl.text.trim(),
       shootDate: shootDateCtrl.text.trim(),
       location: locationCtrl.text.trim(),
+      countryCode: geo.countryCode,
+      countryName: geo.countryName,
+      regionCode: geo.regionCode,
+      regionName: geo.regionName,
       director: directorCtrl.text.trim(),
       targetDuration: targetDurationCtrl.text.trim(),
       characterName: characterNameCtrl.text.trim(),

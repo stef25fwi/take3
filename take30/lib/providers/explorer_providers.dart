@@ -16,6 +16,13 @@ final locationRegionServiceProvider = Provider<LocationRegionService>((ref) {
   return LocationRegionService();
 });
 
+final locationResolutionRefreshTokenProvider = StateProvider<int>((ref) => 0);
+
+final resolvedLocationProvider = FutureProvider<ResolvedLocationRegion>((ref) async {
+  ref.watch(locationResolutionRefreshTokenProvider);
+  return ref.read(locationRegionServiceProvider).resolveLocationRegion();
+});
+
 // ─── Localisation utilisateur ────────────────────────────────────────────────
 
 class ExplorerLocationState {
@@ -39,45 +46,88 @@ class ExplorerLocationState {
 }
 
 class ExplorerLocationNotifier extends StateNotifier<ExplorerLocationState> {
-  ExplorerLocationNotifier(this._service)
-      : super(const ExplorerLocationState(location: null, isResolving: true)) {
-    _bootstrap();
-  }
+  ExplorerLocationNotifier(this._ref, this._service)
+      : super(const ExplorerLocationState(location: null, isResolving: true));
 
+  final Ref _ref;
   final LocationRegionService _service;
 
-  Future<void> _bootstrap() async {
-    final resolved = await _service.resolve();
-    if (!mounted) return;
-    state = ExplorerLocationState(location: resolved, isResolving: false);
+  void syncFromResolved(AsyncValue<ResolvedLocationRegion> next) {
+    next.when(
+      data: (resolved) {
+        Future.microtask(() {
+          if (!mounted) return;
+          state = ExplorerLocationState(location: resolved, isResolving: false);
+        });
+      },
+      loading: () {
+        Future.microtask(() {
+          if (!mounted) return;
+          state = state.copyWith(isResolving: true);
+        });
+      },
+      error: (_, __) {
+        Future.microtask(() {
+          if (!mounted) return;
+          state = state.copyWith(isResolving: false);
+        });
+      },
+    );
   }
 
-  Future<void> setManual({
+  Future<ResolvedLocationRegion> setManual({
     required CountryOption country,
     RegionOption? region,
   }) async {
-    final next = UserLocation(
+    await _service.saveManualLocation(
       countryCode: country.code,
       countryName: country.label,
-      regionCode: region?.code,
-      regionName: region?.label,
-      source: LocationSource.manual,
+      regionCode: region?.code ?? '',
+      regionName: region?.label ?? '',
     );
+    final next = await _service.getSavedManualLocation() ??
+        ResolvedLocationRegion(
+          countryCode: country.code,
+          countryName: country.label,
+          regionCode: region?.code ?? '',
+          regionName: region?.label ?? '',
+          isAutoDetected: false,
+          isApproximate: false,
+          source: LocationResolutionSource.savedManual,
+          resolvedAt: DateTime.now(),
+        );
     state = ExplorerLocationState(location: next, isResolving: false);
-    await _service.save(next);
+    _ref.read(locationResolutionRefreshTokenProvider.notifier).state++;
+    return next;
   }
 
-  Future<void> redetect() async {
+  Future<ResolvedLocationRegion> redetect() async {
     state = state.copyWith(isResolving: true);
-    final auto = _service.detectFromLocale();
+    final auto = await _service.resolveLocationRegion(forceRefresh: true);
     state = ExplorerLocationState(location: auto, isResolving: false);
-    await _service.save(auto);
+    _ref.read(locationResolutionRefreshTokenProvider.notifier).state++;
+    return auto;
   }
 }
 
 final explorerLocationProvider =
     StateNotifierProvider<ExplorerLocationNotifier, ExplorerLocationState>(
-  (ref) => ExplorerLocationNotifier(ref.read(locationRegionServiceProvider)),
+  (ref) {
+    final notifier = ExplorerLocationNotifier(
+      ref,
+      ref.read(locationRegionServiceProvider),
+    );
+    final initialResolved = ref.read(resolvedLocationProvider).valueOrNull;
+    if (initialResolved != null) {
+      notifier.syncFromResolved(AsyncData(initialResolved));
+    }
+    ref.listen<AsyncValue<ResolvedLocationRegion>>(
+      resolvedLocationProvider,
+      (_, next) => notifier.syncFromResolved(next),
+      fireImmediately: true,
+    );
+    return notifier;
+  },
 );
 
 // ─── Filtre ──────────────────────────────────────────────────────────────────
@@ -85,8 +135,54 @@ final explorerLocationProvider =
 class ExplorerFilterNotifier extends StateNotifier<ExplorerFilter> {
   ExplorerFilterNotifier() : super(const ExplorerFilter());
 
-  void setCountry(String? code) => state = state.copyWith(countryCode: code);
-  void setRegion(String? code) => state = state.copyWith(regionCode: code);
+  void setCountry(
+    String? code, {
+    String? name,
+    bool userInitiated = true,
+  }) {
+    final normalizedCountry =
+        (code == null || code.isEmpty) ? null : _canonicalCountryCode(code);
+    final shouldClearRegion = normalizedCountry == null ||
+        normalizedCountry != state.countryCode;
+    state = state.copyWith(
+      countryCode: normalizedCountry,
+      countryName: normalizedCountry == null ? null : (name ?? state.countryName),
+      regionCode: shouldClearRegion ? null : state.regionCode,
+      regionName: shouldClearRegion ? null : state.regionName,
+      locationScope: state.regionCode != null && !shouldClearRegion
+          ? ExplorerLocationScope.region
+          : normalizedCountry != null
+              ? ExplorerLocationScope.country
+              : ExplorerLocationScope.global,
+      hasUserModifiedLocationFilter:
+          userInitiated ? true : state.hasUserModifiedLocationFilter,
+      locationFilterAppliedAutomatically:
+          userInitiated ? false : state.locationFilterAppliedAutomatically,
+    );
+  }
+
+  void setRegion(
+    String? code, {
+    String? name,
+    bool userInitiated = true,
+  }) {
+    final normalizedRegion = (code == null || code.isEmpty)
+        ? null
+        : _canonicalRegionCode(code, regionName: name);
+    state = state.copyWith(
+      regionCode: normalizedRegion,
+      regionName: normalizedRegion == null ? null : (name ?? state.regionName),
+      locationScope: normalizedRegion != null
+          ? ExplorerLocationScope.region
+          : state.countryCode != null
+              ? ExplorerLocationScope.country
+              : ExplorerLocationScope.global,
+      hasUserModifiedLocationFilter:
+          userInitiated ? true : state.hasUserModifiedLocationFilter,
+      locationFilterAppliedAutomatically:
+          userInitiated ? false : state.locationFilterAppliedAutomatically,
+    );
+  }
   void setCategory(String? value) => state = state.copyWith(category: value);
   void setSceneType(String? value) => state = state.copyWith(sceneType: value);
   void setDifficulty(String? value) => state = state.copyWith(difficulty: value);
@@ -96,13 +192,100 @@ class ExplorerFilterNotifier extends StateNotifier<ExplorerFilter> {
       state = state.copyWith(onlyNew: !state.onlyNew, onlyTrending: false);
   void toggleOnlyTrending() =>
       state = state.copyWith(onlyTrending: !state.onlyTrending, onlyNew: false);
+  void applyDetectedLocation({
+    required String countryCode,
+    required String countryName,
+    required String regionCode,
+    required String regionName,
+    bool overrideUserSelection = false,
+  }) {
+    if (!overrideUserSelection && state.hasUserModifiedLocationFilter) {
+      return;
+    }
+    if (countryCode.trim().isEmpty) {
+      return;
+    }
+
+    final normalizedCountry = _canonicalCountryCode(countryCode);
+    final normalizedRegion = regionCode.trim().isEmpty
+        ? ''
+        : _canonicalRegionCode(regionCode, regionName: regionName);
+
+    state = state.copyWith(
+      countryCode: normalizedCountry,
+      countryName: countryName,
+      regionCode: normalizedRegion.isEmpty ? null : normalizedRegion,
+      regionName: regionName.trim().isEmpty ? null : regionName,
+      locationScope: normalizedRegion.isNotEmpty
+          ? ExplorerLocationScope.region
+          : ExplorerLocationScope.country,
+      hasUserModifiedLocationFilter:
+          overrideUserSelection ? false : state.hasUserModifiedLocationFilter,
+      locationFilterAppliedAutomatically: true,
+    );
+  }
+
+  void applyManualLocation({
+    required String countryCode,
+    required String countryName,
+    required String regionCode,
+    required String regionName,
+  }) {
+    final normalizedCountry = _canonicalCountryCode(countryCode);
+    final normalizedRegion = regionCode.trim().isEmpty
+        ? ''
+        : _canonicalRegionCode(regionCode, regionName: regionName);
+    state = state.copyWith(
+      countryCode: normalizedCountry,
+      countryName: countryName,
+      regionCode: normalizedRegion.isEmpty ? null : normalizedRegion,
+      regionName: regionName.trim().isEmpty ? null : regionName,
+      locationScope: normalizedRegion.isNotEmpty
+          ? ExplorerLocationScope.region
+          : ExplorerLocationScope.country,
+      hasUserModifiedLocationFilter: true,
+      locationFilterAppliedAutomatically: false,
+    );
+  }
   void replace(ExplorerFilter next) => state = next;
   void reset() => state = state.cleared();
 }
 
 final explorerFilterProvider =
     StateNotifierProvider<ExplorerFilterNotifier, ExplorerFilter>(
-  (ref) => ExplorerFilterNotifier(),
+  (ref) {
+    final notifier = ExplorerFilterNotifier();
+    final initialResolved = ref.read(resolvedLocationProvider).valueOrNull;
+    if (initialResolved != null &&
+        initialResolved.source !=
+            LocationResolutionSource.fallbackManualRequired) {
+      notifier.applyDetectedLocation(
+        countryCode: initialResolved.countryCode,
+        countryName: initialResolved.countryName,
+        regionCode: initialResolved.regionCode,
+        regionName: initialResolved.regionName,
+      );
+    }
+    ref.listen<AsyncValue<ResolvedLocationRegion>>(
+      resolvedLocationProvider,
+      (_, next) {
+        next.whenData((location) {
+          if (location.source != LocationResolutionSource.fallbackManualRequired) {
+            Future.microtask(() {
+              notifier.applyDetectedLocation(
+                countryCode: location.countryCode,
+                countryName: location.countryName,
+                regionCode: location.regionCode,
+                regionName: location.regionName,
+              );
+            });
+          }
+        });
+      },
+      fireImmediately: true,
+    );
+    return notifier;
+  },
 );
 
 // ─── Catalogue de scènes Explorer (démo) ────────────────────────────────────
@@ -156,6 +339,75 @@ class ExplorerScene {
 
 final _now = DateTime.now();
 
+const _legacyRegionCodes = <String, String>{
+  'IDF': 'ile_de_france',
+  'PACA': 'provence_alpes_cote_dazur',
+  'AURA': 'auvergne_rhone_alpes',
+  'OCC': 'occitanie',
+  'NAQ': 'nouvelle_aquitaine',
+  'HDF': 'hauts_de_france',
+  'GES': 'grand_est',
+  'BFC': 'bourgogne_franche_comte',
+  'BRE': 'bretagne',
+  'NOR': 'normandie',
+  'PDL': 'pays_de_la_loire',
+  'CVL': 'centre_val_de_loire',
+  'COR': 'corse',
+  'BRU': 'bruxelles',
+  'WAL': 'wallonie',
+  'FLA': 'flandre',
+  'GE': 'geneve',
+  'VD': 'vaud',
+  'ZH': 'zurich',
+  'QC': 'quebec',
+  'ON': 'ontario',
+  'BC': 'colombie_britannique',
+  'GP': 'guadeloupe',
+  'MQ': 'martinique',
+  'GF': 'guyane',
+  'RE': 'la_reunion',
+  'YT': 'mayotte',
+};
+
+String _canonicalCountryCode(String code) {
+  final upper = code.trim().toUpperCase();
+  switch (upper) {
+    case 'GP':
+    case 'MQ':
+    case 'GF':
+    case 'RE':
+    case 'YT':
+      return 'FR';
+    case '':
+      return 'GLOBAL';
+    default:
+      return upper;
+  }
+}
+
+String _canonicalRegionCode(String code, {String? regionName}) {
+  final trimmed = code.trim();
+  if (trimmed.isEmpty) {
+    return regionName == null || regionName.trim().isEmpty
+        ? 'global'
+        : normalizeRegionCode('FR', regionName);
+  }
+
+  final legacy = _legacyRegionCodes[trimmed.toUpperCase()];
+  if (legacy != null) {
+    return legacy;
+  }
+
+  if (trimmed.toLowerCase() == 'global') {
+    return 'global';
+  }
+
+  return normalizeRegionCode(
+    'FR',
+    regionName?.isNotEmpty == true ? regionName! : trimmed,
+  );
+}
+
 final publishedAdminScenesProvider = StreamProvider<List<SceneFormData>>((ref) {
   return SceneDraftRepository.watchAll().map(
     (items) => items
@@ -180,10 +432,13 @@ ExplorerScene _mapAdminSceneToExplorer(SceneFormData scene) {
     difficulty: _difficultyForAdminScene(scene),
     durationSeconds: durationSeconds,
     userPlanCount: _countUserPlanMarkers(scene.markersJson),
-    countryCode: 'GLOBAL',
-    countryName: 'Global',
-    regionCode: 'GLOBAL',
-    regionName: 'Global',
+    countryCode: _canonicalCountryCode(scene.countryCode),
+    countryName: scene.countryName.trim().isEmpty ? 'Global' : scene.countryName.trim(),
+    regionCode: _canonicalRegionCode(
+      scene.regionCode,
+      regionName: scene.regionName,
+    ),
+    regionName: scene.regionName.trim().isEmpty ? 'Global' : scene.regionName.trim(),
     thumbnailAsset: _thumbnailAssetForAdminScene(scene),
     publishedAt: publishedAt,
     playCount: 0,
@@ -449,9 +704,9 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
       difficulty: 'Débutant',
       durationSeconds: 60,
       userPlanCount: 1,
-      countryCode: 'GP',
-      countryName: 'Guadeloupe',
-      regionCode: 'GP',
+      countryCode: 'FR',
+      countryName: 'France',
+      regionCode: 'guadeloupe',
       regionName: 'Guadeloupe',
       thumbnailAsset: 'assets/scenes/scene_rupture_telephone.svg',
       publishedAt: _now.subtract(const Duration(hours: 9)),
@@ -471,10 +726,22 @@ final explorerSceneCatalogProvider = Provider<List<ExplorerScene>>((ref) {
 // ─── Filtrage / tri ─────────────────────────────────────────────────────────
 
 bool _matchesFilter(ExplorerScene scene, ExplorerFilter filter) {
-  if (filter.countryCode != null && scene.countryCode != filter.countryCode) {
+  final sceneIsGlobal = _canonicalCountryCode(scene.countryCode) == 'GLOBAL' ||
+      _canonicalRegionCode(scene.regionCode, regionName: scene.regionName) ==
+          'global';
+  if (filter.countryCode != null &&
+      !sceneIsGlobal &&
+      _canonicalCountryCode(scene.countryCode) !=
+          _canonicalCountryCode(filter.countryCode!)) {
     return false;
   }
-  if (filter.regionCode != null && scene.regionCode != filter.regionCode) {
+  if (filter.regionCode != null &&
+      !sceneIsGlobal &&
+      _canonicalRegionCode(scene.regionCode, regionName: scene.regionName) !=
+          _canonicalRegionCode(
+            filter.regionCode!,
+            regionName: filter.regionName,
+          )) {
     return false;
   }
   if (filter.category != null &&
@@ -708,10 +975,10 @@ final _rankingSeedsProvider = Provider<List<_RankingSeed>>((ref) {
       userId: 'u_gp_1',
       displayName: 'Naïa Léon',
       avatarUrl: Take30Assets.avatarIaFemaleLead,
-      regionCode: 'GP',
+      regionCode: 'guadeloupe',
       regionName: 'Guadeloupe',
-      countryCode: 'GP',
-      countryName: 'Guadeloupe',
+      countryCode: 'FR',
+      countryName: 'France',
       totalScore: 76200,
       averageScore: 4.6,
       voteCount: 1820,
@@ -734,9 +1001,15 @@ List<RankingEntry> _rankSeeds(
         displayName: filtered[i].displayName,
         avatarUrl: filtered[i].avatarUrl,
         regionName: filtered[i].regionName,
-        countryName: filtered[i].countryName,
-        regionCode: filtered[i].regionCode,
-        countryCode: filtered[i].countryCode,
+        countryName: _canonicalCountryCode(filtered[i].countryCode) == 'FR' &&
+                filtered[i].regionName == 'Guadeloupe'
+            ? 'France'
+            : filtered[i].countryName,
+        regionCode: _canonicalRegionCode(
+          filtered[i].regionCode,
+          regionName: filtered[i].regionName,
+        ),
+        countryCode: _canonicalCountryCode(filtered[i].countryCode),
         totalScore: filtered[i].totalScore,
         averageScore: filtered[i].averageScore,
         voteCount: filtered[i].voteCount,
@@ -754,8 +1027,11 @@ final regionalRankingProvider =
   final seeds = ref.watch(_rankingSeedsProvider);
   return _rankSeeds(
     seeds,
-    keep: (s) =>
-        s.countryCode == scope.countryCode && s.regionCode == scope.regionCode,
+  keep: (s) =>
+    _canonicalCountryCode(s.countryCode) ==
+      _canonicalCountryCode(scope.countryCode) &&
+    _canonicalRegionCode(s.regionCode, regionName: s.regionName) ==
+      _canonicalRegionCode(scope.regionCode),
     sort: (a, b) {
       final byTotal = b.totalScore.compareTo(a.totalScore);
       if (byTotal != 0) return byTotal;
@@ -772,7 +1048,23 @@ final nationalRankingProvider =
   final seeds = ref.watch(_rankingSeedsProvider);
   return _rankSeeds(
     seeds,
-    keep: (s) => s.countryCode == countryCode,
+    keep: (s) =>
+        _canonicalCountryCode(s.countryCode) == _canonicalCountryCode(countryCode),
+    sort: (a, b) {
+      final byTotal = b.totalScore.compareTo(a.totalScore);
+      if (byTotal != 0) return byTotal;
+      final bySub = b.submissionCount.compareTo(a.submissionCount);
+      if (bySub != 0) return bySub;
+      return b.voteCount.compareTo(a.voteCount);
+    },
+  );
+});
+
+final globalRankingProvider = Provider<List<RankingEntry>>((ref) {
+  final seeds = ref.watch(_rankingSeedsProvider);
+  return _rankSeeds(
+    seeds,
+    keep: (_) => true,
     sort: (a, b) {
       final byTotal = b.totalScore.compareTo(a.totalScore);
       if (byTotal != 0) return byTotal;

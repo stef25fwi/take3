@@ -1,0 +1,111 @@
+============================================================
+AUDIT COMPLET — PAGE ADMIN « AJOUT SCÈNE » TAKE60 / TAKE30
+============================================================
+
+✅ OK — Fichier admin take30_admin_scene_flow.dart présent
+✅ OK — Service VEO présent
+✅ OK — Providers présents
+✅ OK — Explorer provider présent
+✅ OK — Test widget admin présent
+✅ OK — Étape 1 détectée dans la page Ajout scène
+✅ OK — Étape 2 détectée dans la page Ajout scène
+✅ OK — Étape 3 détectée dans la page Ajout scène
+✅ OK — Étape 4 détectée dans la page Ajout scène
+✅ OK — Étape 5 détectée dans la page Ajout scène
+✅ OK — Étape 6 détectée dans la page Ajout scène
+✅ OK — Étape 7 détectée dans la page Ajout scène
+✅ OK — Étape 8 détectée dans la page Ajout scène
+✅ OK — Étape 9 détectée dans la page Ajout scène
+✅ OK — Étape 10 détectée dans la page Ajout scène
+✅ OK — Étape 11 détectée dans la page Ajout scène
+✅ OK — Étape 12 détectée dans la page Ajout scène
+✅ OK — Étape 13 détectée dans la page Ajout scène
+✅ OK — Étape 14 détectée dans la page Ajout scène
+✅ OK — Étape 15 détectée dans la page Ajout scène
+✅ OK — Étape 16 détectée dans la page Ajout scène
+✅ OK — Workflow Brouillon présent
+✅ OK — Workflow En attente de publication présent
+✅ OK — Workflow Publication présent
+✅ OK — Hydratation formulaire _hydrateFromDraft présente
+✅ OK — Sauvegarde / composition SceneFormData présente
+✅ OK — Scène test Interrogatoire police présente
+✅ OK — Chargement rapide scène test présent
+✅ OK — Chargement test remet en brouillon
+✅ OK — Garde admin-only autour des outils test
+✅ OK — Prompt VEO3 affiché en Preview détail
+✅ OK — Service VEO injectable ou lazy
+✅ OK — FirebaseFunctions non forcé au montage widget
+✅ OK — Test admin utilise un faux service VEO
+✅ OK — Timeline guidée affichée en Preview détail
+❌ FAIL — Parsing JSON timeline protégé
+✅ OK — Durée timeline calculée depuis durationSeconds
+✅ OK — Plan caméra affiché
+✅ OK — CueText / indication affiché
+✅ OK — Types user_intro et user_emotion supportés
+✅ OK — Dropdown timeline protégé contre overflow
+✅ OK — Preview détail présente
+✅ OK — Preview affiche chaque plan
+✅ OK — Preview affiche Timeline guidée — 60 secondes
+✅ OK — Message erreur douce si JSON invalide
+✅ OK — Explorer lit les scènes publiées
+✅ OK — Explorer filtre les brouillons / attente
+✅ OK — Mapper admin vers Explorer présent
+✅ OK — Mocks Explorer gardés derrière kDebugMode ou exclus production
+✅ OK — Déduplication Explorer prévue
+✅ OK — Région Global transportée
+✅ OK — Genre Drame / Thriller transporté
+✅ OK — Catégorie Policier transportée
+✅ OK — Badge Nouveau présent
+✅ OK — AuthServiceBase injectable présent
+✅ OK — widget_test override AuthService / provider
+✅ OK — widget_test ne dépend pas de Firebase réel
+✅ OK — Test admin vérifie Prompt VEO3
+✅ OK — Test admin vérifie Timeline guidée
+✅ OK — Test admin vérifie 60 secondes
+✅ OK — Test admin vérifie au moins 3 plans
+✅ OK — Tests workflow SceneFormData / Firestore présents
+
+============================================================
+SCORE AUDIT STATIQUE PAGE AJOUT SCÈNE : 61/62
+============================================================
+⚠️ AUDIT STATIQUE PARTIEL : certains points sont absents ou les noms ont changé.
+   Lire les lignes ❌ FAIL ci-dessus pour corriger ou confirmer manuellement.
+
+Contrôles dynamiques lancés après cet audit :
+- flutter analyze
+- flutter test test/admin_scene_widget_test.dart
+- flutter test test/admin_scene_workflow_test.dart
+- flutter test global
+
+
+===== FLUTTER ANALYZE =====
+Analyzing take30...                                             
+No issues found! (ran in 3.0s)
+
+===== TEST ADMIN AJOUT SCÈNE =====
+00:00 +0: loading /workspaces/take3/take30/test/admin_scene_widget_test.dart
+00:00 +0: step 15 generates then validates intro video and reveals detailed preview
+00:03 +1: All tests passed!
+
+===== TEST WORKFLOW ADMIN =====
+00:00 +0: loading /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+00:00 +0: AiGeneratedVideo serializes and deserializes status and metadata
+00:00 +1: MockVeoVideoGenerationService returns a generated preview with expected metadata
+00:02 +2: SceneFormData stores the admin workflow payload for Firestore
+00:02 +3: All tests passed!
+
+===== TESTS GLOBAUX =====
+00:00 +0: loading /workspaces/take3/take30/test/admin_scene_widget_test.dart
+00:00 +0: /workspaces/take3/take30/test/admin_scene_widget_test.dart: step 15 generates then validates intro video and reveals detailed preview
+00:03 +1: loading /workspaces/take3/take30/test/widget_test.dart
+00:10 +1: /workspaces/take3/take30/test/widget_test.dart: l application affiche Take30
+00:11 +2: loading /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+00:11 +2: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: AiGeneratedVideo serializes and deserializes status and metadata
+00:11 +3: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: MockVeoVideoGenerationService returns a generated preview with expected metadata
+00:13 +4: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: SceneFormData stores the admin workflow payload for Firestore
+00:13 +5: loading /workspaces/take3/take30/test/take60_guided_flow_test.dart
+00:14 +5: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60UserRecordingDraft roundtrips through toMap/fromMap
+00:14 +6: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60UserRecordingDraft copyWith updates uploadedVideoUrl while preserving identity
+00:14 +7: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60GuidedFlowDraft roundtrips with nested recordings
+00:14 +8: /workspaces/take3/take30/test/take60_guided_flow_test.dart: sceneRecordingStatusFromString parses known values and falls back to notStarted
+00:14 +9: All tests passed!

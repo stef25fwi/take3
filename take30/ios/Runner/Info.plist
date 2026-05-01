@@ -39,6 +39,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Take30 a besoin d'accéder à ta caméra pour enregistrer tes performances.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Take60 utilise votre position approximative uniquement pour vous proposer les scènes et classements de votre région. Votre position exacte n’est pas affichée publiquement.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Take30 a besoin du microphone pour enregistrer le son de tes performances.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

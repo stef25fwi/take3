@@ -27,7 +27,7 @@ class ExplorerRankingScreen extends ConsumerWidget {
     final loc = ref.watch(explorerLocationProvider).location;
     final country = loc?.countryCode ?? 'FR';
     final countryName = loc?.countryName ?? 'France';
-    final region = loc?.regionCode ?? 'IDF';
+    final region = loc?.regionCode ?? 'ile_de_france';
     final regionName = loc?.regionName ?? 'Île-de-France';
 
     final entries = scope == ExplorerRankingScope.regional

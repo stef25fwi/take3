@@ -100,4 +100,49 @@ void main() {
       expect(find.textContaining('Vidéo IA'), findsWidgets);
     },
   );
+
+  testWidgets(
+    'preview détail n\'écrase pas l\'écran si la timeline JSON est invalide',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            enableAdminTools: true,
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      await tester.tap(
+        find.text('Charger scène test — Interrogatoire police'),
+      );
+      await tester.pumpAndSettle();
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      state.markersJsonCtrl.text = '{timeline_invalide:';
+      state.setState(() {});
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('16) Prévisualisation de la page détail de scène'),
+        600,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Prompt VEO3'), findsWidgets);
+      expect(
+        find.text('Timeline indisponible ou JSON invalide.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

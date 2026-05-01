@@ -36,6 +36,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     final feedScenes = ref.watch(feedProvider).scenes;
+    final locationState = ref.watch(explorerLocationProvider);
     final palette = _ExplorerPalette.of(context);
     final visiblePopular = _ExplorerMockData.popularScenes
         .map((scene) => scene.withResolvedSceneId(_resolveSceneId(scene, feedScenes)))
@@ -77,9 +78,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       onActionTap: _openFiltersSheet,
                     ),
                     const SizedBox(height: 14),
-                    _RegionBanner(
-                      palette: palette,
+                    ExplorerLocationBanner(
                       onChange: _openLocationSheet,
+                      onRedetect: _redetectLocation,
+                      isDetecting: locationState.isResolving,
                     ),
                     const SizedBox(height: 12),
                     _QuickChipsBar(
@@ -253,6 +255,38 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     context.go(AppRouter.scenePath(sceneId));
   }
 
+  Future<void> _redetectLocation() async {
+    final location = await ref.read(explorerLocationProvider.notifier).redetect();
+    if (!mounted) return;
+
+    if (location.requiresManualSelection) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Localisation indisponible. Choisissez votre région manuellement.',
+          ),
+        ),
+      );
+      await _openLocationSheet();
+      return;
+    }
+
+    ref.read(explorerFilterProvider.notifier).applyDetectedLocation(
+          countryCode: location.countryCode,
+          countryName: location.countryName,
+          regionCode: location.regionCode,
+          regionName: location.regionName,
+          overrideUserSelection: true,
+        );
+
+    final label = location.hasRegion
+        ? 'Région détectée : ${location.regionName}'
+        : 'Pays détecté : ${location.countryName}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(label)),
+    );
+  }
+
   Future<void> _openLocationSheet() async {
     final palette = _ExplorerPalette.of(context);
     await showModalBottomSheet<void>(
@@ -262,7 +296,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (_) => const _LocationPickerSheet(),
+      builder: (_) => const ExplorerLocationPickerSheet(),
     );
   }
 
@@ -1093,25 +1127,38 @@ String _formatCompact(int n) {
 // Bandeau localisation auto-détectée + accès au sélecteur manuel.
 // ────────────────────────────────────────────────────────────────────────────
 
-class _RegionBanner extends ConsumerWidget {
-  const _RegionBanner({required this.palette, required this.onChange});
+class ExplorerLocationBanner extends ConsumerWidget {
+  const ExplorerLocationBanner({
+    super.key,
+    required this.onChange,
+    required this.onRedetect,
+    required this.isDetecting,
+  });
 
-  final _ExplorerPalette palette;
   final VoidCallback onChange;
+  final VoidCallback onRedetect;
+  final bool isDetecting;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = _ExplorerPalette.of(context);
     final loc = ref.watch(explorerLocationProvider);
     final l = loc.location;
     final hasRegion = l?.hasRegion ?? false;
-    final detectedLine = l == null
-        ? 'Choisis ta région pour voir les classements près de toi.'
+    final requiresManual = l == null || l.requiresManualSelection;
+    final permissionDenied = l?.permissionDenied ?? false;
+    final detectedLine = isDetecting && l == null
+      ? 'Détection de votre région...'
+      : requiresManual
+        ? permissionDenied
+          ? 'Localisation refusée. Vous pouvez choisir votre région manuellement.'
+          : 'Choisissez votre pays et votre région pour voir les classements locaux.'
         : hasRegion
-            ? 'Classement détecté : ${l.regionName}, ${l.countryName}'
-            : 'Pays détecté : ${l.countryName}';
-    final secondLine = l == null
-        ? 'La localisation sert uniquement à afficher les classements et scènes proches de toi.'
-        : 'Tu peux modifier ta région à tout moment.';
+          ? 'Votre région détectée : ${l.regionName}'
+          : 'Pays détecté : ${l.countryName}';
+    final secondLine = requiresManual
+      ? 'Utilisée uniquement pour afficher les scènes et classements proches de vous.'
+      : 'Utilisée uniquement pour afficher les scènes et classements proches de vous.';
 
     return Container(
       width: double.infinity,
@@ -1166,27 +1213,64 @@ class _RegionBanner extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          TextButton(
-            onPressed: onChange,
-            style: TextButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              minimumSize: const Size(0, 32),
-              backgroundColor: palette.isDark
-                  ? const Color.fromRGBO(255, 255, 255, 0.08)
-                  : const Color(0xFFFFF7DC),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: isDetecting ? null : onChange,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: const Size(0, 32),
+                  backgroundColor: palette.isDark
+                      ? const Color.fromRGBO(255, 255, 255, 0.08)
+                      : const Color(0xFFFFF7DC),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: Text(
+                  requiresManual ? 'Choisir ma région' : 'Modifier',
+                  style: GoogleFonts.dmSans(
+                    color: palette.primaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              'Modifier',
-              style: GoogleFonts.dmSans(
-                color: palette.primaryText,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: isDetecting ? null : onRedetect,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: const Size(0, 32),
+                  backgroundColor: palette.isDark
+                      ? const Color.fromRGBO(255, 255, 255, 0.05)
+                      : const Color(0xFFF4F5F8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: isDetecting
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                          color: palette.primaryText,
+                        ),
+                      )
+                    : Text(
+                        requiresManual ? 'Auto-détecter' : 'Auto-détecter à nouveau',
+                        style: GoogleFonts.dmSans(
+                          color: palette.primaryText,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -1198,15 +1282,15 @@ class _RegionBanner extends ConsumerWidget {
 // Bottom sheet : choix manuel pays + région.
 // ────────────────────────────────────────────────────────────────────────────
 
-class _LocationPickerSheet extends ConsumerStatefulWidget {
-  const _LocationPickerSheet();
+class ExplorerLocationPickerSheet extends ConsumerStatefulWidget {
+  const ExplorerLocationPickerSheet({super.key});
 
   @override
-  ConsumerState<_LocationPickerSheet> createState() =>
+  ConsumerState<ExplorerLocationPickerSheet> createState() =>
       _LocationPickerSheetState();
 }
 
-class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
+class _LocationPickerSheetState extends ConsumerState<ExplorerLocationPickerSheet> {
   CountryOption? _country;
   RegionOption? _region;
 
@@ -1221,7 +1305,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
       );
       final regions =
           LocationRegionService.regionsByCountry[_country!.code] ?? const [];
-      if (loc.regionCode != null) {
+      if (loc.regionCode.isNotEmpty) {
         for (final r in regions) {
           if (r.code == loc.regionCode) {
             _region = r;
@@ -1234,6 +1318,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final locationState = ref.watch(explorerLocationProvider);
     final palette = _ExplorerPalette.of(context);
     final regions =
         LocationRegionService.regionsByCountry[_country?.code ?? ''] ?? const [];
@@ -1364,11 +1449,24 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
               children: [
                 Expanded(
                   child: TextButton(
-                    onPressed: () async {
-                      await ref
+                    onPressed: locationState.isResolving
+                        ? null
+                        : () async {
+                      final location = await ref
                           .read(explorerLocationProvider.notifier)
                           .redetect();
-                      if (context.mounted) Navigator.of(context).pop();
+                      if (!context.mounted) return;
+                      if (location.requiresManualSelection) {
+                        return;
+                      }
+                      ref.read(explorerFilterProvider.notifier).applyDetectedLocation(
+                            countryCode: location.countryCode,
+                            countryName: location.countryName,
+                            regionCode: location.regionCode,
+                            regionName: location.regionName,
+                            overrideUserSelection: true,
+                          );
+                      Navigator.of(context).pop();
                     },
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1378,7 +1476,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                       backgroundColor: palette.searchBackground,
                     ),
                     child: Text(
-                      'Auto-détecter',
+                      locationState.isResolving ? 'Détection...' : 'Auto-détecter',
                       style: GoogleFonts.dmSans(
                         color: palette.primaryText,
                         fontWeight: FontWeight.w700,
@@ -1392,9 +1490,15 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                     onPressed: _country == null
                         ? null
                         : () async {
-                            await ref
+                            final location = await ref
                                 .read(explorerLocationProvider.notifier)
                                 .setManual(country: _country!, region: _region);
+                            ref.read(explorerFilterProvider.notifier).applyManualLocation(
+                                  countryCode: location.countryCode,
+                                  countryName: location.countryName,
+                                  regionCode: location.regionCode,
+                                  regionName: location.regionName,
+                                );
                             if (context.mounted) Navigator.of(context).pop();
                           },
                     style: ElevatedButton.styleFrom(
@@ -1449,8 +1553,14 @@ class _QuickChipsBar extends ConsumerWidget {
         active: myRegionActive,
         onTap: () {
           if (loc?.regionCode != null) {
-            notifier.setRegion(myRegionActive ? null : loc!.regionCode);
-            notifier.setCountry(myRegionActive ? null : loc.countryCode);
+            notifier.setCountry(
+              myRegionActive ? null : loc!.countryCode,
+              name: myRegionActive ? null : loc.countryName,
+            );
+            notifier.setRegion(
+              myRegionActive ? null : loc.regionCode,
+              name: myRegionActive ? null : loc.regionName,
+            );
           }
         },
       ),
@@ -1459,8 +1569,11 @@ class _QuickChipsBar extends ConsumerWidget {
         active: myCountryActive && !myRegionActive,
         onTap: () {
           if (loc != null) {
-            notifier.setRegion(null);
-            notifier.setCountry(myCountryActive ? null : loc.countryCode);
+            notifier.setRegion(null, name: null);
+            notifier.setCountry(
+              myCountryActive ? null : loc.countryCode,
+              name: myCountryActive ? null : loc.countryName,
+            );
           }
         },
       ),
@@ -1756,7 +1869,7 @@ class _RegionalRankingSection extends ConsumerWidget {
     final loc = ref.watch(explorerLocationProvider).location;
     final entries = (loc != null && loc.hasRegion)
         ? ref.watch(regionalRankingProvider(
-            (countryCode: loc.countryCode, regionCode: loc.regionCode!)))
+        (countryCode: loc.countryCode, regionCode: loc.regionCode)))
         : const [];
 
     return Column(
