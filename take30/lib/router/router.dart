@@ -104,7 +104,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRouter.adminAccess,
-        builder: (_, __) => const AdminAccessGate(),
+        redirect: (_, __) =>
+            '${AppRouter.auth}?tab=login&mode=admin&redirect=${Uri.encodeComponent(AppRouter.admin)}',
       ),
       GoRoute(
         path: AppRouter.admin,
