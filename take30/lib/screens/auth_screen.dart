@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
-import '../router/router.dart';
 import '../theme/app_theme.dart';
 import '../widgets/take30_logo.dart';
 
