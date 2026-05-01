@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "source": "functions",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "*.bak_veo31",
+      ".env.backup_*"
+    ]
+  }
+}

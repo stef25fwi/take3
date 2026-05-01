@@ -1,0 +1,319 @@
+===== FIX + DEPLOY VEO 3.1 FUNCTIONS =====
+Projet : take30
+Region Functions : europe-west1
+Backend : /workspaces/take3/functions
+Modèle cible : veo-3.1-fast-generate-001
+
+===== 1. CHECK BACKEND FUNCTIONS =====
+/workspaces/take3/functions/.env
+/workspaces/take3/functions/.gitignore
+/workspaces/take3/functions/lib/index.js
+/workspaces/take3/functions/lib/index.js.map
+/workspaces/take3/functions/lib/take60/renderTake60GuidedScene.js
+/workspaces/take3/functions/lib/take60/renderTake60GuidedScene.js.map
+/workspaces/take3/functions/lib/veo/checkVeoSceneGeneration.js
+/workspaces/take3/functions/lib/veo/checkVeoSceneGeneration.js.map
+/workspaces/take3/functions/lib/veo/shared.js
+/workspaces/take3/functions/lib/veo/shared.js.map
+/workspaces/take3/functions/lib/veo/startVeoSceneGeneration.js
+/workspaces/take3/functions/lib/veo/startVeoSceneGeneration.js.map
+/workspaces/take3/functions/lib/veo/vertexClient.js
+/workspaces/take3/functions/lib/veo/vertexClient.js.map
+/workspaces/take3/functions/node_modules/.package-lock.json
+/workspaces/take3/functions/node_modules/@fastify/busboy/LICENSE
+/workspaces/take3/functions/node_modules/@fastify/busboy/README.md
+/workspaces/take3/functions/node_modules/@fastify/busboy/package.json
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/.env
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/.gitignore~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/README.md
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/download.js~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/download.sh~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/download.ts~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/index.js
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/index.js~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/package.json
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/package.json~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/tsconfig.json
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/ffmpeg/tsconfig.json~
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/linux-x64/README.md
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/linux-x64/ffmpeg
+/workspaces/take3/functions/node_modules/@ffmpeg-installer/linux-x64/package.json
+/workspaces/take3/functions/node_modules/@firebase/app-check-interop-types/README.md
+/workspaces/take3/functions/node_modules/@firebase/app-check-interop-types/index.d.ts
+/workspaces/take3/functions/node_modules/@firebase/app-check-interop-types/package.json
+/workspaces/take3/functions/node_modules/@firebase/app-types/README.md
+/workspaces/take3/functions/node_modules/@firebase/app-types/index.d.ts
+/workspaces/take3/functions/node_modules/@firebase/app-types/package.json
+/workspaces/take3/functions/node_modules/@firebase/app-types/private.d.ts
+/workspaces/take3/functions/node_modules/@firebase/auth-interop-types/README.md
+/workspaces/take3/functions/node_modules/@firebase/auth-interop-types/index.d.ts
+/workspaces/take3/functions/node_modules/@firebase/auth-interop-types/package.json
+/workspaces/take3/functions/node_modules/@firebase/component/README.md
+/workspaces/take3/functions/node_modules/@firebase/component/package.json
+/workspaces/take3/functions/node_modules/@firebase/database-compat/README.md
+/workspaces/take3/functions/node_modules/@firebase/database-compat/package.json
+/workspaces/take3/functions/node_modules/@firebase/database-types/README.md
+/workspaces/take3/functions/node_modules/@firebase/database-types/index.d.ts
+/workspaces/take3/functions/node_modules/@firebase/database-types/package.json
+/workspaces/take3/functions/node_modules/@firebase/database/README.md
+/workspaces/take3/functions/node_modules/@firebase/database/package.json
+/workspaces/take3/functions/node_modules/@firebase/logger/README.md
+/workspaces/take3/functions/node_modules/@firebase/logger/package.json
+/workspaces/take3/functions/node_modules/@firebase/util/README.md
+/workspaces/take3/functions/node_modules/@firebase/util/package.json
+/workspaces/take3/functions/node_modules/@google-cloud/firestore/LICENSE
+/workspaces/take3/functions/node_modules/@google-cloud/firestore/README.md
+/workspaces/take3/functions/node_modules/@google-cloud/firestore/package.json
+/workspaces/take3/functions/node_modules/@google-cloud/paginator/CHANGELOG.md
+/workspaces/take3/functions/node_modules/@google-cloud/paginator/LICENSE
+/workspaces/take3/functions/node_modules/@google-cloud/paginator/README.md
+/workspaces/take3/functions/node_modules/@google-cloud/paginator/package.json
+/workspaces/take3/functions/node_modules/@google-cloud/projectify/CHANGELOG.md
+/workspaces/take3/functions/node_modules/@google-cloud/projectify/LICENSE
+/workspaces/take3/functions/node_modules/@google-cloud/projectify/README.md
+/workspaces/take3/functions/node_modules/@google-cloud/projectify/package.json
+/workspaces/take3/functions/node_modules/@google-cloud/promisify/CHANGELOG.md
+/workspaces/take3/functions/node_modules/@google-cloud/promisify/LICENSE
+/workspaces/take3/functions/node_modules/@google-cloud/promisify/README.md
+/workspaces/take3/functions/node_modules/@google-cloud/promisify/package.json
+/workspaces/take3/functions/node_modules/@google-cloud/storage/LICENSE
+/workspaces/take3/functions/node_modules/@google-cloud/storage/README.md
+/workspaces/take3/functions/node_modules/@google-cloud/storage/package.json
+/workspaces/take3/functions/node_modules/@grpc/grpc-js/LICENSE
+/workspaces/take3/functions/node_modules/@grpc/grpc-js/README.md
+/workspaces/take3/functions/node_modules/@grpc/grpc-js/package.json
+/workspaces/take3/functions/node_modules/@grpc/proto-loader/LICENSE
+/workspaces/take3/functions/node_modules/@grpc/proto-loader/README.md
+/workspaces/take3/functions/node_modules/@grpc/proto-loader/package.json
+/workspaces/take3/functions/node_modules/@js-sdsl/ordered-map/CHANGELOG.md
+/workspaces/take3/functions/node_modules/@js-sdsl/ordered-map/LICENSE
+/workspaces/take3/functions/node_modules/@js-sdsl/ordered-map/README.md
+/workspaces/take3/functions/node_modules/@js-sdsl/ordered-map/README.zh-CN.md
+/workspaces/take3/functions/node_modules/@js-sdsl/ordered-map/package.json
+/workspaces/take3/functions/node_modules/@nodable/entities/README.md
+/workspaces/take3/functions/node_modules/@nodable/entities/package.json
+/workspaces/take3/functions/node_modules/@opentelemetry/api/LICENSE
+/workspaces/take3/functions/node_modules/@opentelemetry/api/README.md
+/workspaces/take3/functions/node_modules/@opentelemetry/api/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/aspromise/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/aspromise/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/aspromise/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/aspromise/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/aspromise/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/base64/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/base64/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/base64/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/base64/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/base64/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/codegen/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/codegen/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/codegen/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/codegen/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/codegen/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/eventemitter/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/eventemitter/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/eventemitter/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/eventemitter/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/eventemitter/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/fetch/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/fetch/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/fetch/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/fetch/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/fetch/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/float/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/float/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/float/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/float/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/float/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/inquire/.npmignore
+/workspaces/take3/functions/node_modules/@protobufjs/inquire/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/inquire/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/inquire/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/inquire/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/inquire/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/path/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/path/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/path/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/path/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/path/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/pool/.npmignore
+/workspaces/take3/functions/node_modules/@protobufjs/pool/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/pool/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/pool/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/pool/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/pool/package.json
+/workspaces/take3/functions/node_modules/@protobufjs/utf8/.npmignore
+/workspaces/take3/functions/node_modules/@protobufjs/utf8/LICENSE
+/workspaces/take3/functions/node_modules/@protobufjs/utf8/README.md
+/workspaces/take3/functions/node_modules/@protobufjs/utf8/index.d.ts
+/workspaces/take3/functions/node_modules/@protobufjs/utf8/index.js
+/workspaces/take3/functions/node_modules/@protobufjs/utf8/package.json
+/workspaces/take3/functions/node_modules/@tootallnate/once/LICENSE
+/workspaces/take3/functions/node_modules/@tootallnate/once/README.md
+/workspaces/take3/functions/node_modules/@tootallnate/once/package.json
+/workspaces/take3/functions/node_modules/@types/body-parser/LICENSE
+/workspaces/take3/functions/node_modules/@types/body-parser/README.md
+/workspaces/take3/functions/node_modules/@types/body-parser/index.d.ts
+/workspaces/take3/functions/node_modules/@types/body-parser/package.json
+/workspaces/take3/functions/node_modules/@types/caseless/LICENSE
+/workspaces/take3/functions/node_modules/@types/caseless/README.md
+/workspaces/take3/functions/node_modules/@types/caseless/index.d.ts
+/workspaces/take3/functions/node_modules/@types/caseless/package.json
+/workspaces/take3/functions/node_modules/@types/connect/LICENSE
+/workspaces/take3/functions/node_modules/@types/connect/README.md
+/workspaces/take3/functions/node_modules/@types/connect/index.d.ts
+/workspaces/take3/functions/node_modules/@types/connect/package.json
+/workspaces/take3/functions/node_modules/@types/cors/LICENSE
+/workspaces/take3/functions/node_modules/@types/cors/README.md
+
+===== 2. CHECK AUTH FIREBASE / GCLOUD =====
+Logged in as sahai.stephane@gmail.com
+
+     Credentialed Accounts
+ACTIVE  ACCOUNT
+*       sahai.stephane@gmail.com
+
+
+===== 3. REMPLACEMENT VEO 3.0 PREVIEW -> VEO 3.1 =====
+✅ Fichiers corrigés :
+- /workspaces/take3/functions/.env
+
+===== 4. ÉCRITURE ENV NON SECRET VEO 3.1 DANS functions/.env =====
+✅ functions/.env mis à jour
+GOOGLE_CLOUD_PROJECT=take30
+VERTEX_LOCATION=us-central1
+VERTEX_AI_LOCATION=us-central1
+GOOGLE_GENAI_USE_VERTEXAI=true
+VEO_MODEL_ID=veo-3.1-fast-generate-001
+VEO_MODEL=veo-3.1-fast-generate-001
+VEO_USE_MOCK=false
+VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+
+
+===== 5. AUDIT SOURCE BACKEND APRÈS CORRECTION =====
+--- Ancien modèle restant dans backend ---
+/workspaces/take3/functions/.env.bak_veo31:2:VEO_MODEL_ID=veo-3.0-generate-preview
+
+--- VEO 3.1 présent dans backend ---
+/workspaces/take3/functions/lib/veo/startVeoSceneGeneration.js:51:        modelId: config.modelId || "TODO_VEO_MODEL_ID",
+/workspaces/take3/functions/lib/veo/vertexClient.js:80:        throw new Error("Vertex AI n'est pas configure dans cet environnement. Definis GOOGLE_CLOUD_PROJECT, VERTEX_LOCATION, VEO_MODEL_ID et VEO_USE_MOCK=false.");
+/workspaces/take3/functions/lib/veo/shared.js:26:    const modelId = process.env.VEO_MODEL_ID ?? "";
+/workspaces/take3/functions/lib/index.js:421:            !config.modelId && "VEO_MODEL_ID",
+/workspaces/take3/functions/src/veo/shared.ts:43:  const modelId = process.env.VEO_MODEL_ID ?? "";
+/workspaces/take3/functions/src/veo/startVeoSceneGeneration.ts:68:    modelId: config.modelId || "TODO_VEO_MODEL_ID",
+/workspaces/take3/functions/src/veo/vertexClient.ts:87:      "Vertex AI n'est pas configure dans cet environnement. Definis GOOGLE_CLOUD_PROJECT, VERTEX_LOCATION, VEO_MODEL_ID et VEO_USE_MOCK=false."
+/workspaces/take3/functions/src/index.ts:485:        !config.modelId && "VEO_MODEL_ID",
+/workspaces/take3/functions/.env.bak_veo31:2:VEO_MODEL_ID=veo-3.0-generate-preview
+/workspaces/take3/functions/.env:5:VEO_MODEL_ID=veo-3.1-fast-generate-001
+/workspaces/take3/functions/.env:6:VEO_MODEL=veo-3.1-fast-generate-001
+
+===== 6. CRÉATION CONFIG FIREBASE TEMPORAIRE POUR FUNCTIONS =====
+{
+  "functions": {
+    "source": "functions",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log"
+    ]
+  }
+}
+
+===== 7. NPM INSTALL FUNCTIONS =====
+
+up to date, audited 247 packages in 4s
+
+33 packages are looking for funding
+  run `npm fund` for details
+
+11 vulnerabilities (2 low, 9 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+===== 8. DEPLOY FUNCTIONS VEO / TAKE60 =====
+
+=== Deploying to 'take30'...
+
+i  deploying functions
+i  functions: preparing codebase default for deployment
+i  functions: ensuring required API cloudfunctions.googleapis.com is enabled...
+i  functions: ensuring required API cloudbuild.googleapis.com is enabled...
+i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled...
+⚠  functions: Runtime Node.js 20 was deprecated on 2026-04-30 and will be decommissioned on 2026-10-30, after which you will not be able to deploy without upgrading. Consider upgrading now to avoid disruption. See https://cloud.google.com/functions/docs/runtime-support for full details on the lifecycle policy
+⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+⚠  functions: Please note that there will be breaking changes when you upgrade.
+i  functions: Loading and analyzing source code for codebase default to determine what to deploy
+Serving at port 8632
+
+i  extensions: ensuring required API firebaseextensions.googleapis.com is enabled...
+Error: Failed to load environment variables from .env.:
+- Error Key GOOGLE_CLOUD_PROJECT is reserved for internal use.
+
+===== 9. CHECK ENV DÉPLOYÉES APRÈS DEPLOY =====
+
+----- startVeoSceneGeneration -----
+
+----- checkVeoSceneGeneration -----
+
+----- renderTake60GuidedScene -----
+
+===== 10. LOGS START VEO APRÈS DEPLOY =====
+2026-05-01T02:12:29.371887Z W startveoscenegeneration: 
+2026-05-01T02:12:29.386398Z D startveoscenegeneration: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2026-05-01T02:19:09.015697Z W startveoscenegeneration: 
+2026-05-01T02:19:09.027953Z D startveoscenegeneration: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2026-05-01T02:33:25.710561828Z N startVeoSceneGeneration: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"sahai.stephane@gmail.com","principalSubject":"user:sahai.stephane@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"172.166.151.113","callerSuppliedUserAgent":"FirebaseCLI/15.15.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2026-05-01T02:33:24.795014225Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.secret_environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","service_config.direct_vpc_network_interface","service_config.direct_vpc_egress","labels"]},"function":{"service_config":{"secret_environment_variables":[{"secret":"VEO_API_KEY","version":"1","project_id":"take30","key":"VEO_API_KEY"}],"available_memory":"256Mi","available_cpu":"1","max_instance_request_concurrency":80,"max_instance_count":50},"name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","build_config":{"source":{},"source_token":"Clhwcm9qZWN0cy84MDM1NzM0Njg3MTAvbG9jYXRpb25zL2V1cm9wZS13ZXN0MS9idWlsZHMvZDc1MzkwYzgtNzUwYS00NjdjLWIxNDItMzcyNDBhNTFmMDE1EmFldXJvcGUtd2VzdDEtZG9ja2VyLnBrZy5kZXYvdGFrZTMwL2djZi1hcnRpZmFjdHMvdGFrZTMwX19ldXJvcGUtLXdlc3QxX19vbl9zY2VuZV9jcmVhdGU6dmVyc2lvbl8xGKac2MWxFyI+cHJvamVjdHMvdGFrZTMwL2xvY2F0aW9ucy9ldXJvcGUtd2VzdDEvZnVuY3Rpb25zL29uU2NlbmVDcmVhdGUqCwjzodDPBhCwydg6Mghub2RlanMyMDp3CiNnY3IuaW8vZ2FlLXJ1bnRpbWVzL25vZGVqczIwOnN0YWJsZRJQZXVyb3BlLXdlc3QxLWRvY2tlci5wa2cuZGV2L3NlcnZlcmxlc3MtcnVudGltZXMvZ29vZ2xlLTIyLWZ1bGwvcnVudGltZXMvbm9kZWpzMjBAAQ==","entry_point":"startVeoSceneGeneration","runtime":"nodejs20"},"labels":{"deployment-callable":"true","deployment-tool":"cli-firebase","firebase-functions-hash":"b5a2ab2f8a5d3d454d1abcd32d25c1816c8905dd"}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["europe-west1"]}}
+2026-05-01T02:33:29.823509Z I startveoscenegeneration: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-05-01T02:33:31.445465Z I startveoscenegeneration: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-01T02:33:34.177131448Z N startVeoSceneGeneration: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"sahai.stephane@gmail.com","principalSubject":"user:sahai.stephane@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","response":{"url":"https://europe-west1-take30.cloudfunctions.net/startVeoSceneGeneration","serviceConfig":{"revision":"startveoscenegeneration-00007-zas","allTrafficOnLatestRevision":true,"uri":"https://startveoscenegeneration-hykin5mi5q-ew.a.run.app","availableMemory":"256Mi","timeoutSeconds":60,"maxInstanceCount":50,"serviceAccountEmail":"803573468710-compute@developer.gserviceaccount.com","secretEnvironmentVariables":[{"secret":"VEO_API_KEY","projectId":"take30","version":"1","key":"VEO_API_KEY"}],"availableCpu":"1","maxInstanceRequestConcurrency":80,"ingressSettings":"ALLOW_ALL"},"environment":"GEN_2","buildConfig":{"dockerRegistry":"ARTIFACT_REGISTRY","serviceAccount":"projects/take30/serviceAccounts/803573468710-compute@developer.gserviceaccount.com","dockerRepository":"projects/take30/locations/europe-west1/repositories/gcf-artifacts","entryPoint":"startVeoSceneGeneration","runtime":"nodejs20","source":{},"automaticUpdatePolicy":{}},"updateTime":"2026-05-01T02:33:25.700841318Z","state":"ACTIVE","@type":"type.googleapis.com/google.cloud.functions.v2.Function","satisfiesPzi":true,"createTime":"2026-04-27T22:47:18.481044284Z","labels":{"deployment-callable":"true","deployment-tool":"cli-firebase","firebase-functions-hash":"b5a2ab2f8a5d3d454d1abcd32d25c1816c8905dd"},"name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration"},"resourceLocation":{"currentLocations":["europe-west1"]}}
+2026-05-01T02:33:45.793283Z W startveoscenegeneration: 
+2026-05-01T02:33:45.951155Z D startveoscenegeneration: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2026-05-01T02:41:08.141457521Z N startVeoSceneGeneration: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"sahai.stephane@gmail.com","principalSubject":"user:sahai.stephane@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"172.166.151.113","callerSuppliedUserAgent":"FirebaseCLI/15.15.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2026-05-01T02:41:07.274347812Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","request":{"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.secret_environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","service_config.direct_vpc_network_interface","service_config.direct_vpc_egress","labels"]},"function":{"name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","labels":{"firebase-functions-hash":"e655b185bf76c519781739578e4889f1cc389645","deployment-callable":"true","deployment-tool":"cli-firebase"},"service_config":{"max_instance_count":50,"available_memory":"256Mi","available_cpu":"1","secret_environment_variables":[{"key":"VEO_API_KEY","secret":"VEO_API_KEY","project_id":"take30","version":"1"}],"max_instance_request_concurrency":80},"build_config":{"entry_point":"startVeoSceneGeneration","runtime":"nodejs20","source":{}}}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["europe-west1"]}}
+2026-05-01T02:42:04.915791Z I startveoscenegeneration: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-05-01T02:42:07.592685Z I startveoscenegeneration: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-01T02:42:09.131060449Z N startVeoSceneGeneration: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"sahai.stephane@gmail.com","principalSubject":"user:sahai.stephane@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","response":{"url":"https://europe-west1-take30.cloudfunctions.net/startVeoSceneGeneration","updateTime":"2026-05-01T02:41:08.132913591Z","satisfiesPzi":true,"labels":{"deployment-callable":"true","deployment-tool":"cli-firebase","firebase-functions-hash":"e655b185bf76c519781739578e4889f1cc389645"},"createTime":"2026-04-27T22:47:18.481044284Z","environment":"GEN_2","name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","serviceConfig":{"allTrafficOnLatestRevision":true,"maxInstanceCount":50,"serviceAccountEmail":"803573468710-compute@developer.gserviceaccount.com","availableCpu":"1","revision":"startveoscenegeneration-00008-toh","maxInstanceRequestConcurrency":80,"timeoutSeconds":60,"uri":"https://startveoscenegeneration-hykin5mi5q-ew.a.run.app","ingressSettings":"ALLOW_ALL","secretEnvironmentVariables":[{"secret":"VEO_API_KEY","version":"1","projectId":"take30","key":"VEO_API_KEY"}],"availableMemory":"256Mi"},"buildConfig":{"entryPoint":"startVeoSceneGeneration","serviceAccount":"projects/take30/serviceAccounts/803573468710-compute@developer.gserviceaccount.com","source":{},"runtime":"nodejs20","automaticUpdatePolicy":{},"dockerRepository":"projects/take30/locations/europe-west1/repositories/gcf-artifacts","dockerRegistry":"ARTIFACT_REGISTRY"},"@type":"type.googleapis.com/google.cloud.functions.v2.Function","state":"ACTIVE"},"resourceLocation":{"currentLocations":["europe-west1"]}}
+2026-05-01T02:42:15.334196Z W startveoscenegeneration: 
+2026-05-01T02:42:15.512607Z D startveoscenegeneration: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2026-05-01T02:42:17.274025Z I startveoscenegeneration: {"uid":"tBpVay6WuJcXAQzRhXewvLayYdC3","message":"isAdminUid","adminExists":false}
+2026-05-01T02:51:37.042551715Z N startVeoSceneGeneration: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"sahai.stephane@gmail.com","principalSubject":"user:sahai.stephane@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"callerIp":"172.166.151.112","callerSuppliedUserAgent":"FirebaseCLI/15.15.0,gzip(gfe),gzip(gfe)","requestAttributes":{"time":"2026-05-01T02:51:36.177253493Z","auth":{}},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","authorizationInfo":[{"resource":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","permission":"cloudfunctions.functions.update","granted":true,"resourceAttributes":{"service":"cloudfunctions.googleapis.com","name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","type":"cloudfunctions.googleapis.com/Function"},"permissionType":"ADMIN_WRITE"}],"resourceName":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","request":{"function":{"labels":{"firebase-functions-hash":"5dd0b18bebd514a365818b8c782de2b517434bf7","deployment-callable":"true","deployment-tool":"cli-firebase"},"build_config":{"source":{},"entry_point":"startVeoSceneGeneration","runtime":"nodejs20"},"service_config":{"max_instance_request_concurrency":80,"secret_environment_variables":[{"key":"VEO_API_KEY","project_id":"take30","secret":"VEO_API_KEY","version":"1"}],"max_instance_count":50,"available_memory":"256Mi","available_cpu":"1"},"name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration"},"@type":"type.googleapis.com/google.cloud.functions.v2.UpdateFunctionRequest","update_mask":{"paths":["name","build_config.runtime","build_config.entry_point","build_config.source.storage_source.bucket","build_config.source.storage_source.object","build_config.environment_variables","build_config.source_token","service_config.environment_variables","service_config.secret_environment_variables","service_config.ingress_settings","service_config.timeout_seconds","service_config.service_account_email","service_config.available_memory","service_config.min_instance_count","service_config.max_instance_count","service_config.max_instance_request_concurrency","service_config.available_cpu","service_config.vpc_connector","service_config.vpc_connector_egress_settings","service_config.direct_vpc_network_interface","service_config.direct_vpc_egress","labels"]}},"response":{"@type":"type.googleapis.com/google.longrunning.Operation"},"resourceLocation":{"currentLocations":["europe-west1"]}}
+2026-05-01T02:52:29.593506Z I startveoscenegeneration: Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-05-01T02:52:33.169371Z I startveoscenegeneration: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-01T02:52:35.546081184Z N startVeoSceneGeneration: {"@type":"type.googleapis.com/google.cloud.audit.AuditLog","status":{},"authenticationInfo":{"principalEmail":"sahai.stephane@gmail.com","principalSubject":"user:sahai.stephane@gmail.com","oauthInfo":{"oauthClientId":"563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com"}},"requestMetadata":{"requestAttributes":{},"destinationAttributes":{}},"serviceName":"cloudfunctions.googleapis.com","methodName":"google.cloud.functions.v2.FunctionService.UpdateFunction","resourceName":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","response":{"name":"projects/take30/locations/europe-west1/functions/startVeoSceneGeneration","@type":"type.googleapis.com/google.cloud.functions.v2.Function","buildConfig":{"dockerRepository":"projects/take30/locations/europe-west1/repositories/gcf-artifacts","source":{},"runtime":"nodejs20","serviceAccount":"projects/take30/serviceAccounts/803573468710-compute@developer.gserviceaccount.com","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"entryPoint":"startVeoSceneGeneration"},"state":"ACTIVE","environment":"GEN_2","updateTime":"2026-05-01T02:51:37.033542625Z","satisfiesPzi":true,"labels":{"firebase-functions-hash":"5dd0b18bebd514a365818b8c782de2b517434bf7","deployment-tool":"cli-firebase","deployment-callable":"true"},"url":"https://europe-west1-take30.cloudfunctions.net/startVeoSceneGeneration","createTime":"2026-04-27T22:47:18.481044284Z","serviceConfig":{"allTrafficOnLatestRevision":true,"maxInstanceRequestConcurrency":80,"serviceAccountEmail":"803573468710-compute@developer.gserviceaccount.com","availableMemory":"256Mi","availableCpu":"1","revision":"startveoscenegeneration-00009-has","secretEnvironmentVariables":[{"key":"VEO_API_KEY","version":"1","secret":"VEO_API_KEY","projectId":"take30"}],"maxInstanceCount":50,"uri":"https://startveoscenegeneration-hykin5mi5q-ew.a.run.app","ingressSettings":"ALLOW_ALL","timeoutSeconds":60}},"resourceLocation":{"currentLocations":["europe-west1"]}}
+2026-05-01T02:52:59.318508Z E startveoscenegeneration: 
+2026-05-01T02:52:59.468118Z D startveoscenegeneration: {"verifications":{"app":"MISSING","auth":"VALID"},"message":"Callable request verification passed"}
+2026-05-01T02:53:01.012742Z I startveoscenegeneration: {"adminExists":false,"message":"isAdminUid","uid":"tBpVay6WuJcXAQzRhXewvLayYdC3","userIsAdmin":true}
+2026-05-01T02:53:01.809219Z E startveoscenegeneration: Unhandled error Error: Publisher Model `projects/take30/locations/us-central1/publishers/google/models/veo-3.0-generate-preview` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+    at callVertexJson (/workspace/lib/veo/vertexClient.js:154:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async startVertexSceneGeneration (/workspace/lib/veo/vertexClient.js:53:22)
+    at async /workspace/lib/veo/startVeoSceneGeneration.js:25:25
+    at async /workspace/node_modules/firebase-functions/lib/common/providers/https.js:467:26
+2026-05-01T03:07:03.417628Z E startveoscenegeneration: 
+2026-05-01T03:07:03.432266Z D startveoscenegeneration: {"message":"Callable request verification passed","verifications":{"app":"MISSING","auth":"VALID"}}
+2026-05-01T03:07:04.207941Z I startveoscenegeneration: {"userIsAdmin":true,"uid":"tBpVay6WuJcXAQzRhXewvLayYdC3","message":"isAdminUid","adminExists":false}
+2026-05-01T03:07:04.933385Z E startveoscenegeneration: Unhandled error Error: Publisher Model `projects/take30/locations/us-central1/publishers/google/models/veo-3.0-generate-preview` was not found or your project does not have access to it. Please ensure you are using a valid model version. For more information, see: https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+    at callVertexJson (/workspace/lib/veo/vertexClient.js:154:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async startVertexSceneGeneration (/workspace/lib/veo/vertexClient.js:53:22)
+    at async /workspace/lib/veo/startVeoSceneGeneration.js:25:25
+    at async /workspace/node_modules/firebase-functions/lib/common/providers/https.js:467:26
+2026-05-01T03:41:03.228950Z W startveoscenegeneration: 
+2026-05-01T03:41:03.239429Z I startveoscenegeneration: Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-05-01T03:41:05.063607Z I startveoscenegeneration: Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-01T03:41:05.131846Z D startveoscenegeneration: {"verifications":{"auth":"MISSING","app":"MISSING"},"message":"Callable request verification passed"}
+2026-05-01T03:55:34.374862Z W startveoscenegeneration: 
+2026-05-01T03:55:34.389103Z D startveoscenegeneration: {"verifications":{"app":"MISSING","auth":"MISSING"},"message":"Callable request verification passed"}
+
+===== 11. VERDICT =====
+VEO 3.1 dans env déployée : 0
+Ancien VEO 3.0 dans env déployée : 1
+🔴 À vérifier : l'environnement déployé ne montre pas encore clairement veo-3.1-fast-generate-001.
+
+✅ Rapport généré : fix_deploy_veo31_functions_20260501_040250.txt
