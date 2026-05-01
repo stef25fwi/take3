@@ -2128,8 +2128,6 @@ class _AddScenePageState extends State<AddScenePage> {
   List<String> _testedPrompts = [];
   SceneStatus _selectedPublicationTarget = SceneStatus.draft;
 
-  bool get _canShowAdminTestTools => widget.enableAdminTools;
-
   @override
   void initState() {
     super.initState();
@@ -2253,21 +2251,6 @@ class _AddScenePageState extends State<AddScenePage> {
     _veoOperationId = data.veoOperationId;
     _veoGenerationError = data.veoError;
     _selectedPublicationTarget = data.status;
-  }
-
-  void _loadPoliceInterrogationTestScene() {
-    setState(() {
-      _hydrateFromDraft(SceneFormData.testPoliceInterrogation());
-      _selectedPublicationTarget = SceneStatus.draft;
-    });
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text('Scène test interrogatoire police chargée.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
   }
 
   @override
@@ -2734,50 +2717,6 @@ class _AddScenePageState extends State<AddScenePage> {
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
-                    if (_canShowAdminTestTools) ...[
-                      Card(
-                        color: const Color(0xFFFFF7DC),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Color(0xFFE8C56A)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.science_outlined,
-                                  color: Color(0xFF8A6A00)),
-                              const SizedBox(width: 10),
-                              const Expanded(
-                                child: Text(
-                                  'Outil admin : préremplir le formulaire avec '
-                                  'la fiche test « Interrogatoire police » '
-                                  '(scène 60 s, 3 plans).',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF5A4500),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              ElevatedButton.icon(
-                                onPressed: _loadPoliceInterrogationTestScene,
-                                icon: const Icon(Icons.download),
-                                label: const Text(
-                                  'Charger scène test — Interrogatoire police',
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1E1E1E),
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
                     _section(
                       '1) Informations générales',
                       children: [
