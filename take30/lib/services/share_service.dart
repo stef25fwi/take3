@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/models.dart';
@@ -6,8 +7,24 @@ class ShareService {
   ShareService._();
 
   static final ShareService _instance = ShareService._();
+  static const String _defaultPublicBaseUrl = 'https://take60.web.app';
 
   factory ShareService() => _instance;
+
+  String _publicBaseUrl() {
+    if (!kIsWeb) {
+      return _defaultPublicBaseUrl;
+    }
+
+    final base = Uri.base;
+    final firstSegment = base.pathSegments.isEmpty ? '' : base.pathSegments.first;
+    final pathPrefix = firstSegment == 'take3' ? '/take3' : '';
+    return '${base.origin}$pathPrefix';
+  }
+
+  String _sceneUrl(String sceneId) => '${_publicBaseUrl()}/scene/$sceneId';
+  String _profileUrl(String userId) => '${_publicBaseUrl()}/profile/$userId';
+  String _challengeUrl() => '${_publicBaseUrl()}/challenge';
 
   Future<void> shareScene(SceneModel scene) async {
     final text = '''🎬 Regarde ma performance sur Take 60 !
@@ -17,7 +34,7 @@ Par @${scene.author.username}
 
 ❤️ ${_formatCount(scene.likesCount)} likes · 👁 ${_formatCount(scene.viewsCount)} vues
 
-👉 https://take30.app/scene/${scene.id}''';
+👉 ${_sceneUrl(scene.id)}''';
 
     await SharePlus.instance.share(
       ShareParams(
@@ -33,7 +50,7 @@ Par @${scene.author.username}
 ${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take 60'}
 🎬 ${user.scenesCount} scènes · ❤️ ${_formatCount(user.likesCount)} likes
 
-👉 https://take30.app/profile/${user.id}''';
+👉 ${_profileUrl(user.id)}''';
 
     await SharePlus.instance.share(
       ShareParams(
@@ -49,7 +66,7 @@ ${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take 60'}
 Scène : "${challenge.sceneTitle}"
 ${challenge.quote}
 
-👉 https://take30.app/challenge''';
+👉 ${_challengeUrl()}''';
 
     await SharePlus.instance.share(
       ShareParams(
@@ -65,7 +82,7 @@ ${challenge.quote}
   }) async {
     final text = '''🎭 Je viens de poster "$sceneTitle" sur Take 60 !
 
-👉 https://take30.app/scene/$sceneId''';
+👉 ${_sceneUrl(sceneId)}''';
 
     await SharePlus.instance.share(
       ShareParams(

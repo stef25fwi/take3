@@ -1839,7 +1839,7 @@ UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
       displayName: currentUser.displayName,
       avatarUrl: currentUser.avatarUrl,
       email: currentUser.email,
-      bio: 'Tu explores Take 30 en mode démo avec un profil instantané.',
+      bio: 'Tu explores Take 60 en mode démo avec un profil instantané.',
       scenesCount: 3,
       followersCount: 124,
       likesCount: 418,
