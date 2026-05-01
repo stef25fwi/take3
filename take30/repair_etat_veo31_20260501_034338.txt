@@ -1,0 +1,220 @@
+===== REPAIR + ÉTAT VEO 3.1 TAKE60 =====
+Projet : take30
+Functions region : europe-west1
+Vertex location : us-central1
+VEO model cible : veo-3.1-fast-generate-001
+
+===== 1. INSTALL GCLOUD SI ABSENT =====
+❌ gcloud absent — installation...
+Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Hit:2 http://archive.ubuntu.com/ubuntu noble InRelease
+Hit:3 https://repo.anaconda.com/pkgs/misc/debrepo/conda stable InRelease
+Get:4 https://packages.microsoft.com/repos/microsoft-ubuntu-noble-prod noble InRelease [3600 B]
+Get:5 http://archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:6 http://archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:7 https://dl.yarnpkg.com/debian stable InRelease
+Get:8 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [3491 kB]
+Get:9 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1498 kB]
+Get:10 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [34.2 kB]
+Get:11 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1986 kB]
+Get:12 https://packages.microsoft.com/repos/microsoft-ubuntu-noble-prod noble/main amd64 Packages [132 kB]
+Get:13 http://archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [54.1 kB]
+Get:14 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [2386 kB]
+Get:15 http://archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [3788 kB]
+Get:16 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [2142 kB]
+Err:7 https://dl.yarnpkg.com/debian stable InRelease
+  The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 62D54FD4003F6525
+Get:17 http://archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [35.6 kB]
+Get:18 http://archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [49.0 kB]
+Get:19 http://archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages [671 B]
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+apt-transport-https is already the newest version (2.8.3).
+ca-certificates is already the newest version (20240203).
+The following additional packages will be installed:
+  dirmngr gnupg-utils gnupg2 gpg gpg-agent gpgconf gpgsm gpgv keyboxd
+  libcurl3t64-gnutls libcurl4-openssl-dev libcurl4t64
+Suggested packages:
+  dbus-user-session pinentry-gnome3 tor parcimonie xloadimage gpg-wks-server
+  scdaemon libcurl4-doc libidn-dev libkrb5-dev libldap2-dev librtmp-dev
+  libssh2-1-dev
+Recommended packages:
+  gnupg-l10n gpg-wks-client
+The following packages will be upgraded:
+  curl dirmngr gnupg gnupg-utils gnupg2 gpg gpg-agent gpgconf gpgsm gpgv
+  keyboxd libcurl3t64-gnutls libcurl4-openssl-dev libcurl4t64
+14 upgraded, 0 newly installed, 0 to remove and 148 not upgraded.
+Need to get 3508 kB of archives.
+After this operation, 1024 B of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 dirmngr amd64 2.4.4-2ubuntu17.4 [323 kB]
+Get:2 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gpgsm amd64 2.4.4-2ubuntu17.4 [232 kB]
+Get:3 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gnupg-utils amd64 2.4.4-2ubuntu17.4 [109 kB]
+Get:4 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gpg-agent amd64 2.4.4-2ubuntu17.4 [227 kB]
+Get:5 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gpg amd64 2.4.4-2ubuntu17.4 [565 kB]
+Get:6 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gpgconf amd64 2.4.4-2ubuntu17.4 [104 kB]
+Get:7 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gnupg all 2.4.4-2ubuntu17.4 [359 kB]
+Get:8 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 keyboxd amd64 2.4.4-2ubuntu17.4 [78.3 kB]
+Get:9 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 gpgv amd64 2.4.4-2ubuntu17.4 [158 kB]
+Get:10 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libcurl4-openssl-dev amd64 8.5.0-2ubuntu10.8 [446 kB]
+Get:11 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 curl amd64 8.5.0-2ubuntu10.8 [227 kB]
+Get:12 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libcurl4t64 amd64 8.5.0-2ubuntu10.8 [342 kB]
+Get:13 http://archive.ubuntu.com/ubuntu noble-updates/main amd64 libcurl3t64-gnutls amd64 8.5.0-2ubuntu10.8 [334 kB]
+Get:14 http://archive.ubuntu.com/ubuntu noble-updates/universe amd64 gnupg2 all 2.4.4-2ubuntu17.4 [4752 B]
+Fetched 3508 kB in 1s (3849 kB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 58629 files and directories currently installed.)
+Preparing to unpack .../0-dirmngr_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking dirmngr (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../1-gpgsm_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking gpgsm (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../2-gnupg-utils_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking gnupg-utils (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../3-gpg-agent_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking gpg-agent (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../4-gpg_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking gpg (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../5-gpgconf_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking gpgconf (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../6-gnupg_2.4.4-2ubuntu17.4_all.deb ...
+Unpacking gnupg (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../7-keyboxd_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking keyboxd (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Preparing to unpack .../8-gpgv_2.4.4-2ubuntu17.4_amd64.deb ...
+Unpacking gpgv (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Setting up gpgv (2.4.4-2ubuntu17.4) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 58629 files and directories currently installed.)
+Preparing to unpack .../libcurl4-openssl-dev_8.5.0-2ubuntu10.8_amd64.deb ...
+Unpacking libcurl4-openssl-dev:amd64 (8.5.0-2ubuntu10.8) over (8.5.0-2ubuntu10.6) ...
+Preparing to unpack .../curl_8.5.0-2ubuntu10.8_amd64.deb ...
+Unpacking curl (8.5.0-2ubuntu10.8) over (8.5.0-2ubuntu10.6) ...
+Preparing to unpack .../libcurl4t64_8.5.0-2ubuntu10.8_amd64.deb ...
+Unpacking libcurl4t64:amd64 (8.5.0-2ubuntu10.8) over (8.5.0-2ubuntu10.6) ...
+Preparing to unpack .../libcurl3t64-gnutls_8.5.0-2ubuntu10.8_amd64.deb ...
+Unpacking libcurl3t64-gnutls:amd64 (8.5.0-2ubuntu10.8) over (8.5.0-2ubuntu10.6) ...
+Preparing to unpack .../gnupg2_2.4.4-2ubuntu17.4_all.deb ...
+Unpacking gnupg2 (2.4.4-2ubuntu17.4) over (2.4.4-2ubuntu17.3) ...
+Setting up libcurl4t64:amd64 (8.5.0-2ubuntu10.8) ...
+Setting up libcurl3t64-gnutls:amd64 (8.5.0-2ubuntu10.8) ...
+Setting up libcurl4-openssl-dev:amd64 (8.5.0-2ubuntu10.8) ...
+Setting up gpgconf (2.4.4-2ubuntu17.4) ...
+Setting up curl (8.5.0-2ubuntu10.8) ...
+Setting up gpg (2.4.4-2ubuntu17.4) ...
+Setting up gnupg-utils (2.4.4-2ubuntu17.4) ...
+Setting up gpg-agent (2.4.4-2ubuntu17.4) ...
+Setting up gpgsm (2.4.4-2ubuntu17.4) ...
+Setting up dirmngr (2.4.4-2ubuntu17.4) ...
+Setting up keyboxd (2.4.4-2ubuntu17.4) ...
+Setting up gnupg (2.4.4-2ubuntu17.4) ...
+Setting up gnupg2 (2.4.4-2ubuntu17.4) ...
+Processing triggers for man-db (2.12.0-4build2) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
+deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main
+Hit:1 http://security.ubuntu.com/ubuntu noble-security InRelease
+Get:2 https://dl.yarnpkg.com/debian stable InRelease
+Hit:3 https://repo.anaconda.com/pkgs/misc/debrepo/conda stable InRelease
+Get:4 https://packages.cloud.google.com/apt cloud-sdk InRelease [1620 B]
+Hit:5 http://archive.ubuntu.com/ubuntu noble InRelease
+Hit:6 https://packages.microsoft.com/repos/microsoft-ubuntu-noble-prod noble InRelease
+Hit:7 http://archive.ubuntu.com/ubuntu noble-updates InRelease
+Hit:8 http://archive.ubuntu.com/ubuntu noble-backports InRelease
+Err:2 https://dl.yarnpkg.com/debian stable InRelease
+  The following signatures couldn't be verified because the public key is not available: NO_PUBKEY 62D54FD4003F6525
+Get:9 https://packages.cloud.google.com/apt cloud-sdk/main all Packages [1994 kB]
+Get:10 https://packages.cloud.google.com/apt cloud-sdk/main amd64 Packages [4678 kB]
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  google-cloud-cli-anthoscli
+Suggested packages:
+  google-cloud-cli-app-engine-java google-cloud-cli-app-engine-python
+  google-cloud-cli-pubsub-emulator google-cloud-cli-bigtable-emulator
+  google-cloud-cli-datastore-emulator kubectl
+The following NEW packages will be installed:
+  google-cloud-cli google-cloud-cli-anthoscli
+0 upgraded, 2 newly installed, 0 to remove and 148 not upgraded.
+Need to get 122 MB of archives.
+After this operation, 600 MB of additional disk space will be used.
+Get:1 https://packages.cloud.google.com/apt cloud-sdk/main amd64 google-cloud-cli amd64 566.0.0-0 [85.8 MB]
+Get:2 https://packages.cloud.google.com/apt cloud-sdk/main amd64 google-cloud-cli-anthoscli amd64 566.0.0-0 [35.8 MB]
+Fetched 122 MB in 1s (115 MB/s)
+Selecting previously unselected package google-cloud-cli.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 58629 files and directories currently installed.)
+Preparing to unpack .../google-cloud-cli_566.0.0-0_amd64.deb ...
+Unpacking google-cloud-cli (566.0.0-0) ...
+Selecting previously unselected package google-cloud-cli-anthoscli.
+Preparing to unpack .../google-cloud-cli-anthoscli_566.0.0-0_amd64.deb ...
+Unpacking google-cloud-cli-anthoscli (566.0.0-0) ...
+Setting up google-cloud-cli (566.0.0-0) ...
+Setting up google-cloud-cli-anthoscli (566.0.0-0) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
+
+===== 2. AUTH GCLOUD =====
+Google Cloud SDK 566.0.0
+alpha 2026.04.24
+beta 2026.04.24
+bq 2.1.31
+bundled-python3-unix 3.13.11
+core 2026.04.24
+gcloud-crc32c 1.0.0
+gsutil 5.36
+preview 2026.04.24
+
+Si aucun compte actif n’apparaît, lance après cette commande :
+gcloud auth login --no-launch-browser
+
+===== 3. CONFIG PROJET =====
+
+===== 4. ACTIVATION API NÉCESSAIRES =====
+
+===== 5. ÉTAT FUNCTIONS DÉPLOYÉES =====
+[90m│[39m checkVeoSceneGeneration      [90m│[39m v2      [90m│[39m callable                                   [90m│[39m europe-west1 [90m│[39m 256    [90m│[39m nodejs20 [90m│[39m
+[90m│[39m renderTake60GuidedScene      [90m│[39m v2      [90m│[39m callable                                   [90m│[39m europe-west1 [90m│[39m 256    [90m│[39m nodejs20 [90m│[39m
+[90m│[39m startVeoSceneGeneration      [90m│[39m v2      [90m│[39m callable                                   [90m│[39m europe-west1 [90m│[39m 256    [90m│[39m nodejs20 [90m│[39m
+
+===== 6. LOGS VEO RÉCENTS =====
+
+===== 7. CORRECTION STORAGE RULES ai_scenes / final_scenes =====
+✅ ai_scenes et final_scenes ajoutés
+
+=== Deploying to 'take30'...
+
+i  deploying storage
+i  storage: ensuring required API firebasestorage.googleapis.com is enabled...
+i  firebase.storage: checking storage.rules for compilation errors...
+✔  firebase.storage: rules file storage.rules compiled successfully
+i  storage: latest version of storage.rules already up to date, skipping upload...
+✔  storage: released rules storage.rules to firebase.storage
+
+✔  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/take30/overview
+
+===== 8. REMPLACEMENT LOCAL VEO 3.0 PREVIEW -> VEO 3.1 =====
+✅ Fichiers corrigés :
+- docs/veo3_implementation_plan.md
+
+===== 9. AUDIT MODÈLES RESTANTS =====
+docs/veo3_implementation_plan.md.bak_veo31:144:- VEO_MODEL_ID=veo-3.1-fast-generate-001
+docs/veo3_implementation_plan.md:144:- VEO_MODEL_ID=veo-3.1-fast-generate-001
+
+===== 10. VÉRIFICATION DOSSIER BACKEND FUNCTIONS LOCAL =====
+❌ BLOQUANT : dossier functions absent dans ce repo local
+Les Functions existent dans Firebase, mais leur code source backend n’est pas dans ce dossier.
+Tu dois récupérer le dossier functions qui a servi au déploiement, puis relancer cette commande.
+
+===== 13. TEST DIRECT VERTEX VEO 3.1 =====
+❌ Pas de token gcloud.
+Lance : gcloud auth login --no-launch-browser
+
+===== 14. VERDICT FINAL =====
+Functions détectées : 3 / 3
+ai_scenes dans storage.rules : 0
+final_scenes dans storage.rules : 0
+Vieux modèle VEO 3.0 restant : 1
+
+🔴 Backend local absent : impossible de corriger définitivement le modèle déployé depuis ce repo.
+
+✅ Rapport généré : repair_etat_veo31_20260501_034338.txt

@@ -1,0 +1,95 @@
+===== ÉTAT VEO 3.1 TAKE60 =====
+Projet : take30
+Functions region : europe-west1
+Vertex location : us-central1
+VEO model : veo-3.1-fast-generate-001
+
+===== 1. AUTHENTIFICATION =====
+--- Firebase ---
+Logged in as sahai.stephane@gmail.com
+
+--- GCloud ---
+
+===== 2. PROJET GOOGLE CLOUD =====
+
+===== 3. BILLING =====
+
+===== 4. API VERTEX AI / FIREBASE =====
+❌ aiplatform.googleapis.com non activée
+❌ cloudfunctions.googleapis.com non activée
+❌ cloudbuild.googleapis.com non activée
+❌ run.googleapis.com non activée
+❌ artifactregistry.googleapis.com non activée
+❌ firestore.googleapis.com non activée
+❌ firebasestorage.googleapis.com non activée
+❌ storage.googleapis.com non activée
+❌ iam.googleapis.com non activée
+
+===== 5. VARIABLES VEO 3.1 =====
+❌ GOOGLE_CLOUD_PROJECT absent
+❌ VERTEX_AI_LOCATION absent
+❌ GOOGLE_GENAI_USE_VERTEXAI absent
+✅ VEO_MODEL défini
+❌ GOOGLE_APPLICATION_CREDENTIALS absent
+❌ FIREBASE_ADMIN_PROJECT_ID absent
+❌ FIREBASE_ADMIN_CLIENT_EMAIL absent
+❌ FIREBASE_ADMIN_PRIVATE_KEY absent
+
+===== 6. CLOUD FUNCTIONS TAKE60 / VEO =====
+[90m│[39m checkVeoSceneGeneration      [90m│[39m v2      [90m│[39m callable                                   [90m│[39m europe-west1 [90m│[39m 256    [90m│[39m nodejs20 [90m│[39m
+[90m│[39m renderTake60GuidedScene      [90m│[39m v2      [90m│[39m callable                                   [90m│[39m europe-west1 [90m│[39m 256    [90m│[39m nodejs20 [90m│[39m
+[90m│[39m startVeoSceneGeneration      [90m│[39m v2      [90m│[39m callable                                   [90m│[39m europe-west1 [90m│[39m 256    [90m│[39m nodejs20 [90m│[39m
+
+===== 7. TEST HTTP DES FUNCTIONS =====
+
+--- startVeoSceneGeneration ---
+HTTP_CODE=401
+{"error":{"message":"Connexion requise.","status":"UNAUTHENTICATED"}}
+🟠 startVeoSceneGeneration existe mais demande une authentification Firebase
+
+--- checkVeoSceneGeneration ---
+HTTP_CODE=401
+{"error":{"message":"Connexion requise.","status":"UNAUTHENTICATED"}}
+🟠 checkVeoSceneGeneration existe mais demande une authentification Firebase
+
+--- renderTake60GuidedScene ---
+HTTP_CODE=401
+{"error":{"message":"Authentification requise.","status":"UNAUTHENTICATED"}}
+🟠 renderTake60GuidedScene existe mais demande une authentification Firebase
+
+===== 8. STORAGE RULES =====
+8:    match /scenes/{userId}/{fileName} {
+15:    match /thumbnails/{userId}/{fileName} {
+22:    match /avatars/{fileName} {
+
+❌ ai_scenes absent
+❌ final_scenes absent
+
+===== 9. MODÈLES VEO / MOCKS DANS LE CODE =====
+--- Modèles VEO détectés ---
+docs/veo3_implementation_plan.md:144:- VEO_MODEL_ID=veo-3.1-fast-generate-001
+
+--- Mocks / placeholders critiques ---
+lib/services/take60_guided_scene_service.dart:29:    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+lib/admin/services/veo_video_generation_service.dart:101:class MockVeoVideoGenerationService implements VeoVideoGenerationService {
+lib/admin/services/veo_video_generation_service.dart:102:  const MockVeoVideoGenerationService();
+lib/admin/services/veo_video_generation_service.dart:105:      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+test/take60_guided_scene_service_test.dart:82:          'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+test/take60_guided_scene_service_test.dart:100:            'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+test/admin_scene_widget_test.dart:7:class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
+test/admin_scene_widget_test.dart:43:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+test/admin_scene_widget_test.dart:116:            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+test/admin_scene_workflow_test.dart:33:  group('MockVeoVideoGenerationService', () {
+test/admin_scene_workflow_test.dart:35:      const service = MockVeoVideoGenerationService();
+
+===== 10. TEST DIRECT ACCÈS VERTEX AI VEO 3.1 =====
+❌ Impossible de récupérer un token gcloud
+
+===== VERDICT RAPIDE =====
+API Vertex AI : 0
+Functions VEO détectées : 3 / 3
+Règle ai_scenes : 0
+Règle final_scenes : 0
+Mocks critiques : 4
+
+✅ Rapport généré : etat_veo31_20260501_034057.txt
