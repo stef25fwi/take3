@@ -1,4 +1,4 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 /**
  * Take30 — Cloud Functions (v2)
  *
@@ -415,6 +415,42 @@ export const computeLeaderboard = onSchedule("every 60 minutes", async () => {
 
 export { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
 export { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)
+//   GET /veoStatus?token=<DIAG_TOKEN>
+// ═══════════════════════════════════════════════════════════════════════════
+import { getVertexVeoConfig, VEO_API_KEY } from "./veo/shared";
+
+export const veoStatus = onRequest(
+  { secrets: [VEO_API_KEY], cors: true, region: "europe-west1" },
+  async (req, res) => {
+    const DIAG_TOKEN = process.env.DIAG_TOKEN ?? "veo3-diag-2026";
+    if (req.query["token"] !== DIAG_TOKEN) {
+      res.status(401).json({ error: "Token invalide." });
+      return;
+    }
+    const config = getVertexVeoConfig();
+    const apiKeyPresent = (() => {
+      try { return Boolean(VEO_API_KEY.value()); } catch { return false; }
+    })();
+    res.json({
+      ok: true,
+      projectId: config.projectId,
+      location: config.location || null,
+      modelId: config.modelId || null,
+      outputBucket: config.outputBucket,
+      useMock: config.useMock,
+      veoApiKeyPresent: apiKeyPresent,
+      missingVars: [
+        !config.projectId && "GOOGLE_CLOUD_PROJECT",
+        !config.location && "VERTEX_LOCATION",
+        !config.modelId && "VEO_MODEL_ID",
+        !apiKeyPresent && "VEO_API_KEY (secret)",
+      ].filter(Boolean),
+    });
+  }
+);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // renderTake60GuidedScene — real FFmpeg pipeline lives in ./take60.
