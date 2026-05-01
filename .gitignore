@@ -19,3 +19,7 @@ ui-debug.log
 # Service accounts (NE JAMAIS COMMIT)
 scripts/seed/serviceAccountKey.json
 **/serviceAccountKey*.json
+
+# Local rule backups
+backups/
+take30/backups/
