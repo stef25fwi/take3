@@ -423,7 +423,7 @@ export { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
 import { getVertexVeoConfig, VEO_API_KEY } from "./veo/shared";
 
 export const veoStatus = onRequest(
-  { secrets: [VEO_API_KEY], cors: true, region: "europe-west1" },
+  { secrets: [VEO_API_KEY], cors: true, invoker: "public", region: "europe-west1" },
   async (req, res) => {
     const DIAG_TOKEN = process.env.DIAG_TOKEN ?? "veo3-diag-2026";
     if (req.query["token"] !== DIAG_TOKEN) {
