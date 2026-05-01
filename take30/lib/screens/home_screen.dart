@@ -171,7 +171,13 @@ class _HomeHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Take30Logo(height: 23),
+        const SizedBox(
+          height: 46,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Take30Logo(height: 28),
+          ),
+        ),
         Row(
           children: [
             if (canOpenAdmin) ...[

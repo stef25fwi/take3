@@ -87,18 +87,18 @@ class MainShell extends ConsumerWidget {
                           width: 68,
                           height: 60,
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 6),
+                            padding: const EdgeInsets.only(top: 2),
                             child: Image.asset(
                               '../take 30 images IA/clapback.png',
                               fit: BoxFit.contain,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 1),
                         Text(
                           'Record',
                           style: GoogleFonts.dmSans(
-                            fontSize: 10,
+                            fontSize: 9.5,
+                            letterSpacing: -0.2,
                             color: index == 2 ? selectedColor : inactiveColor,
                             fontWeight: index == 2 ? FontWeight.w600 : FontWeight.w400,
                           ),
