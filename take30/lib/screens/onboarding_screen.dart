@@ -132,16 +132,18 @@ class _HeroCollagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        const horizontalBleed = AppThemeTokens.pageHorizontalPadding;
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
         final cardWidth = width * 0.40;
         final cardHeight = height * 0.64;
 
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             Positioned(
-              left: width * 0.02,
-              top: height * 0.14,
+              left: -horizontalBleed,
+              top: height * 0.18,
               child: _PhotoSlot(
                 width: cardWidth,
                 height: cardHeight,
@@ -150,8 +152,8 @@ class _HeroCollagePlaceholder extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: width * 0.25,
-              top: height * -0.01,
+              left: width * 0.24,
+              top: height * 0.04,
               child: _PhotoSlot(
                 width: cardWidth * 1.01,
                 height: cardHeight * 1.04,
@@ -161,8 +163,8 @@ class _HeroCollagePlaceholder extends StatelessWidget {
               ),
             ),
             Positioned(
-              right: width * 0.02,
-              top: height * 0.15,
+              right: -horizontalBleed,
+              top: height * 0.19,
               child: _PhotoSlot(
                 width: cardWidth,
                 height: cardHeight,
