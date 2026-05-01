@@ -18,7 +18,7 @@ import {
   copyVertexAssetToFirebaseStorage,
 } from "./vertexClient";
 
-export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY] }, async (req) => {
+export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
   const uid = req.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion requise.");

@@ -13,7 +13,7 @@ import {
 } from "./shared";
 import { startVertexSceneGeneration } from "./vertexClient";
 
-export const startVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY] }, async (req) => {
+export const startVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
   const uid = req.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion requise.");
