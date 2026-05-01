@@ -131,6 +131,96 @@ service cloud.firestore {
     }
 
     // Tout le reste est refusé par défaut.
+
+    // ======================================================
+    // TAKE60 PROD EXACT RULES
+    // Collections réelles détectées :
+    // - scenes adminWorkflow
+    // - take60_user_recordings
+    // - take60_guided_projects
+    // - take60_renders
+    // ======================================================
+
+    function take60IsAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.superAdmin == true ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.superAdmin == true
+          )
+        )
+      );
+    }
+
+    function take60IsOwnerByData(data) {
+      return request.auth != null && (
+        data.userId == request.auth.uid ||
+        data.ownerId == request.auth.uid ||
+        data.authorId == request.auth.uid ||
+        data.createdBy == request.auth.uid
+      );
+    }
+
+    // Scènes guidées Take60 publiées / prêtes.
+    // Le client charge collection('scenes').where('adminWorkflow', isEqualTo: true)
+    match /scenes/{sceneId} {
+      allow read: if resource.data.adminWorkflow == true && (
+        resource.data.status == 'published' ||
+        resource.data.publicationStatus == 'published' ||
+        resource.data.ready == true ||
+        resource.data.isPublished == true ||
+        take60IsAdmin()
+      );
+
+      allow create, update, delete: if take60IsAdmin();
+    }
+
+    // Métadonnées des segments enregistrés par l'utilisateur.
+    // Client : collection('take60_user_recordings')
+    match /take60_user_recordings/{recordingId} {
+      allow create: if request.auth != null && take60IsOwnerByData(request.resource.data);
+
+      allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+
+      allow update: if take60IsAdmin() || (
+        take60IsOwnerByData(resource.data) &&
+        take60IsOwnerByData(request.resource.data)
+      );
+
+      allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+    }
+
+    // Projets guidés sauvegardés côté client.
+    // Client : collection('take60_guided_projects')
+    match /take60_guided_projects/{projectId} {
+      allow create: if request.auth != null && take60IsOwnerByData(request.resource.data);
+
+      allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+
+      allow update: if take60IsAdmin() || (
+        take60IsOwnerByData(resource.data) &&
+        take60IsOwnerByData(request.resource.data)
+      );
+
+      allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+    }
+
+    // Rendus serveur créés par Cloud Functions Admin SDK.
+    // Function : db.collection("take60_renders")
+    // Le client peut lire son rendu, mais ne doit pas l'écrire directement.
+    match /take60_renders/{renderId} {
+      allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+
+      allow create, update, delete: if take60IsAdmin();
+    }
+
+
     match /{document=**} {
       allow read, write: if false;
     }
