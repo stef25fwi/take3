@@ -5,8 +5,8 @@ DART_FILE="lib/firebase_options.dart"
 API_KEY=$(grep "apiKey:" "$DART_FILE" | head -1 | sed -E "s/.*apiKey: '([^']+)'.*/\1/")
 
 echo "===== 1. DIAGNOSTIC CONFIG VEO3 ====="
-curl -sS "https://veostatus-hykin5mi5q-ew.a.run.app?token=veo3-diag-2026" \
-  | python3 -m json.tool 2>/dev/null || echo "(pas de reponse JSON)"
+VEO_STATUS_RAW=$(curl -sS "https://veostatus-hykin5mi5q-ew.a.run.app?token=veo3-diag-2026")
+echo "$VEO_STATUS_RAW" | python3 -m json.tool 2>/dev/null || echo "Reponse brute : $VEO_STATUS_RAW"
 
 echo ""
 echo "===== 2. CONNEXION USER ADMIN ====="
@@ -16,14 +16,14 @@ SIGNIN=$(curl -sS \
   -d '{"email":"test.take60.1777598090@take60.app","password":"Take60Test!2026","returnSecureToken":true}')
 
 TOKEN=$(echo "$SIGNIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('idToken',''))" 2>/dev/null || true)
-UID=$(echo "$SIGNIN"   | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('localId',''))" 2>/dev/null || true)
+USER_ID=$(echo "$SIGNIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('localId',''))" 2>/dev/null || true)
 
 if [ -z "$TOKEN" ]; then
   echo "ERREUR connexion : $(echo "$SIGNIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('error',{}).get('message','?'))" 2>/dev/null)"
   exit 1
 fi
-echo "UID   : $UID"
-echo "Token : ${TOKEN:0:40}..."
+echo "USER_ID : $USER_ID"
+echo "Token   : ${TOKEN:0:40}..."
 
 echo ""
 echo "===== 3. TEST startVeoSceneGeneration ====="
@@ -58,7 +58,7 @@ except: print('')
 
 if [ -z "$SCENE_ID" ]; then
   echo ""
-  echo "STOP : sceneId absent — VEO3 n'a pas demarré."
+  echo "STOP : sceneId absent — VEO3 n'a pas demarre."
   exit 1
 fi
 
@@ -67,8 +67,7 @@ echo "Job cree : sceneId=$SCENE_ID  provider=$PROVIDER"
 
 if [ "$PROVIDER" = "mock" ]; then
   echo ""
-  echo "MODE MOCK : env vars VERTEX_LOCATION / VEO_MODEL_ID non configurés."
-  echo "Consultez le resultat veoStatus ci-dessus pour les variables manquantes."
+  echo "MODE MOCK : VERTEX_LOCATION / VEO_MODEL_ID non configures en production."
 fi
 
 echo ""
