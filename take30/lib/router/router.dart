@@ -71,7 +71,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (location == AppRouter.admin) {
         if (!isAuthenticated) {
           final redirect = Uri.encodeComponent(AppRouter.admin);
-          return '${AppRouter.auth}?tab=login&redirect=$redirect';
+          return '${AppRouter.auth}?tab=login&mode=admin&redirect=$redirect';
         }
         if (!isAdmin) {
           return AppRouter.home;
