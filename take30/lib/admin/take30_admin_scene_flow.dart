@@ -179,7 +179,9 @@ String _normalizeSceneRegionCode(
 ) {
   final trimmed = raw.trim();
   if (trimmed.isEmpty) {
-    return regionName.isEmpty ? 'global' : normalizeRegionCode(countryCode, regionName);
+    return regionName.isEmpty
+        ? 'global'
+        : normalizeRegionCode(countryCode, regionName);
   }
   if (trimmed.toLowerCase() == 'global') {
     return 'global';
@@ -187,7 +189,8 @@ String _normalizeSceneRegionCode(
   if (trimmed.contains('_')) {
     return trimmed.toLowerCase();
   }
-  return normalizeRegionCode(countryCode, regionName.isEmpty ? trimmed : regionName);
+  return normalizeRegionCode(
+      countryCode, regionName.isEmpty ? trimmed : regionName);
 }
 
 class AdminSession {
@@ -376,7 +379,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                 width: 52,
                                 height: 52,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF6C4DFF).withValues(alpha: 0.10),
+                                  color: const Color(0xFF6C4DFF)
+                                      .withValues(alpha: 0.10),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: const Icon(
@@ -426,10 +430,12 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Mot de passe admin',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
                               suffixIcon: IconButton(
                                 onPressed: () {
-                                  setState(() => _obscurePassword = !_obscurePassword);
+                                  setState(() =>
+                                      _obscurePassword = !_obscurePassword);
                                 },
                                 icon: Icon(
                                   _obscurePassword
@@ -472,7 +478,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                   ? const SizedBox(
                                       width: 16,
                                       height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
                                     )
                                   : const Icon(Icons.login_rounded),
                               label: const Text('Entrer dans l’admin'),
@@ -507,11 +514,16 @@ class SceneDraftRepository {
 
   static Future<void> save(SceneFormData data) async {
     _upsertLocal(data);
-    await _collection.doc(data.id).set(data.toFirestore(), SetOptions(merge: true));
+    await _collection
+        .doc(data.id)
+        .set(data.toFirestore(), SetOptions(merge: true));
   }
 
   static Stream<List<SceneFormData>> watchAll() {
-    return _collection.where('adminWorkflow', isEqualTo: true).snapshots().map((s) {
+    return _collection
+        .where('adminWorkflow', isEqualTo: true)
+        .snapshots()
+        .map((s) {
       final items = s.docs
           .map((doc) => SceneFormData.fromFirestore(doc.id, doc.data()))
           .toList()
@@ -537,9 +549,8 @@ class SceneDraftRepository {
   static List<SceneFormData> drafts() =>
       _items.where((e) => e.status == SceneStatus.draft).toList();
 
-  static List<SceneFormData> pendingPublication() => _items
-      .where((e) => e.status == SceneStatus.pendingPublication)
-      .toList();
+  static List<SceneFormData> pendingPublication() =>
+      _items.where((e) => e.status == SceneStatus.pendingPublication).toList();
 
   static List<SceneFormData> published() =>
       _items.where((e) => e.status == SceneStatus.published).toList();
@@ -1054,8 +1065,10 @@ class SceneFormData {
         'createdBy': nowAuthor,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
-        'submittedAt': submittedAt == null ? null : Timestamp.fromDate(submittedAt!),
-        'publishedAt': publishedAt == null ? null : Timestamp.fromDate(publishedAt!),
+        'submittedAt':
+            submittedAt == null ? null : Timestamp.fromDate(submittedAt!),
+        'publishedAt':
+            publishedAt == null ? null : Timestamp.fromDate(publishedAt!),
       },
     };
   }
@@ -1064,7 +1077,8 @@ class SceneFormData {
     final actorSheet = data['actorSheet'] as Map<String, dynamic>? ?? const {};
     final aiIntroVideo = data['aiIntroVideo'] as Map<String, dynamic>?;
     final raccord = data['raccord'] as Map<String, dynamic>? ?? const {};
-    final publication = data['publication'] as Map<String, dynamic>? ?? const {};
+    final publication =
+        data['publication'] as Map<String, dynamic>? ?? const {};
     final geo = _deriveSceneGeoMetadata(
       countryCode: data['countryCode'] as String?,
       countryName: data['countryName'] as String?,
@@ -1151,8 +1165,9 @@ class SceneFormData {
       startCue: data['startCue'] as String? ?? '',
       movementCue: data['movementCue'] as String? ?? '',
       exactEnd: data['exactEnd'] as String? ?? '',
-      idealTextDuration:
-          data['idealTextDuration'] as String? ?? data['durationSeconds']?.toString() ?? '',
+      idealTextDuration: data['idealTextDuration'] as String? ??
+          data['durationSeconds']?.toString() ??
+          '',
       technicalConstraints: actorSheet['actingConstraints'] as String? ?? '',
       spectatorFeeling: data['spectatorFeeling'] as String? ?? '',
       directorFinalNote: actorSheet['adminNotes'] as String? ?? '',
@@ -1177,17 +1192,18 @@ class SceneFormData {
               generatedAt: _readAdminDate(aiIntroVideo['generatedAt']),
               updatedAt: _readAdminDate(aiIntroVideo['updatedAt']),
             ),
-      veoPrompt: data['veoPrompt'] as String? ?? aiIntroVideo?['prompt'] as String? ?? '',
-      veoStatus: data['veoStatus'] as String? ?? (aiIntroVideo == null ? 'none' : 'completed'),
+      veoPrompt: data['veoPrompt'] as String? ??
+          aiIntroVideo?['prompt'] as String? ??
+          '',
+      veoStatus: data['veoStatus'] as String? ??
+          (aiIntroVideo == null ? 'none' : 'completed'),
       veoOperationId: data['veoOperationId'] as String?,
       veoError: data['veoError'] as String?,
-      visualTransitionPoint:
-          raccord['visualTransitionPoint'] as String? ?? '',
+      visualTransitionPoint: raccord['visualTransitionPoint'] as String? ?? '',
       emotionalTransitionPoint:
           raccord['emotionalTransitionPoint'] as String? ?? '',
       firstActorAction: raccord['firstActorAction'] as String? ?? '',
-      firstExpectedEmotion:
-          raccord['firstExpectedEmotion'] as String? ?? '',
+      firstExpectedEmotion: raccord['firstExpectedEmotion'] as String? ?? '',
       lastAiFrameDescription:
           raccord['lastAiFrameDescription'] as String? ?? '',
       createdAt: _readAdminDate(publication['createdAt'] ?? data['createdAt']),
@@ -1268,29 +1284,22 @@ class SceneFormData {
       block3Look: 'Fuite',
       block3Rhythm: 'Cassé',
       startPosition: 'Assis, mains sur la table.',
-      plannedMovement:
-          'Léger mouvement du corps vers l’avant puis retrait.',
-      expectedGestures:
-          'Doigts qui tapent, micro-tensions dans les mains.',
+      plannedMovement: 'Léger mouvement du corps vers l’avant puis retrait.',
+      expectedGestures: 'Doigts qui tapent, micro-tensions dans les mains.',
       usedObjects: 'Table, chaise.',
-      keyActionMoment:
-          'Pause silencieuse avant la phrase : Vous bluffez.',
-      bodyDirection:
-          'Tension dans la mâchoire, épaules légèrement bloquées.',
+      keyActionMoment: 'Pause silencieuse avant la phrase : Vous bluffez.',
+      bodyDirection: 'Tension dans la mâchoire, épaules légèrement bloquées.',
       framingType: 'plan rapproché',
       cameraRelation: 'face caméra',
       gazePoint: 'Objectif caméra, comme si le policier était en face.',
       faceDirection:
           'Micro-expressions, regard dur au début puis regard fuyant à la fin.',
       globalTempo: 'lent puis instable',
-      silences:
-          'Garder des silences avant et après les phrases importantes.',
-      dramaticRise:
-          'La montée dramatique doit être intérieure, sans cri.',
+      silences: 'Garder des silences avant et après les phrases importantes.',
+      dramaticRise: 'La montée dramatique doit être intérieure, sans cri.',
       floorMark: 'Position fixe assise.',
       startCue: 'Regard caméra, respiration lente.',
-      movementCue:
-          'Respiration visible avant la deuxième réplique.',
+      movementCue: 'Respiration visible avant la deuxième réplique.',
       exactEnd: 'Finir sur un regard fuyant, sans ajouter de texte.',
       idealTextDuration: '20 secondes environ.',
       technicalConstraints:
@@ -1389,7 +1398,8 @@ class AdminDashboardPage extends StatelessWidget {
         stream: SceneDraftRepository.watchAll(),
         builder: (context, snapshot) {
           final items = snapshot.data ?? SceneDraftRepository.all();
-          final drafts = items.where((item) => item.status == SceneStatus.draft).length;
+          final drafts =
+              items.where((item) => item.status == SceneStatus.draft).length;
           final pending = items
               .where((item) => item.status == SceneStatus.pendingPublication)
               .length;
@@ -1544,7 +1554,8 @@ class AnalyticsFullPage extends StatelessWidget {
         stream: SceneDraftRepository.watchAll(),
         builder: (context, snapshot) {
           final items = snapshot.data ?? SceneDraftRepository.all();
-          final drafts = items.where((item) => item.status == SceneStatus.draft).toList();
+          final drafts =
+              items.where((item) => item.status == SceneStatus.draft).toList();
           final pending = items
               .where((item) => item.status == SceneStatus.pendingPublication)
               .toList();
@@ -1722,7 +1733,8 @@ class _AnalyticsBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = items.fold<int>(0, (runningTotal, item) => runningTotal + item.$2);
+    final total =
+        items.fold<int>(0, (runningTotal, item) => runningTotal + item.$2);
     final safeTotal = total == 0 ? 1 : total;
 
     return Container(
@@ -2132,12 +2144,12 @@ class _AddScenePageState extends State<AddScenePage> {
   void initState() {
     super.initState();
     _veoVideoGenerationService = widget.veoVideoGenerationService ??
-      VeoVideoGenerationServiceFactory.createDefault();
+        VeoVideoGenerationServiceFactory.createDefault();
     _veoSceneGenerationService =
         widget.veoSceneGenerationService ?? VeoSceneGenerationService();
     _useCallableVeoFlow = widget.veoVideoGenerationService == null;
-    _sceneDraftId =
-        widget.initialData?.id ?? 'scene_${DateTime.now().millisecondsSinceEpoch}';
+    _sceneDraftId = widget.initialData?.id ??
+        'scene_${DateTime.now().millisecondsSinceEpoch}';
     _sceneCreatedAt = widget.initialData?.createdAt ?? DateTime.now();
     if (widget.initialData != null) {
       _hydrateFromDraft(widget.initialData!);
@@ -2209,8 +2221,8 @@ class _AddScenePageState extends State<AddScenePage> {
     directorFinalNoteCtrl.text = data.directorFinalNote;
     requestedVideoFormatCtrl.text = data.requestedVideoFormat;
     veoPromptCtrl.text = data.veoPrompt.isNotEmpty
-      ? data.veoPrompt
-      : (data.aiIntroVideo?.prompt ?? _kDefaultVeoPrompt);
+        ? data.veoPrompt
+        : (data.aiIntroVideo?.prompt ?? _kDefaultVeoPrompt);
     visualTransitionPointCtrl.text = data.visualTransitionPoint;
     emotionalTransitionPointCtrl.text = data.emotionalTransitionPoint;
     firstActorActionCtrl.text = data.firstActorAction;
@@ -2219,14 +2231,16 @@ class _AddScenePageState extends State<AddScenePage> {
     markersJsonCtrl.text =
         data.markersJson.trim().isEmpty ? '[]' : data.markersJson;
 
-    selectedMainObjective = data.mainObjective.isEmpty ? selectedMainObjective : data.mainObjective;
+    selectedMainObjective =
+        data.mainObjective.isEmpty ? selectedMainObjective : data.mainObjective;
     selectedDominantEmotion = data.dominantEmotion.isEmpty
         ? selectedDominantEmotion
         : data.dominantEmotion;
     selectedSecondaryEmotion = data.secondaryEmotion.isEmpty
         ? selectedSecondaryEmotion
         : data.secondaryEmotion;
-    selectedIntensity = data.intensity.isEmpty ? selectedIntensity : data.intensity;
+    selectedIntensity =
+        data.intensity.isEmpty ? selectedIntensity : data.intensity;
     selectedTextType = data.textType.isEmpty ? selectedTextType : data.textType;
     selectedFramingType =
         data.framingType.isEmpty ? selectedFramingType : data.framingType;
@@ -2243,9 +2257,8 @@ class _AddScenePageState extends State<AddScenePage> {
       ..addAll(data.playStyles);
     _testedPrompts = List<String>.from(data.testedPrompts);
     _generatedPreviewVideo = data.aiIntroVideo;
-    _validatedPreviewVideo = data.aiIntroVideo?.isValidated == true
-        ? data.aiIntroVideo
-        : null;
+    _validatedPreviewVideo =
+        data.aiIntroVideo?.isValidated == true ? data.aiIntroVideo : null;
     _isVeoPromptLocked = data.aiIntroVideo != null;
     _veoStatusValue = data.veoStatus;
     _veoOperationId = data.veoOperationId;
@@ -2336,14 +2349,14 @@ class _AddScenePageState extends State<AddScenePage> {
 
   SceneFormData _composeData(SceneStatus status, {DateTime? updatedAt}) {
     final now = updatedAt ?? DateTime.now();
-    final currentVideo = (_validatedPreviewVideo ?? _generatedPreviewVideo)
-        ?.copyWith(
-          status: _validatedPreviewVideo != null
-              ? AiIntroVideoStatus.validated
-              : (_generatedPreviewVideo?.status ?? AiIntroVideoStatus.generated),
-          prompt: veoPromptCtrl.text.trim(),
-          updatedAt: now,
-        );
+    final currentVideo =
+        (_validatedPreviewVideo ?? _generatedPreviewVideo)?.copyWith(
+      status: _validatedPreviewVideo != null
+          ? AiIntroVideoStatus.validated
+          : (_generatedPreviewVideo?.status ?? AiIntroVideoStatus.generated),
+      prompt: veoPromptCtrl.text.trim(),
+      updatedAt: now,
+    );
     final geo = _deriveSceneGeoMetadata(
       countryCode: widget.initialData?.countryCode,
       countryName: widget.initialData?.countryName,
@@ -2446,8 +2459,9 @@ class _AddScenePageState extends State<AddScenePage> {
               status == SceneStatus.published
           ? (widget.initialData?.submittedAt ?? now)
           : null,
-      publishedAt:
-          status == SceneStatus.published ? (widget.initialData?.publishedAt ?? now) : null,
+      publishedAt: status == SceneStatus.published
+          ? (widget.initialData?.publishedAt ?? now)
+          : null,
       createdBy: _currentCreatorId(),
       veoPrompt: veoPromptCtrl.text.trim(),
       veoStatus: _normalizedVeoStatusValue(),
@@ -2560,8 +2574,8 @@ class _AddScenePageState extends State<AddScenePage> {
           _isVeoPromptLocked = false;
           _veoStatusValue = job.status.value;
           _veoGenerationStatus = null;
-          _veoGenerationError = job.errorMessage ??
-              'La génération VEO a échoué côté backend.';
+          _veoGenerationError =
+              job.errorMessage ?? 'La génération VEO a échoué côté backend.';
         });
         return;
       }
@@ -2795,7 +2809,8 @@ class _AddScenePageState extends State<AddScenePage> {
                           onChanged: (v) =>
                               setState(() => selectedMainObjective = v!),
                         ),
-                        _textField(mainObstacleCtrl, 'Obstacle principal', maxLines: 3),
+                        _textField(mainObstacleCtrl, 'Obstacle principal',
+                            maxLines: 3),
                         _textField(stakesCtrl, 'Enjeu', maxLines: 3),
                       ],
                     ),
@@ -2820,7 +2835,8 @@ class _AddScenePageState extends State<AddScenePage> {
                           label: 'Niveau d’intensité',
                           value: selectedIntensity,
                           items: intensityOptions,
-                          onChanged: (v) => setState(() => selectedIntensity = v!),
+                          onChanged: (v) =>
+                              setState(() => selectedIntensity = v!),
                         ),
                         _textField(
                           evolutionStartCtrl,
@@ -2834,7 +2850,8 @@ class _AddScenePageState extends State<AddScenePage> {
                           evolutionEndCtrl,
                           'Évolution émotionnelle — fin',
                         ),
-                        _textField(emotionalNuanceCtrl, 'Nuance importante', maxLines: 3),
+                        _textField(emotionalNuanceCtrl, 'Nuance importante',
+                            maxLines: 3),
                       ],
                     ),
                     _section(
@@ -2854,8 +2871,10 @@ class _AddScenePageState extends State<AddScenePage> {
                             });
                           },
                         ),
-                        _textField(actingDirectionCtrl, 'Consigne de jeu', maxLines: 4),
-                        _textField(referencesCtrl, 'Références éventuelles', maxLines: 3),
+                        _textField(actingDirectionCtrl, 'Consigne de jeu',
+                            maxLines: 4),
+                        _textField(referencesCtrl, 'Références éventuelles',
+                            maxLines: 3),
                       ],
                     ),
                     _section(
@@ -2865,7 +2884,8 @@ class _AddScenePageState extends State<AddScenePage> {
                           label: 'Type de texte',
                           value: selectedTextType,
                           items: textTypeOptions,
-                          onChanged: (v) => setState(() => selectedTextType = v!),
+                          onChanged: (v) =>
+                              setState(() => selectedTextType = v!),
                         ),
                         _dialogueTextField(),
                         _textField(
@@ -2915,7 +2935,8 @@ class _AddScenePageState extends State<AddScenePage> {
                           'Moment précis d’une action importante',
                           maxLines: 3,
                         ),
-                        _textField(bodyDirectionCtrl, 'Consigne corporelle', maxLines: 3),
+                        _textField(bodyDirectionCtrl, 'Consigne corporelle',
+                            maxLines: 3),
                       ],
                     ),
                     _section(
@@ -2925,16 +2946,19 @@ class _AddScenePageState extends State<AddScenePage> {
                           label: 'Type de cadrage',
                           value: selectedFramingType,
                           items: framingOptions,
-                          onChanged: (v) => setState(() => selectedFramingType = v!),
+                          onChanged: (v) =>
+                              setState(() => selectedFramingType = v!),
                         ),
                         _dropdown(
                           label: 'Rapport caméra',
                           value: selectedCameraRelation,
                           items: cameraRelationOptions,
-                          onChanged: (v) => setState(() => selectedCameraRelation = v!),
+                          onChanged: (v) =>
+                              setState(() => selectedCameraRelation = v!),
                         ),
                         _textField(gazePointCtrl, 'Point de regard'),
-                        _textField(faceDirectionCtrl, 'Consigne visage', maxLines: 3),
+                        _textField(faceDirectionCtrl, 'Consigne visage',
+                            maxLines: 3),
                       ],
                     ),
                     _section(
@@ -2944,10 +2968,13 @@ class _AddScenePageState extends State<AddScenePage> {
                           label: 'Tempo global',
                           value: selectedGlobalTempo,
                           items: tempoOptions,
-                          onChanged: (v) => setState(() => selectedGlobalTempo = v!),
+                          onChanged: (v) =>
+                              setState(() => selectedGlobalTempo = v!),
                         ),
-                        _textField(silencesCtrl, 'Silences à garder', maxLines: 3),
-                        _textField(dramaticRiseCtrl, 'Montée dramatique', maxLines: 3),
+                        _textField(silencesCtrl, 'Silences à garder',
+                            maxLines: 3),
+                        _textField(dramaticRiseCtrl, 'Montée dramatique',
+                            maxLines: 3),
                       ],
                     ),
                     _section(
@@ -2957,7 +2984,8 @@ class _AddScenePageState extends State<AddScenePage> {
                         _textField(startCueCtrl, 'Top départ'),
                         _textField(movementCueCtrl, 'Signal de mouvement'),
                         _textField(exactEndCtrl, 'Moment exact de fin'),
-                        _textField(idealTextDurationCtrl, 'Durée idéale du texte'),
+                        _textField(
+                            idealTextDurationCtrl, 'Durée idéale du texte'),
                         _textField(
                           technicalConstraintsCtrl,
                           'Contraintes son / lumière / cadre',
@@ -2991,7 +3019,8 @@ class _AddScenePageState extends State<AddScenePage> {
                       children: [
                         const Text(
                           'Rédigez ici le prompt qui servira à générer une vidéo cinématique d’environ 15 secondes. Cette vidéo doit préparer l’ambiance émotionnelle de la scène sans voler la place de l’acteur. Elle doit idéalement se terminer sur un cadrage permettant un raccord naturel avec la scène jouée.',
-                          style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                          style:
+                              TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
                         TextFormField(
                           controller: veoPromptCtrl,
@@ -3044,17 +3073,21 @@ class _AddScenePageState extends State<AddScenePage> {
                                 ),
                               ),
                               SizedBox(height: 10),
-                              Text('• Durée recommandée : environ 15 secondes.'),
+                              Text(
+                                  '• Durée recommandée : environ 15 secondes.'),
                               Text('• Format recommandé : 16:9.'),
-                              Text('• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
+                              Text(
+                                  '• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
                               Text('• Éviter les visages identifiables.'),
                               Text('• Éviter le texte à l’image.'),
                               Text('• Éviter les logos.'),
-                              Text('• La vidéo IA doit servir d’introduction émotionnelle.'),
+                              Text(
+                                  '• La vidéo IA doit servir d’introduction émotionnelle.'),
                             ],
                           ),
                         ),
-                        if (_veoStatusValue != 'none' || _veoOperationId != null)
+                        if (_veoStatusValue != 'none' ||
+                            _veoOperationId != null)
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -3065,7 +3098,8 @@ class _AddScenePageState extends State<AddScenePage> {
                                 ),
                               ),
                               if (_veoOperationId != null)
-                                Chip(label: Text('Opération: $_veoOperationId')),
+                                Chip(
+                                    label: Text('Opération: $_veoOperationId')),
                             ],
                           ),
                         if (_testedPrompts.isNotEmpty)
@@ -3089,7 +3123,8 @@ class _AddScenePageState extends State<AddScenePage> {
                                 )
                                 .toList(),
                           ),
-                        if (_veoGenerationError != null || _veoGenerationStatus != null)
+                        if (_veoGenerationError != null ||
+                            _veoGenerationStatus != null)
                           Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
@@ -3111,7 +3146,8 @@ class _AddScenePageState extends State<AddScenePage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    _veoGenerationError ?? _veoGenerationStatus!,
+                                    _veoGenerationError ??
+                                        _veoGenerationStatus!,
                                     style: TextStyle(
                                       color: _veoGenerationError != null
                                           ? const Color(0xFF991B1B)
@@ -3124,7 +3160,9 @@ class _AddScenePageState extends State<AddScenePage> {
                             ),
                           ),
                         FilledButton.icon(
-                          onPressed: _isGeneratingPreview ? null : _generatePreviewVideo,
+                          onPressed: _isGeneratingPreview
+                              ? null
+                              : _generatePreviewVideo,
                           icon: _isGeneratingPreview
                               ? const SizedBox(
                                   width: 18,
@@ -3188,7 +3226,8 @@ class _AddScenePageState extends State<AddScenePage> {
                       children: [
                         const Text(
                           'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur. Pour chaque plan, choisis le type, la durée, la réplique imposée et le cadrage caméra. La durée totale ne doit pas dépasser 60 secondes.',
-                          style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                          style:
+                              TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
                         _GuidedTimelineEditor(controller: markersJsonCtrl),
                       ],
@@ -3199,7 +3238,8 @@ class _AddScenePageState extends State<AddScenePage> {
                       children: [
                         const Text(
                           'L’admin voit ici exactement comment la scène apparaîtra avant publication. La vidéo IA reste toujours une introduction émotionnelle, distincte de la prestation de l’acteur.',
-                          style: TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                          style:
+                              TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
                         _SceneDetailPreview(scene: _currentPreviewData()),
                         Wrap(
@@ -3226,8 +3266,9 @@ class _AddScenePageState extends State<AddScenePage> {
                               label: const Text('Modifier le prompt VEO3'),
                             ),
                             OutlinedButton.icon(
-                              onPressed:
-                                  _isGeneratingPreview ? null : _generatePreviewVideo,
+                              onPressed: _isGeneratingPreview
+                                  ? null
+                                  : _generatePreviewVideo,
                               icon: const Icon(Icons.refresh_rounded),
                               label: const Text('Régénérer la vidéo'),
                             ),
@@ -3240,7 +3281,8 @@ class _AddScenePageState extends State<AddScenePage> {
                               .map(
                                 (status) => ChoiceChip(
                                   label: Text(status.label),
-                                  selected: _selectedPublicationTarget == status,
+                                  selected:
+                                      _selectedPublicationTarget == status,
                                   onSelected: (_) {
                                     setState(() {
                                       _selectedPublicationTarget = status;
@@ -3268,12 +3310,14 @@ class _AddScenePageState extends State<AddScenePage> {
                                 _generateScene();
                               },
                               icon: const Icon(Icons.schedule_send_rounded),
-                              label: const Text('Envoyer en attente de publication'),
+                              label: const Text(
+                                  'Envoyer en attente de publication'),
                             ),
                             FilledButton.tonalIcon(
                               onPressed: () {
                                 setState(() {
-                                  _selectedPublicationTarget = SceneStatus.published;
+                                  _selectedPublicationTarget =
+                                      SceneStatus.published;
                                 });
                                 _generateScene();
                               },
@@ -3586,7 +3630,8 @@ class _AddScenePageState extends State<AddScenePage> {
         return;
       }
 
-      final generated = await _veoVideoGenerationService.generateSceneIntroVideo(
+      final generated =
+          await _veoVideoGenerationService.generateSceneIntroVideo(
         sceneDraftId: _sceneDraftId,
         prompt: prompt,
         durationSeconds: 15,
@@ -3639,7 +3684,8 @@ class _AddScenePageState extends State<AddScenePage> {
       _isVeoPromptLocked = false;
       _validatedPreviewVideo = null;
       _veoGenerationError = null;
-      _veoStatusValue = _generatedPreviewVideo == null ? 'none' : _veoStatusValue;
+      _veoStatusValue =
+          _generatedPreviewVideo == null ? 'none' : _veoStatusValue;
       _veoGenerationStatus =
           'Prompt réactivé. Corrige le texte puis relance une génération.';
     });
@@ -4057,6 +4103,14 @@ class _SceneLibraryList extends StatelessWidget {
   }
 }
 
+String _compactDialoguePreview(String value) {
+  final normalized = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (normalized.isEmpty) {
+    return 'Aucun dialogue renseigné';
+  }
+  return normalized;
+}
+
 class _SceneLibraryCard extends StatelessWidget {
   const _SceneLibraryCard({required this.scene});
 
@@ -4132,6 +4186,28 @@ class _SceneLibraryCard extends StatelessWidget {
                       Text(
                         'Durée IA : ${scene.aiDurationSeconds}s • Créée le ${_formatAdminDate(scene.createdAt)}',
                         style: const TextStyle(color: Color(0xFF6B7280)),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Texte / dialogue',
+                        style: TextStyle(
+                          color: Color(0xFF111827),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _compactDialoguePreview(scene.dialogueText),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: true,
+                        style: const TextStyle(
+                          color: Color(0xFF374151),
+                          fontSize: 13,
+                          height: 1.25,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -4475,8 +4551,10 @@ class _SceneDetailPreview extends StatelessWidget {
                   children: [
                     _PreviewPill(label: 'Catégorie', value: scene.category),
                     _PreviewPill(label: 'Genre', value: scene.genre),
-                    _PreviewPill(label: 'Niveau', value: scene.recommendedLevel),
-                    _PreviewPill(label: 'Audition', value: scene.targetDuration),
+                    _PreviewPill(
+                        label: 'Niveau', value: scene.recommendedLevel),
+                    _PreviewPill(
+                        label: 'Audition', value: scene.targetDuration),
                     _PreviewPill(label: 'Statut', value: scene.status.label),
                   ],
                 ),
@@ -4939,8 +5017,7 @@ class _GuidedTimelineEditorState extends State<_GuidedTimelineEditor> {
               userTypes: _userTypes,
               onChange: (key, value) => _update(i, key, value),
               onMoveUp: i == 0 ? null : () => _move(i, -1),
-              onMoveDown:
-                  i == _markers.length - 1 ? null : () => _move(i, 1),
+              onMoveDown: i == _markers.length - 1 ? null : () => _move(i, 1),
               onDelete: () => _remove(i),
             ),
         const SizedBox(height: 12),
@@ -4952,9 +5029,8 @@ class _GuidedTimelineEditorState extends State<_GuidedTimelineEditor> {
             Text(
               'Durée totale: $total/60 s',
               style: TextStyle(
-                color: tooLong
-                    ? const Color(0xFFD32F2F)
-                    : const Color(0xFF1F2937),
+                color:
+                    tooLong ? const Color(0xFFD32F2F) : const Color(0xFF1F2937),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -5036,9 +5112,8 @@ class _MarkerRow extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: isUser
-                    ? const Color(0xFFFFB800)
-                    : const Color(0xFF2563EB),
+                backgroundColor:
+                    isUser ? const Color(0xFFFFB800) : const Color(0xFF2563EB),
                 child: Text(
                   '${index + 1}',
                   style: const TextStyle(
