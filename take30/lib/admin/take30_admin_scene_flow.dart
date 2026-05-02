@@ -366,6 +366,34 @@ String _normalizeExtractedPromptBlock(String value) {
       .trim();
 }
 
+String _extractFirstJsonBlock(String raw) {
+  try {
+    final cleaned = raw
+        .replaceAll(RegExp(r'```json', caseSensitive: false), '')
+        .replaceAll('```', '')
+        .trim();
+    if (cleaned.isEmpty) {
+      return cleaned;
+    }
+
+    final firstArrayIndex = cleaned.indexOf('[');
+    final lastArrayIndex = cleaned.lastIndexOf(']');
+    if (firstArrayIndex >= 0 && lastArrayIndex > firstArrayIndex) {
+      return cleaned.substring(firstArrayIndex, lastArrayIndex + 1).trim();
+    }
+
+    final firstObjectIndex = cleaned.indexOf('{');
+    final lastObjectIndex = cleaned.lastIndexOf('}');
+    if (firstObjectIndex >= 0 && lastObjectIndex > firstObjectIndex) {
+      return cleaned.substring(firstObjectIndex, lastObjectIndex + 1).trim();
+    }
+
+    return cleaned;
+  } catch (_) {
+    return raw.trim();
+  }
+}
+
 String _extractSection(
   String raw,
   List<String> headings,
@@ -3099,6 +3127,31 @@ class _AddScenePageState extends State<AddScenePage> {
     );
   }
 
+  List<dynamic>? _tryDecodeGuidedTimelineJson({required bool showError}) {
+    final raw = markersJsonCtrl.text.trim().isEmpty
+        ? '[]'
+        : markersJsonCtrl.text.trim();
+    final jsonBlock = _extractFirstJsonBlock(raw);
+
+    try {
+      final decoded = jsonDecode(jsonBlock);
+      if (decoded is List) {
+        markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert(decoded);
+        return decoded;
+      }
+    } catch (_) {
+      // Message handled below so this helper never throws.
+    }
+
+    if (showError) {
+      _showAdminMessage(
+        'Timeline JSON invalide : colle uniquement un tableau JSON qui commence par [ et finit par ].',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+    }
+    return null;
+  }
+
   bool _setControllerText(
     TextEditingController controller,
     String value, {
@@ -3281,7 +3334,7 @@ class _AddScenePageState extends State<AddScenePage> {
     }
 
     final userCharacterFields = _extractColonFields(parsed.userCharacter);
-    final timelineWarning = <String>[];
+    final importWarnings = <String>[];
     var veoPromptSkipped = false;
 
     setState(() {
@@ -3407,12 +3460,20 @@ class _AddScenePageState extends State<AddScenePage> {
       _appendLabeledText(referencesCtrl, 'Mots-clés', parsed.keywords);
 
       if (parsed.guidedTimelineJson.trim().isNotEmpty) {
+        final jsonBlock = _extractFirstJsonBlock(parsed.guidedTimelineJson);
         try {
-          final decoded = jsonDecode(parsed.guidedTimelineJson);
-          markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert(decoded);
+          final decoded = jsonDecode(jsonBlock);
+          if (decoded is List) {
+            markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert(decoded);
+          } else {
+            importWarnings.add(
+              'Timeline détectée mais JSON invalide : champ non importé.',
+            );
+          }
         } catch (_) {
-          markersJsonCtrl.text = parsed.guidedTimelineJson.trim();
-          timelineWarning.add('Timeline JSON importée mais à vérifier.');
+          importWarnings.add(
+            'Timeline détectée mais JSON invalide : champ non importé.',
+          );
         }
       }
 
@@ -3429,9 +3490,9 @@ class _AddScenePageState extends State<AddScenePage> {
       'Champs remplis automatiquement.',
       backgroundColor: const Color(0xFF065F46),
     );
-    if (timelineWarning.isNotEmpty) {
+    if (importWarnings.isNotEmpty) {
       _showAdminMessage(
-        timelineWarning.first,
+        importWarnings.first,
         backgroundColor: const Color(0xFF92400E),
       );
     }
@@ -3815,6 +3876,10 @@ class _AddScenePageState extends State<AddScenePage> {
         backgroundColor: const Color(0xFFB91C1C),
       );
       await _scrollToSection(_step15SectionKey);
+      return;
+    }
+
+    if (_tryDecodeGuidedTimelineJson(showError: true) == null) {
       return;
     }
 
@@ -4405,6 +4470,15 @@ class _AddScenePageState extends State<AddScenePage> {
                               TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
                         _GuidedTimelineEditor(controller: markersJsonCtrl),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Le champ timeline doit contenir uniquement un tableau JSON : [ ... ].',
+                          style: TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                     _section(
@@ -4713,6 +4787,11 @@ class _AddScenePageState extends State<AddScenePage> {
   }
 
   Future<void> _generatePreviewVideo() async {
+    final timeline = _tryDecodeGuidedTimelineJson(showError: true);
+    if (timeline == null) {
+      return;
+    }
+
     final prompt = veoPromptCtrl.text.trim();
 
     if (_useCallableVeoFlow) {

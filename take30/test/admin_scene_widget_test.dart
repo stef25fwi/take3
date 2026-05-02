@@ -5,6 +5,8 @@ import 'package:take30/admin/services/veo_video_generation_service.dart';
 import 'package:take30/admin/take30_admin_scene_flow.dart';
 
 class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
+  int callCount = 0;
+
   @override
   Future<AiGeneratedVideo> generateSceneIntroVideo({
     required String sceneDraftId,
@@ -12,6 +14,7 @@ class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
     int durationSeconds = 15,
     String aspectRatio = '16:9',
   }) async {
+    callCount += 1;
     final now = DateTime(2026, 4, 27, 18, 0);
     return AiGeneratedVideo(
       provider: 'veo3',
@@ -352,6 +355,100 @@ Je n'ai rien vu.
         "La preuve ADN vient d'arriver sur la table.",
       );
       expect(state.referencesCtrl.text, contains('Objectif importé'));
+    },
+  );
+
+  testWidgets(
+    'import prompt extrait uniquement le tableau JSON timeline même avec texte autour',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: SceneFormData.testPoliceInterrogation(),
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      state.importPromptCtrl.text = '''
+TITRE DE LA SCÈNE
+Timeline propre
+
+TIMELINE TAKE60 GUIDÉE JSON
+Voici la timeline à importer :
+```json
+[
+  {
+    "id": "intro_ai_001",
+    "type": "intro_cinema",
+    "durationSeconds": 8,
+    "label": "Intro"
+  }
+]
+```
+
+NOTES TECHNIQUES
+Ne doit jamais être copié dans markersJsonCtrl.
+''';
+      state.debugApplyPromptImport();
+      await tester.pumpAndSettle();
+
+      expect(state.markersJsonCtrl.text.trim(), startsWith('['));
+      expect(state.markersJsonCtrl.text.trim(), endsWith(']'));
+      expect(state.markersJsonCtrl.text, contains('intro_ai_001'));
+      expect(state.markersJsonCtrl.text, isNot(contains('NOTES TECHNIQUES')));
+      expect(state.markersJsonCtrl.text, isNot(contains('Ne doit jamais')));
+    },
+  );
+
+  testWidgets(
+    'preview avec timeline JSON invalide bloque VEO sans modifier la preview',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final fakeService = _FakeVeoVideoGenerationService();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: SceneFormData.testPoliceInterrogation(),
+            veoVideoGenerationService: fakeService,
+          ),
+        ),
+      );
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      state.markersJsonCtrl.text = 'NOTES TECHNIQUES\nceci n’est pas du JSON';
+      state.setState(() {});
+      await tester.pump();
+
+      await tester.scrollUntilVisible(
+        find.text('Valider et générer la preview'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Valider et générer la preview'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(fakeService.callCount, 0);
+      expect(find.text('Corriger le prompt'), findsNothing);
+      expect(
+        find.text(
+          'Timeline JSON invalide : colle uniquement un tableau JSON qui commence par [ et finit par ].',
+        ),
+        findsOneWidget,
+      );
+      expect(state.markersJsonCtrl.text, contains('NOTES TECHNIQUES'));
     },
   );
 }
