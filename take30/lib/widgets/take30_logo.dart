@@ -7,7 +7,7 @@ class Take30Logo extends StatelessWidget {
     super.key,
     this.height = 44,
     this.assetPath = Take30Assets.logoDark,
-    this.semanticLabel = 'Take 60',
+    this.semanticLabel = 'Take 30',
     this.color,
     this.sandColor = const Color(0xFFF4C20D),
     this.innerGlow = 0.25,

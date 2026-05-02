@@ -1,0 +1,11 @@
+===== PATCH TEXTES VISIBLES UNIQUEMENT =====
+Fichiers modifiés :
+ - apps/web/src/App.jsx
+ - apps/web/index.html
+
+===== FLUTTER ANALYZE =====
+Analyzing take30...                                             
+
+  error • Two elements in a constant set literal can't be equal • lib/services/auth_service.dart:60:5 • equal_elements_in_const_set
+
+1 issue found. (ran in 38.5s)

@@ -1,0 +1,634 @@
+===== 0. BRANCHE / ÉTAT INITIAL =====
+chore/unify-brand-take30-20260502_025445
+ D functions/src/take60/renderTake60GuidedScene.ts
+ M take30/firestore.rules
+ M take30/lib/admin/take30_admin_scene_flow.dart
+ M take30/lib/main.dart
+ M take30/lib/models/models.dart
+ D take30/lib/models/take60_guided_flow.dart
+ M take30/lib/providers/providers.dart
+ M take30/lib/screens/explore_screen.dart
+ M take30/lib/screens/record_screen.dart
+ M take30/lib/screens/scene_detail_screen.dart
+ D take30/lib/screens/take60_guided_record_screen.dart
+ M take30/lib/services/auth_service.dart
+ M take30/lib/services/notification_service.dart
+ M take30/lib/services/share_service.dart
+ D take30/lib/services/take60_guided_scene_service.dart
+ M take30/lib/widgets/take30_logo.dart
+ D take30/test/take60_guided_flow_test.dart
+ D take30/test/take60_guided_scene_service_test.dart
+?? audit_migration_take30_20260502_025445.txt
+?? functions/src/take30/
+?? migration_take60_to_take30_clean_20260502_025704.txt
+?? migration_take60_to_take30_clean_20260502_025922.txt
+?? take30/lib/models/take30_guided_flow.dart
+?? take30/lib/screens/take30_guided_record_screen.dart
+?? take30/lib/services/take30_guided_scene_service.dart
+?? take30/test/take30_guided_flow_test.dart
+?? take30/test/take30_guided_scene_service_test.dart
+
+===== 1. PATCH SOURCE TAKE60 -> TAKE30 =====
+Fichiers modifiés contenu :
+Aucun contenu modifié.
+
+Fichiers/dossiers renommés :
+Aucun renommage nécessaire.
+
+===== 2. AUDIT OCCURRENCES TAKE60 RESTANTES HORS RAPPORTS/BUILDS =====
+./storage.rules:42:    // TAKE60 PROD EXACT STORAGE RULES
+./storage.rules:45:    // - take60_renders/{uid}/{renderId}.mp4
+./storage.rules:46:    // - take60_renders/{uid}/{renderId}.jpg
+./storage.rules:49:    // Segments vidéo utilisateur Take60.
+./storage.rules:61:    match /take60_renders/{userId}/{fileName} {
+./firestore.rules:136:    // TAKE60 PROD EXACT RULES
+./firestore.rules:139:    // - take60_user_recordings
+./firestore.rules:140:    // - take60_guided_projects
+./firestore.rules:141:    // - take60_renders
+./firestore.rules:144:    function take60IsAdmin() {
+./firestore.rules:161:    function take60IsOwnerByData(data) {
+./firestore.rules:170:    // Scènes guidées Take60 publiées / prêtes.
+./firestore.rules:178:        take60IsAdmin()
+./firestore.rules:181:      allow create, update, delete: if take60IsAdmin();
+./firestore.rules:185:    // Client : collection('take60_user_recordings')
+./firestore.rules:186:    match /take60_user_recordings/{recordingId} {
+./firestore.rules:187:      allow create: if request.auth != null && take60IsOwnerByData(request.resource.data);
+./firestore.rules:189:      allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+./firestore.rules:191:      allow update: if take60IsAdmin() || (
+./firestore.rules:192:        take60IsOwnerByData(resource.data) &&
+./firestore.rules:193:        take60IsOwnerByData(request.resource.data)
+./firestore.rules:196:      allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+./firestore.rules:200:    // Client : collection('take60_guided_projects')
+./firestore.rules:201:    match /take60_guided_projects/{projectId} {
+./firestore.rules:202:      allow create: if request.auth != null && take60IsOwnerByData(request.resource.data);
+./firestore.rules:204:      allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+./firestore.rules:206:      allow update: if take60IsAdmin() || (
+./firestore.rules:207:        take60IsOwnerByData(resource.data) &&
+./firestore.rules:208:        take60IsOwnerByData(request.resource.data)
+./firestore.rules:211:      allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+./firestore.rules:215:    // Function : db.collection("take60_renders")
+./firestore.rules:217:    match /take60_renders/{renderId} {
+./firestore.rules:218:      allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+./firestore.rules:220:      allow create, update, delete: if take60IsAdmin();
+./functions/lib/index.js:36:exports.renderTake60GuidedScene = exports.veoStatus = exports.checkVeoSceneGeneration = exports.startVeoSceneGeneration = exports.computeLeaderboard = exports.sendPushOnNotificationCreate = exports.pingSceneView = exports.onDuelVote = exports.toggleFollow = exports.onCommentCreate = exports.onLikeWrite = exports.onSceneDelete = exports.onSceneCreate = void 0;
+./functions/lib/index.js:469:// renderTake60GuidedScene — real FFmpeg pipeline lives in ./take60.
+./functions/lib/index.js:471:var renderTake60GuidedScene_1 = require("./take60/renderTake60GuidedScene");
+./functions/lib/index.js:472:Object.defineProperty(exports, "renderTake60GuidedScene", { enumerable: true, get: function () { return renderTake60GuidedScene_1.renderTake60GuidedScene; } });
+./functions/lib/take30/renderTake30GuidedScene.js:3: * Take60 — Guided scene final renderer.
+./functions/lib/take30/renderTake30GuidedScene.js:61:exports.renderTake60GuidedScene = void 0;
+./functions/lib/take30/renderTake30GuidedScene.js:331:exports.renderTake60GuidedScene = (0, https_1.onCall)(async (req) => {
+./functions/lib/take30/renderTake30GuidedScene.js:348:    const renderId = db.collection("take60_renders").doc().id;
+./functions/lib/take30/renderTake30GuidedScene.js:349:    const renderRef = db.doc(`take60_renders/${renderId}`);
+./functions/lib/take30/renderTake30GuidedScene.js:367:        const workDir = await fs.mkdtemp(path.join(os.tmpdir(), `take60-${renderId}-`));
+./functions/lib/take30/renderTake30GuidedScene.js:371:            const videoRemote = `take60_renders/${auth.uid}/${renderId}.mp4`;
+./functions/lib/take30/renderTake30GuidedScene.js:372:            const thumbRemote = `take60_renders/${auth.uid}/${renderId}.jpg`;
+./functions/lib/take30/renderTake30GuidedScene.js:394:            v2_1.logger.info(`Take60 render ${renderId} ok (${duration}s)`);
+./functions/lib/take30/renderTake30GuidedScene.js:397:            v2_1.logger.error(`Take60 render ${renderId} failed`, err);
+./functions/src/index.ts:494:// renderTake60GuidedScene — real FFmpeg pipeline lives in ./take60.
+./functions/src/index.ts:496:export { renderTake60GuidedScene } from "./take60/renderTake60GuidedScene";
+./functions/src/take30/renderTake30GuidedScene.ts:2: * Take60 — Guided scene final renderer.
+./functions/src/take30/renderTake30GuidedScene.ts:361:export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
+./functions/src/take30/renderTake30GuidedScene.ts:383:  const renderId = db.collection("take60_renders").doc().id;
+./functions/src/take30/renderTake30GuidedScene.ts:384:  const renderRef = db.doc(`take60_renders/${renderId}`);
+./functions/src/take30/renderTake30GuidedScene.ts:405:    const workDir = await fs.mkdtemp(path.join(os.tmpdir(), `take60-${renderId}-`));
+./functions/src/take30/renderTake30GuidedScene.ts:413:      const videoRemote = `take60_renders/${auth.uid}/${renderId}.mp4`;
+./functions/src/take30/renderTake30GuidedScene.ts:414:      const thumbRemote = `take60_renders/${auth.uid}/${renderId}.jpg`;
+./functions/src/take30/renderTake30GuidedScene.ts:436:      logger.info(`Take60 render ${renderId} ok (${duration}s)`);
+./functions/src/take30/renderTake30GuidedScene.ts:438:      logger.error(`Take60 render ${renderId} failed`, err as Error);
+./apps/web/index.html:6:    <title>Take 60</title>
+./apps/web/src/App.jsx:41:              alt="Take 60"
+./apps/web/src/App.jsx:54:                alt="Take 60"
+./apps/web/src/App.jsx:58:                La version web utilise maintenant la direction Take 60 sombre avec
+./.vscode/tasks.json:34:        "feat: refine entry flow and take60 home ui"
+./.vscode/tasks.json:57:      "label": "Deploy Take60 Hosting",
+./.vscode/tasks.json:59:      "command": "cd ${workspaceFolder}/take30 && cp firebase.json firebase.json.bak.take60 && python3 -c \"import json, pathlib; p = pathlib.Path('firebase.json'); data = json.loads(p.read_text()); data['hosting']['site'] = 'take60'; p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\\n')\" && firebase deploy --project take30 --only hosting && mv firebase.json.bak.take60 firebase.json",
+./.vscode/tasks.json:104:      "label": "🚀 Deploy Take 60 Splash",
+./.vscode/tasks.json:109:        "feat: refresh Take 60 branding and splash"
+./scripts/verify_admin_access.js:12:const ADMIN_UID = "admin_take60";
+./scripts/verify_admin_access.js:13:const ADMIN_EMAIL = "admin@take60.local";
+./scripts/verify_admin_access.js:14:const ADMIN_PASSWORD = "Take60Admin2026!";
+./scripts/seed/users.json:3:    "id": "admin_take60",
+./scripts/seed/users.json:4:    "username": "take60_admin",
+./scripts/seed/users.json:5:    "displayName": "Take 60 Admin",
+./scripts/seed/users.json:6:    "avatarUrl": "https://i.pravatar.cc/150?u=take60-admin",
+./scripts/seed/users.json:7:    "email": "admin@take60.local",
+./scripts/seed/users.json:8:    "authPassword": "Take60Admin2026!",
+./scripts/seed/users.json:9:    "bio": "Administration Take 60",
+./scripts/seed/README.md:21:- email : `admin@take60.local`
+./scripts/seed/README.md:22:- mot de passe : `Take60Admin2026!`
+./scripts/seed/README.md:23:- accès : page connexion Flutter puis redirection vers l'espace admin si `isAdmin` est présent dans `users/admin_take60`
+./take30/storage.rules:35:    // TAKE60 PROD EXACT STORAGE RULES
+./take30/storage.rules:38:    // - take60_renders/{uid}/{renderId}.mp4
+./take30/storage.rules:39:    // - take60_renders/{uid}/{renderId}.jpg
+./take30/storage.rules:42:    // Segments vidéo utilisateur Take60.
+./take30/storage.rules:54:    match /take60_renders/{userId}/{fileName} {
+./take30/lib/main.dart.before_appcheck_fix:117:      title: 'Take 60',
+./take30/lib/main.dart.bak:103:      title: 'Take 60',
+./take30/run_veo3_check.sh:16:  -d '{"email":"test.take60.1777598090@take60.app","password":"Take60Test!2026","returnSecureToken":true}')
+./take30/test_veo3_corrected.sh:13:TEST_EMAIL="test.take60.$(date +%s)@take60.app"
+./take30/test_veo3_corrected.sh:14:TEST_PASSWORD="Take60Test!2026"
+./take30/ios/Runner/Info.plist:43:	<string>Take60 utilise votre position approximative uniquement pour vous proposer les scènes et classements de votre région. Votre position exacte n’est pas affichée publiquement.</string>
+
+===== 3. VÉRIFICATION OCCURRENCES TAKE30 =====
+take30/assets/PLACEMENT_PROMPT.md:1:# TAKE30 — Prompt de placement des images dans le code Flutter
+take30/assets/PLACEMENT_PROMPT.md:4:Ce fichier contient les instructions exactes pour intégrer les images SVG/PNG dans le code Flutter Take30.
+take30/assets/PLACEMENT_PROMPT.md:348:/// Centralise tous les chemins d'assets Take30
+take30/assets/PLACEMENT_PROMPT.md:349:class Take30Assets {
+take30/assets/PLACEMENT_PROMPT.md:445:Take30Assets.sceneThumb(sceneId: scene.id, fit: BoxFit.cover)
+take30/assets/PLACEMENT_PROMPT.md:451:Take30Assets.avatarWidget(userId: user.id, size: 40, showBorder: true)
+take30/assets/PLACEMENT_PROMPT.md:465:avatarUrl: Take30Assets.lunaAct  // utiliser les constantes
+take30/assets/PLACEMENT_PROMPT.md:471:thumbnailUrl: Take30Assets.sceneRupture
+take30/assets/PLACEMENT_PROMPT.md:488:*Fichier généré automatiquement pour Take30 Flutter MVP*
+take30/assets/onboarding/hero_onboarding.svg:78:  <!-- Take30 watermark subtle -->
+take30/assets/onboarding/hero_onboarding.svg:79:  <text x="188" y="30" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="800" fill="white" opacity="0.1" letter-spacing="-1">Take30</text>
+take30/assets/README.md:1:Dossier réservé aux visuels, icônes et médias de l’application Take30.
+take30/docs/veo3_implementation_plan.md.bak_veo31:1:# Take30 — Implémentation VEO 3 pour “Ajout scène”
+take30/docs/veo3_implementation_plan.md.bak_veo31:31:- Projet Firebase : take30
+take30/docs/veo3_implementation_plan.md.bak_veo31:32:- Storage bucket : take30.firebasestorage.app
+take30/docs/veo3_implementation_plan.md.bak_veo31:142:- GOOGLE_CLOUD_PROJECT=take30
+take30/docs/veo3_implementation_plan.md.bak_veo31:145:- VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+take30/docs/veo3_implementation_plan.md:1:# Take30 — Implémentation VEO 3 pour “Ajout scène”
+take30/docs/veo3_implementation_plan.md:31:- Projet Firebase : take30
+take30/docs/veo3_implementation_plan.md:32:- Storage bucket : take30.firebasestorage.app
+take30/docs/veo3_implementation_plan.md:142:- GOOGLE_CLOUD_PROJECT=take30
+take30/docs/veo3_implementation_plan.md:145:- VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+take30/firebase.json:6:          "projectId": "take30",
+take30/firebase.json:13:          "projectId": "take30",
+take30/web/index.html:26:  <meta name="apple-mobile-web-app-title" content="take30">
+take30/web/index.html:32:  <title>take30</title>
+take30/web/manifest.json:2:    "name": "take30",
+take30/web/manifest.json:3:    "short_name": "take30",
+take30/test/explore_screen_widget_test.dart:5:import 'package:take30/providers/explorer_providers.dart';
+take30/test/explore_screen_widget_test.dart:6:import 'package:take30/screens/explore_screen.dart';
+take30/test/explore_screen_widget_test.dart:7:import 'package:take30/services/location_region_service.dart';
+take30/test/explorer_ranking_location_test.dart:4:import 'package:take30/providers/explorer_providers.dart';
+take30/test/take30_guided_scene_service_test.dart:2:import 'package:take30/models/models.dart';
+take30/test/take30_guided_scene_service_test.dart:3:import 'package:take30/services/take30_guided_scene_service.dart';
+take30/test/take30_guided_scene_service_test.dart:24:        Take30SceneMarker(
+take30/test/take30_guided_scene_service_test.dart:38:        const Take30SceneMarker(
+take30/test/take30_guided_scene_service_test.dart:55:  Take30UserRecordingDraft buildRecording({String? uploadedVideoUrl}) {
+take30/test/take30_guided_scene_service_test.dart:56:    return Take30UserRecordingDraft(
+take30/test/take30_guided_scene_service_test.dart:70:  group('isTake30RenderableRemoteVideoUrl', () {
+take30/test/take30_guided_scene_service_test.dart:73:        isTake30RenderableRemoteVideoUrl('assets/scenes/demo.mp4'),
+take30/test/take30_guided_scene_service_test.dart:77:        isTake30RenderableRemoteVideoUrl('/tmp/local.mp4'),
+take30/test/take30_guided_scene_service_test.dart:81:        isTake30RenderableRemoteVideoUrl(
+take30/test/take30_guided_scene_service_test.dart:90:        isTake30RenderableRemoteVideoUrl('https://example.com/video.mp4'),
+take30/test/take30_guided_scene_service_test.dart:96:  group('validateTake30RenderRequest', () {
+take30/test/take30_guided_scene_service_test.dart:104:        () => validateTake30RenderRequest(
+take30/test/take30_guided_scene_service_test.dart:112:          isA<Take30GuidedSceneException>().having(
+take30/test/take30_guided_scene_service_test.dart:125:        () => validateTake30RenderRequest(
+take30/test/take30_guided_scene_service_test.dart:131:          isA<Take30GuidedSceneException>().having(
+take30/test/take30_guided_scene_service_test.dart:144:        () => validateTake30RenderRequest(
+take30/test/explorer_filter_location_test.dart:6:import 'package:take30/models/explorer_filter.dart';
+take30/test/explorer_filter_location_test.dart:7:import 'package:take30/providers/explorer_providers.dart';
+take30/test/explorer_filter_location_test.dart:8:import 'package:take30/services/location_region_service.dart';
+take30/test/admin_scene_widget_test.dart:3:import 'package:take30/admin/models/ai_generated_video.dart';
+take30/test/admin_scene_widget_test.dart:4:import 'package:take30/admin/services/veo_video_generation_service.dart';
+take30/test/admin_scene_widget_test.dart:5:import 'package:take30/admin/take30_admin_scene_flow.dart';
+take30/test/widget_test.dart:7:import 'package:take30/main.dart';
+take30/test/widget_test.dart:8:import 'package:take30/models/models.dart';
+take30/test/widget_test.dart:9:import 'package:take30/providers/providers.dart';
+take30/test/widget_test.dart:10:import 'package:take30/router/router.dart';
+take30/test/widget_test.dart:11:import 'package:take30/services/auth_service.dart';
+take30/test/widget_test.dart:56:  testWidgets('l application affiche Take30', (WidgetTester tester) async {
+take30/test/widget_test.dart:78:        child: const Take30App(),
+take30/test/widget_test.dart:84:    expect(find.byKey(const Key('take30_app_root')), findsOneWidget);
+take30/test/take30_guided_flow_test.dart:2:import 'package:take30/models/take30_guided_flow.dart';
+take30/test/take30_guided_flow_test.dart:5:  group('Take30UserRecordingDraft', () {
+take30/test/take30_guided_flow_test.dart:7:      final original = Take30UserRecordingDraft(
+take30/test/take30_guided_flow_test.dart:21:      final restored = Take30UserRecordingDraft.fromMap(
+take30/test/take30_guided_flow_test.dart:35:      final draft = Take30UserRecordingDraft(
+take30/test/take30_guided_flow_test.dart:60:  group('Take30GuidedFlowDraft', () {
+take30/test/take30_guided_flow_test.dart:62:      final draft = Take30GuidedFlowDraft(
+take30/test/take30_guided_flow_test.dart:69:          Take30UserRecordingDraft(
+take30/test/take30_guided_flow_test.dart:84:      final restored = Take30GuidedFlowDraft.fromMap(
+take30/test/admin_scene_workflow_test.dart:2:import 'package:take30/admin/models/ai_generated_video.dart';
+take30/test/admin_scene_workflow_test.dart:3:import 'package:take30/admin/services/veo_video_generation_service.dart';
+take30/test/admin_scene_workflow_test.dart:4:import 'package:take30/admin/take30_admin_scene_flow.dart';
+take30/test/admin_scene_workflow_test.dart:156:        createdBy: 'admin_take30',
+take30/test/location_region_service_test.dart:8:import 'package:take30/services/location_region_service.dart';
+take30/firestore.rules:106:    // TAKE30 PROD EXACT RULES
+take30/firestore.rules:109:    // - take30_user_recordings
+take30/firestore.rules:110:    // - take30_guided_projects
+take30/firestore.rules:111:    // - take30_renders
+take30/firestore.rules:114:    function take30IsAdmin() {
+take30/firestore.rules:131:    function take30IsOwnerByData(data) {
+take30/firestore.rules:140:    // Scènes guidées Take30 publiées / prêtes.
+take30/firestore.rules:148:        take30IsAdmin()
+take30/firestore.rules:151:      allow create, update, delete: if take30IsAdmin();
+take30/firestore.rules:155:    // Client : collection('take30_user_recordings')
+take30/firestore.rules:156:    match /take30_user_recordings/{recordingId} {
+take30/firestore.rules:157:      allow create: if request.auth != null && take30IsOwnerByData(request.resource.data);
+take30/firestore.rules:159:      allow read: if take30IsAdmin() || take30IsOwnerByData(resource.data);
+take30/firestore.rules:161:      allow update: if take30IsAdmin() || (
+take30/firestore.rules:162:        take30IsOwnerByData(resource.data) &&
+take30/firestore.rules:163:        take30IsOwnerByData(request.resource.data)
+take30/firestore.rules:166:      allow delete: if take30IsAdmin() || take30IsOwnerByData(resource.data);
+take30/firestore.rules:170:    // Client : collection('take30_guided_projects')
+take30/firestore.rules:171:    match /take30_guided_projects/{projectId} {
+take30/firestore.rules:172:      allow create: if request.auth != null && take30IsOwnerByData(request.resource.data);
+take30/firestore.rules:174:      allow read: if take30IsAdmin() || take30IsOwnerByData(resource.data);
+take30/firestore.rules:176:      allow update: if take30IsAdmin() || (
+take30/firestore.rules:177:        take30IsOwnerByData(resource.data) &&
+take30/firestore.rules:178:        take30IsOwnerByData(request.resource.data)
+take30/firestore.rules:181:      allow delete: if take30IsAdmin() || take30IsOwnerByData(resource.data);
+take30/firestore.rules:185:    // Function : db.collection("take30_renders")
+take30/firestore.rules:187:    match /take30_renders/{renderId} {
+take30/firestore.rules:188:      allow read: if take30IsAdmin() || take30IsOwnerByData(resource.data);
+take30/firestore.rules:190:      allow create, update, delete: if take30IsAdmin();
+take30/lib/main.dart:99:      child: const Take30App(),
+take30/lib/main.dart:104:class Take30App extends ConsumerWidget {
+take30/lib/main.dart:105:  const Take30App({super.key});
+take30/lib/main.dart:116:      key: const Key('take30_app_root'),
+take30/lib/main.dart:118:      title: 'Take 30',
+take30/lib/widgets/take30_logo.dart:5:class Take30Logo extends StatelessWidget {
+take30/lib/widgets/take30_logo.dart:6:  const Take30Logo({
+take30/lib/widgets/take30_logo.dart:9:    this.assetPath = Take30Assets.logoDark,
+take30/lib/widgets/take30_logo.dart:10:    this.semanticLabel = 'Take 30',
+take30/lib/router/router.dart:5:import '../admin/take30_admin_scene_flow.dart';
+take30/lib/providers/providers.dart:37:  static const String _storageKey = 'take30.theme_mode';
+take30/lib/providers/providers.dart:221:const String _demoPublishedScenesPrefKey = 'take30.demo_published_scenes';
+take30/lib/providers/providers.dart:222:const String _demoSceneInteractionsPrefKey = 'take30.demo_scene_interactions';
+take30/lib/providers/providers.dart:602:  static const String _demoEmail = 'demo@take30.app';
+take30/lib/providers/providers.dart:603:  static const String _demoUsername = 'demo_take30';
+take30/lib/providers/providers.dart:738:        username: 'demo_take30',
+take30/lib/providers/providers.dart:740:        avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:741:        email: 'demo@take30.app',
+take30/lib/providers/providers.dart:1056:      message: 'Take 30 a besoin de ta caméra pour enregistrer tes performances.',
+take30/lib/providers/providers.dart:1074:      message: 'Take 30 a besoin du microphone pour capturer le son.',
+take30/lib/providers/providers.dart:1281:          username: 'demo_take30',
+take30/lib/providers/providers.dart:1283:          avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1284:          email: 'demo@take30.app',
+take30/lib/providers/providers.dart:1311:              avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1312:              email: 'demo@take30.app',
+take30/lib/providers/providers.dart:1387:              avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1388:              email: 'demo@take30.app',
+take30/lib/providers/providers.dart:1429:              avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1430:              email: 'demo@take30.app',
+take30/lib/providers/providers.dart:1487:  static const String _demoEmail = 'demo@take30.app';
+take30/lib/providers/providers.dart:1488:  static const String _demoUsername = 'demo_take30';
+take30/lib/providers/providers.dart:1574:      title: 'Take 30 — Spotlight A',
+take30/lib/providers/providers.dart:1588:      title: 'Take 30 — Spotlight B',
+take30/lib/providers/providers.dart:1691:      subMessage: 'Vote maintenant pour voir le duel Take 30 en action.',
+take30/lib/providers/providers.dart:1703:      avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1711:      avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1762:  return user.username == 'demo_take30' ||
+take30/lib/providers/providers.dart:1764:      user.email == 'demo@take30.app';
+take30/lib/providers/providers.dart:1842:      bio: 'Tu explores Take 30 en mode démo avec un profil instantané.',
+take30/lib/providers/providers.dart:1859:        avatarUrl: Take30Assets.avatarIaFemaleAlt,
+take30/lib/providers/providers.dart:1874:        avatarUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/providers.dart:1888:        avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/providers.dart:1902:        avatarUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/providers.dart:1916:        avatarUrl: Take30Assets.avatarIaFemaleAlt,
+take30/lib/providers/providers.dart:1930:        avatarUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/providers.dart:1944:        avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/providers.dart:1945:        bio: 'Top créatrice Take 30, connue pour ses scènes ultra nettes.',
+take30/lib/providers/providers.dart:1958:        avatarUrl: Take30Assets.avatarIaFemaleAlt,
+take30/lib/providers/providers.dart:1973:        username: 'demo_take30',
+take30/lib/providers/providers.dart:1975:        avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:1976:        email: 'demo@take30.app',
+take30/lib/providers/providers.dart:1977:        bio: 'Profil démo instantané pour parcourir Take 30 sans attendre.',
+take30/lib/providers/providers.dart:1988:        username: 'TalentTake30',
+take30/lib/providers/providers.dart:1989:        displayName: 'Talent Take 30',
+take30/lib/providers/providers.dart:1990:        avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/providers.dart:2058:          thumbnailUrl: Take30Assets.avatarIaFemaleAlt,
+take30/lib/providers/providers.dart:2085:          thumbnailUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/providers.dart:2094:    case 'demo_take30':
+take30/lib/providers/providers.dart:2100:          thumbnailUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/explorer_providers.dart:6:import '../admin/take30_admin_scene_flow.dart'
+take30/lib/providers/explorer_providers.dart:854:      avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/explorer_providers.dart:868:      avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/explorer_providers.dart:882:      avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/explorer_providers.dart:896:      avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/explorer_providers.dart:909:      avatarUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/explorer_providers.dart:922:      avatarUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/explorer_providers.dart:935:      avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/providers/explorer_providers.dart:949:      avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/providers/explorer_providers.dart:963:      avatarUrl: Take30Assets.avatarIaMaleLead,
+take30/lib/providers/explorer_providers.dart:977:      avatarUrl: Take30Assets.avatarIaFemaleLead,
+take30/lib/models/models.dart:3:import 'take30_guided_flow.dart';
+take30/lib/models/models.dart:5:export 'take30_guided_flow.dart';
+take30/lib/models/models.dart:230:    this.audioRules = const Take30AudioRules(),
+take30/lib/models/models.dart:266:  final Take30AudioRules audioRules;
+take30/lib/models/models.dart:267:  final List<Take30SceneMarker> markers;
+take30/lib/models/models.dart:396:      audioRules: Take30AudioRules.fromMap(_readMap(d['audioRules'])),
+take30/lib/models/models.dart:398:          .map(Take30SceneMarker.fromMap)
+take30/lib/models/take30_guided_flow.dart:17:  switch (_normalizeTake30Key(value)) {
+take30/lib/models/take30_guided_flow.dart:86:  switch (_normalizeTake30Key(value)) {
+take30/lib/models/take30_guided_flow.dart:133:  switch (_normalizeTake30Key(value)) {
+take30/lib/models/take30_guided_flow.dart:181:class Take30AudioRules {
+take30/lib/models/take30_guided_flow.dart:182:  const Take30AudioRules({
+take30/lib/models/take30_guided_flow.dart:194:  factory Take30AudioRules.fromMap(Map<String, dynamic>? json) {
+take30/lib/models/take30_guided_flow.dart:196:    return Take30AudioRules(
+take30/lib/models/take30_guided_flow.dart:217:      // Mapping vers le contrat backend (renderTake30GuidedScene).
+take30/lib/models/take30_guided_flow.dart:225:class Take30SceneMarker {
+take30/lib/models/take30_guided_flow.dart:226:  const Take30SceneMarker({
+take30/lib/models/take30_guided_flow.dart:262:  factory Take30SceneMarker.fromMap(Map<String, dynamic> json) {
+take30/lib/models/take30_guided_flow.dart:269:    return Take30SceneMarker(
+take30/lib/models/take30_guided_flow.dart:305:class Take30UserRecordingDraft {
+take30/lib/models/take30_guided_flow.dart:306:  const Take30UserRecordingDraft({
+take30/lib/models/take30_guided_flow.dart:330:  Take30UserRecordingDraft copyWith({
+take30/lib/models/take30_guided_flow.dart:337:    return Take30UserRecordingDraft(
+take30/lib/models/take30_guided_flow.dart:351:  factory Take30UserRecordingDraft.fromMap(Map<String, dynamic> json) {
+take30/lib/models/take30_guided_flow.dart:352:    return Take30UserRecordingDraft(
+take30/lib/models/take30_guided_flow.dart:363:      createdAt: _readTake30Date(json['createdAt']),
+take30/lib/models/take30_guided_flow.dart:364:      updatedAt: _readTake30Date(json['updatedAt']),
+take30/lib/models/take30_guided_flow.dart:384:class Take30PlaybackSegment {
+take30/lib/models/take30_guided_flow.dart:385:  const Take30PlaybackSegment({
+take30/lib/models/take30_guided_flow.dart:401:  factory Take30PlaybackSegment.fromMap(Map<String, dynamic> json) {
+take30/lib/models/take30_guided_flow.dart:402:    return Take30PlaybackSegment(
+take30/lib/models/take30_guided_flow.dart:424:class Take30RenderResult {
+take30/lib/models/take30_guided_flow.dart:425:  const Take30RenderResult({
+take30/lib/models/take30_guided_flow.dart:437:  final List<Take30PlaybackSegment> segments;
+take30/lib/models/take30_guided_flow.dart:439:  factory Take30RenderResult.fromMap(Map<String, dynamic> json) {
+take30/lib/models/take30_guided_flow.dart:441:    return Take30RenderResult(
+take30/lib/models/take30_guided_flow.dart:451:            (segment) => Take30PlaybackSegment.fromMap(
+take30/lib/models/take30_guided_flow.dart:470:class Take30GuidedFlowDraft {
+take30/lib/models/take30_guided_flow.dart:471:  const Take30GuidedFlowDraft({
+take30/lib/models/take30_guided_flow.dart:486:  final List<Take30UserRecordingDraft> recordings;
+take30/lib/models/take30_guided_flow.dart:489:  factory Take30GuidedFlowDraft.fromMap(Map<String, dynamic> json) {
+take30/lib/models/take30_guided_flow.dart:491:    return Take30GuidedFlowDraft(
+take30/lib/models/take30_guided_flow.dart:500:            (recording) => Take30UserRecordingDraft.fromMap(
+take30/lib/models/take30_guided_flow.dart:505:      updatedAt: _readTake30Date(json['updatedAt']),
+take30/lib/models/take30_guided_flow.dart:522:DateTime _readTake30Date(dynamic raw) {
+take30/lib/models/take30_guided_flow.dart:535:String _normalizeTake30Key(String? value) {
+take30/lib/theme/app_theme.dart:5:import 'take30_screen_themes.dart';
+take30/lib/theme/take30_screen_themes.dart:4:/// TAKE30 - PIXEL PERFECT SCREEN THEMES
+take30/lib/firebase_options.dart:3://   flutterfire configure --project=take30 --platforms=android,ios,web
+take30/lib/firebase_options.dart:37:    projectId: 'take30',
+take30/lib/firebase_options.dart:38:    authDomain: 'take30.firebaseapp.com',
+take30/lib/firebase_options.dart:39:    storageBucket: 'take30.firebasestorage.app',
+take30/lib/firebase_options.dart:47:  // google-services.json → take30/android/app/google-services.json,
+take30/lib/firebase_options.dart:48:  // pour l'application `app.take30`, puis lance `flutterfire configure`
+take30/lib/firebase_options.dart:54:    projectId: 'take30',
+take30/lib/firebase_options.dart:55:    storageBucket: 'take30.firebasestorage.app',
+take30/lib/firebase_options.dart:61:  // GoogleService-Info.plist → take30/ios/Runner/GoogleService-Info.plist,
+take30/lib/firebase_options.dart:62:  // pour le bundle `app.take30`, puis lance `flutterfire configure`
+take30/lib/firebase_options.dart:68:    projectId: 'take30',
+take30/lib/firebase_options.dart:69:    storageBucket: 'take30.firebasestorage.app',
+take30/lib/firebase_options.dart:71:    iosBundleId: 'app.take30',
+take30/lib/screens/home_screen.dart:13:import '../widgets/take30_logo.dart';
+take30/lib/screens/home_screen.dart:178:            child: Take30Logo(height: 28),
+take30/lib/screens/messages_screen.dart:41:    return user.username == 'demo_take30' ||
+take30/lib/screens/messages_screen.dart:43:        user.email == 'demo@take30.app';
+take30/lib/screens/auth_screen.dart:8:import '../widgets/take30_logo.dart';
+take30/lib/screens/auth_screen.dart:130:                child: Take30Logo(height: 72),
+take30/lib/screens/profile_screen.dart:841:      user.email == 'demo@take30.app' ||
+take30/lib/screens/profile_screen.dart:842:      user.username == 'demo_take30';
+take30/lib/screens/take30_guided_record_screen.dart:18:import '../services/take30_guided_scene_service.dart';
+take30/lib/screens/take30_guided_record_screen.dart:22:/// Take30 Guided Recording Flow — full state machine.
+take30/lib/screens/take30_guided_record_screen.dart:31:class Take30GuidedRecordScreen extends ConsumerStatefulWidget {
+take30/lib/screens/take30_guided_record_screen.dart:32:  const Take30GuidedRecordScreen({super.key, this.initialScene});
+take30/lib/screens/take30_guided_record_screen.dart:37:  ConsumerState<Take30GuidedRecordScreen> createState() =>
+take30/lib/screens/take30_guided_record_screen.dart:38:      _Take30GuidedRecordScreenState();
+take30/lib/screens/take30_guided_record_screen.dart:53:class _Take30GuidedRecordScreenState
+take30/lib/screens/take30_guided_record_screen.dart:54:    extends ConsumerState<Take30GuidedRecordScreen> {
+take30/lib/screens/take30_guided_record_screen.dart:59:  final Take30GuidedSceneService _service = Take30GuidedSceneService.instance;
+take30/lib/screens/take30_guided_record_screen.dart:69:  List<Take30SceneMarker> _timeline = const [];
+take30/lib/screens/take30_guided_record_screen.dart:71:  final Map<String, Take30UserRecordingDraft> _recordings = {};
+take30/lib/screens/take30_guided_record_screen.dart:82:  Take30UserRecordingDraft? _previewRecording;
+take30/lib/screens/take30_guided_record_screen.dart:86:  Take30RenderResult? _renderResult;
+take30/lib/screens/take30_guided_record_screen.dart:244:  Take30SceneMarker? get _currentMarker =>
+take30/lib/screens/take30_guided_record_screen.dart:257:  void _enterMarker(Take30SceneMarker marker) {
+take30/lib/screens/take30_guided_record_screen.dart:266:  Future<void> _enterAiPlayback(Take30SceneMarker marker) async {
+take30/lib/screens/take30_guided_record_screen.dart:378:          'L\'accès au $labels a été refusé. Ouvre les réglages pour autoriser Take30.',
+take30/lib/screens/take30_guided_record_screen.dart:449:  Future<void> _initPreviewController(Take30UserRecordingDraft draft) async {
+take30/lib/screens/take30_guided_record_screen.dart:520:      final result = await _service.renderTake30GuidedScene(
+take30/lib/screens/take30_guided_record_screen.dart:608:  void _replayPlan(Take30SceneMarker marker) {
+take30/lib/screens/take30_guided_record_screen.dart:713:                        'Créer ma scène Take30',
+take30/lib/screens/take30_guided_record_screen.dart:1267:  String _userPlanIndexLabel(Take30SceneMarker marker) {
+take30/lib/screens/take30_guided_record_screen.dart:1282:  String _aiPlanIndexLabel(Take30SceneMarker marker) {
+take30/lib/screens/take30_guided_record_screen.dart:1461:            'Ta scène Take30 est prête.',
+take30/lib/screens/scene_detail_screen.dart:34:    return user.username == 'demo_take30' ||
+take30/lib/screens/scene_detail_screen.dart:36:        user.email == 'demo@take30.app';
+take30/lib/screens/scene_detail_screen.dart:223:                  _TagChip(label: 'Take 30', color: AppColors.yellow),
+take30/lib/screens/scene_detail_screen.dart:459:    return user.username == 'demo_take30' ||
+take30/lib/screens/scene_detail_screen.dart:461:        user.email == 'demo@take30.app';
+take30/lib/screens/record_screen.dart:16:import 'take30_guided_record_screen.dart';
+take30/lib/screens/record_screen.dart:112:            'L’accès au $labels a été refusé de façon permanente. Ouvre les réglages système pour autoriser Take 30.',
+take30/lib/screens/record_screen.dart:183:      tags: const ['take30'],
+take30/lib/screens/record_screen.dart:189:    return Take30GuidedRecordScreen(initialScene: widget.scene);
+take30/lib/screens/main_shell.dart:92:                              '../take 30 images IA/clapback.png',
+take30/lib/screens/onboarding_screen.dart:8:import '../theme/take30_screen_themes.dart';
+take30/lib/screens/onboarding_screen.dart:9:import '../widgets/take30_logo.dart';
+take30/lib/screens/onboarding_screen.dart:32:                child: Take30Logo(height: 52),
+take30/lib/screens/onboarding_screen.dart:150:                imagePath: '../take 30 images IA/1pic.png',
+take30/lib/screens/onboarding_screen.dart:160:                imagePath: '../take 30 images IA/2pic.png',
+take30/lib/screens/onboarding_screen.dart:171:                imagePath: '../take 30 images IA/3pic.png',
+take30/lib/screens/preview_publish_screen.dart:37:      tags: const ['take30'],
+take30/lib/screens/preview_publish_screen.dart:53:    final tags = sceneSource.tags.isEmpty ? <String>['take30'] : sceneSource.tags;
+take30/lib/screens/explore_screen.dart:1112:      authorName: 'Take30 Studio',
+take30/lib/screens/notifications_screen.dart:22:    return user.username == 'demo_take30' ||
+take30/lib/screens/notifications_screen.dart:24:        user.email == 'demo@take30.app';
+take30/lib/main.dart.before_appcheck_fix:99:      child: const Take30App(),
+take30/lib/main.dart.before_appcheck_fix:104:class Take30App extends ConsumerWidget {
+take30/lib/main.dart.before_appcheck_fix:105:  const Take30App({super.key});
+take30/lib/main.dart.bak:85:      child: const Take30App(),
+take30/lib/main.dart.bak:90:class Take30App extends ConsumerWidget {
+take30/lib/main.dart.bak:91:  const Take30App({super.key});
+take30/lib/services/auth_service.dart:54:  static const String _canonicalAdminEmail = 'admin@take30.local';
+take30/lib/services/auth_service.dart:55:  static const String _canonicalAdminUsername = 'take30_admin';
+take30/lib/services/auth_service.dart:58:    'admin_take30',
+take30/lib/services/auth_service.dart:59:    'take30admin2026',
+take30/lib/services/auth_service.dart:60:    'take30admin2026',
+take30/lib/services/auth_service.dart:61:    'take30_admin',
+take30/lib/services/auth_service.dart:62:    'take 30 admin',
+take30/lib/services/auth_service.dart:75:  static const String _demoEmail = 'demo@take30.app';
+take30/lib/services/auth_service.dart:76:  static const String _demoUsername = 'demo_take30';
+take30/lib/services/auth_service.dart:78:  static const String _demoSessionPrefKey = 'take30.demo_session';
+take30/lib/services/auth_service.dart:219:          preferredAvatarUrl ?? fbUser.photoURL ?? Take30Assets.avatarCurrentUser,
+take30/lib/services/auth_service.dart:230:      avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/services/auth_service.dart:433:        avatarUrl: cred.user!.photoURL ?? Take30Assets.avatarCurrentUser,
+take30/lib/services/auth_service.dart.before_email_verify:42:  static const String _demoEmail = 'demo@take30.app';
+take30/lib/services/auth_service.dart.before_email_verify:43:  static const String _demoUsername = 'demo_take30';
+take30/lib/services/auth_service.dart.before_email_verify:45:  static const String _demoSessionPrefKey = 'take30.demo_session';
+take30/lib/services/auth_service.dart.before_email_verify:179:          preferredAvatarUrl ?? fbUser.photoURL ?? Take30Assets.avatarCurrentUser,
+take30/lib/services/auth_service.dart.before_email_verify:190:      avatarUrl: Take30Assets.avatarCurrentUser,
+take30/lib/services/auth_service.dart.before_email_verify:339:        avatarUrl: cred.user!.photoURL ?? Take30Assets.avatarCurrentUser,
+take30/lib/services/take30_guided_scene_service.dart:15:class Take30GuidedSceneException implements Exception {
+take30/lib/services/take30_guided_scene_service.dart:16:  const Take30GuidedSceneException({
+take30/lib/services/take30_guided_scene_service.dart:36:bool isTake30RenderableRemoteVideoUrl(
+take30/lib/services/take30_guided_scene_service.dart:72:void validateTake30RenderRequest({
+take30/lib/services/take30_guided_scene_service.dart:74:  required List<Take30SceneMarker> markers,
+take30/lib/services/take30_guided_scene_service.dart:75:  required List<Take30UserRecordingDraft> recordings,
+take30/lib/services/take30_guided_scene_service.dart:78:  final recordingsByMarker = <String, Take30UserRecordingDraft>{
+take30/lib/services/take30_guided_scene_service.dart:86:        throw Take30GuidedSceneException(
+take30/lib/services/take30_guided_scene_service.dart:92:      if (!isTake30RenderableRemoteVideoUrl(recording.uploadedVideoUrl)) {
+take30/lib/services/take30_guided_scene_service.dart:93:        throw Take30GuidedSceneException(
+take30/lib/services/take30_guided_scene_service.dart:103:    if (!isTake30RenderableRemoteVideoUrl(
+take30/lib/services/take30_guided_scene_service.dart:107:      throw Take30GuidedSceneException(
+take30/lib/services/take30_guided_scene_service.dart:116:class Take30GuidedSceneService {
+take30/lib/services/take30_guided_scene_service.dart:117:  Take30GuidedSceneService._internal()
+take30/lib/services/take30_guided_scene_service.dart:123:  static final Take30GuidedSceneService instance =
+take30/lib/services/take30_guided_scene_service.dart:124:      Take30GuidedSceneService._internal();
+take30/lib/services/take30_guided_scene_service.dart:164:  List<Take30SceneMarker> buildTimeline(SceneModel scene) {
+take30/lib/services/take30_guided_scene_service.dart:195:    final markers = <Take30SceneMarker>[];
+take30/lib/services/take30_guided_scene_service.dart:204:        Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:234:  Future<Take30GuidedFlowDraft?> loadDraft({required String sceneId}) async {
+take30/lib/services/take30_guided_scene_service.dart:240:    return Take30GuidedFlowDraft.fromMap(
+take30/lib/services/take30_guided_scene_service.dart:249:    required List<Take30UserRecordingDraft> recordings,
+take30/lib/services/take30_guided_scene_service.dart:251:    final draft = Take30GuidedFlowDraft(
+take30/lib/services/take30_guided_scene_service.dart:269:  Future<Take30UserRecordingDraft> persistRecording({
+take30/lib/services/take30_guided_scene_service.dart:271:    required Take30SceneMarker marker,
+take30/lib/services/take30_guided_scene_service.dart:304:    final recording = Take30UserRecordingDraft(
+take30/lib/services/take30_guided_scene_service.dart:319:          .collection('take30_user_recordings')
+take30/lib/services/take30_guided_scene_service.dart:328:  Future<Take30RenderResult> renderTake30GuidedScene({
+take30/lib/services/take30_guided_scene_service.dart:330:    required List<Take30UserRecordingDraft> recordings,
+take30/lib/services/take30_guided_scene_service.dart:333:    validateTake30RenderRequest(
+take30/lib/services/take30_guided_scene_service.dart:378:      final callable = _functions.httpsCallable('renderTake30GuidedScene');
+take30/lib/services/take30_guided_scene_service.dart:380:      return Take30RenderResult.fromMap(
+take30/lib/services/take30_guided_scene_service.dart:384:      throw Take30GuidedSceneException(
+take30/lib/services/take30_guided_scene_service.dart:386:        message: error.message ?? 'Le rendu final Take30 a échoué côté backend.',
+take30/lib/services/take30_guided_scene_service.dart:389:      throw const Take30GuidedSceneException(
+take30/lib/services/take30_guided_scene_service.dart:391:        message: 'Le rendu final Take30 a échoué pour une raison inconnue.',
+take30/lib/services/take30_guided_scene_service.dart:398:    required List<Take30UserRecordingDraft> recordings,
+take30/lib/services/take30_guided_scene_service.dart:399:    required Take30RenderResult renderResult,
+take30/lib/services/take30_guided_scene_service.dart:421:        'take30_guided_project_$projectId',
+take30/lib/services/take30_guided_scene_service.dart:428:        .collection('take30_guided_projects')
+take30/lib/services/take30_guided_scene_service.dart:436:        id: 'take30_scene_001',
+take30/lib/services/take30_guided_scene_service.dart:458:        audioRules: const Take30AudioRules(),
+take30/lib/services/take30_guided_scene_service.dart:460:          Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:475:          Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:489:          Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:504:          Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:518:          Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:534:          Take30SceneMarker(
+take30/lib/services/take30_guided_scene_service.dart:551:        id: 'take30_scene_002',
+take30/lib/services/take30_guided_scene_service.dart:575:        id: 'take30_scene_003',
+take30/lib/services/take30_guided_scene_service.dart:602:      'take30_guided_draft_${currentUserId}_$sceneId';
+take30/lib/services/share_service.dart:10:  static const String _defaultPublicBaseUrl = 'https://take30.web.app';
+take30/lib/services/share_service.dart:30:    final text = '''🎬 Regarde ma performance sur Take 30 !
+take30/lib/services/share_service.dart:42:        subject: '${scene.title} sur Take 30',
+take30/lib/services/share_service.dart:48:    final text = '''🌟 Découvre @${user.username} sur Take 30 !
+take30/lib/services/share_service.dart:50:${user.bio.isNotEmpty ? '"${user.bio}"' : 'Talent Take 30'}
+take30/lib/services/share_service.dart:58:        subject: '@${user.username} sur Take 30',
+take30/lib/services/share_service.dart:64:    final text = '''🔥 Défi du Jour Take 30 !
+take30/lib/services/share_service.dart:74:        subject: 'Défi du Jour Take 30',
+take30/lib/services/share_service.dart:83:    final text = '''🎭 Je viens de poster "$sceneTitle" sur Take 30 !
+take30/lib/services/notification_service.dart:31:    'take30_high_importance',
+take30/lib/services/notification_service.dart:32:    'Notifications Take 30',
+take30/lib/services/notification_service.dart:33:    description: 'Notifications push pour Take 30',
+take30/lib/services/camera_service.dart:205:    return path.join(directory.path, 'take30_$timestamp.mp4');
+take30/lib/utils/assets.dart:1:class Take30Assets {
+take30/lib/utils/assets.dart:2:  const Take30Assets._();
+take30/lib/admin/take30_admin_scene_flow.dart:20:  runApp(const Take30AdminApp());
+take30/lib/admin/take30_admin_scene_flow.dart:24:  'TAKE30_ADMIN_ID',
+take30/lib/admin/take30_admin_scene_flow.dart:25:  defaultValue: 'take30_admin',
+take30/lib/admin/take30_admin_scene_flow.dart:28:  'TAKE30_ADMIN_PASSWORD',
+take30/lib/admin/take30_admin_scene_flow.dart:29:  defaultValue: 'Take30Admin2026!',
+take30/lib/admin/take30_admin_scene_flow.dart:253:class Take30AdminApp extends StatelessWidget {
+take30/lib/admin/take30_admin_scene_flow.dart:254:  const Take30AdminApp({super.key});
+take30/lib/admin/take30_admin_scene_flow.dart:259:      title: 'Take 30 Admin',
+take30/lib/admin/take30_admin_scene_flow.dart:951:    final nowAuthor = createdBy.isEmpty ? 'admin_take30' : createdBy;
+take30/lib/admin/take30_admin_scene_flow.dart:1201:      createdBy: publication['createdBy'] as String? ?? 'admin_take30',
+take30/lib/admin/take30_admin_scene_flow.dart:1221:      director: 'Direction interne Take30',
+take30/lib/admin/take30_admin_scene_flow.dart:1377:        title: const Text('Take 30 • Administration'),
+take30/lib/admin/take30_admin_scene_flow.dart:2485:          'admin_take30';
+take30/lib/admin/take30_admin_scene_flow.dart:2487:      return adminAccessController.value.identifier ?? 'admin_take30';
+take30/lib/admin/take30_admin_scene_flow.dart:3187:                      '15bis) Montage automatique dialogué (timeline Take30)',
+take30/lib/admin/take30_admin_scene_flow.dart:4716:// Visual editor for Take30 guided scene markers. Each row exposes the
+take30/run_veo3_check.sh:31:  -X POST "https://europe-west1-take30.cloudfunctions.net/startVeoSceneGeneration" \
+take30/run_veo3_check.sh:80:    -X POST "https://europe-west1-take30.cloudfunctions.net/checkVeoSceneGeneration" \
+take30/check_veo3_access.sh:10:firebase functions:log --only startVeoSceneGeneration --project take30 -n 30 2>/dev/null || \
+take30/fix_and_test_veo3.sh:3:# bash take30/fix_and_test_veo3.sh
+take30/fix_and_test_veo3.sh:8:APP_DIR="$ROOT/take30"
+take30/fix_and_test_veo3.sh:38:firebase deploy --only functions --project take30
+take30/test_veo3_corrected.sh:11:PROJECT_ID="take30"
+take30/ios/Runner.xcodeproj/project.pbxproj:376:				PRODUCT_BUNDLE_IDENTIFIER = app.take30;
+take30/ios/Runner.xcodeproj/project.pbxproj:392:				PRODUCT_BUNDLE_IDENTIFIER = app.take30.RunnerTests;
+take30/ios/Runner.xcodeproj/project.pbxproj:409:				PRODUCT_BUNDLE_IDENTIFIER = app.take30.RunnerTests;
+take30/ios/Runner.xcodeproj/project.pbxproj:424:				PRODUCT_BUNDLE_IDENTIFIER = app.take30.RunnerTests;
+take30/ios/Runner.xcodeproj/project.pbxproj:556:				PRODUCT_BUNDLE_IDENTIFIER = app.take30;
+take30/ios/Runner.xcodeproj/project.pbxproj:579:				PRODUCT_BUNDLE_IDENTIFIER = app.take30;
+take30/ios/Runner/Runner.entitlements:11:		<string>applinks:take30.app</string>
+take30/ios/Runner/Info.plist:10:	<string>Take30</string>
+take30/ios/Runner/Info.plist:19:			<string>app.take30.deeplink</string>
+take30/ios/Runner/Info.plist:22:				<string>take30</string>
+take30/ios/Runner/Info.plist:29:	<string>take30</string>
+take30/ios/Runner/Info.plist:41:	<string>Take30 a besoin d'accéder à ta caméra pour enregistrer tes performances.</string>
+take30/ios/Runner/Info.plist:45:	<string>Take30 a besoin du microphone pour enregistrer le son de tes performances.</string>
+take30/ios/Runner/Info.plist:47:	<string>Take30 a besoin de la reconnaissance vocale pour dicter le texte des scènes.</string>
+take30/ios/Runner/Info.plist:49:	<string>Take30 peut enregistrer vos vidéos dans votre galerie lorsque vous le demandez.</string>
+take30/ios/Runner/Info.plist:51:	<string>Take30 a besoin d'accéder à ta galerie pour importer des vidéos.</string>
+take30/ios/Runner/GoogleService-Info.plist:16:	<string>app.take30</string>
+take30/ios/Runner/GoogleService-Info.plist:18:	<string>take30</string>
+take30/ios/Runner/GoogleService-Info.plist:20:	<string>take30.firebasestorage.app</string>
+take30/ios/Flutter/flutter_export_environment.sh:4:export "FLUTTER_APPLICATION_PATH=/workspaces/take3/take30"
+take30/ios/Flutter/Generated.xcconfig:3:FLUTTER_APPLICATION_PATH=/workspaces/take3/take30
+take30/.firebaserc:3:    "default": "take30"
+take30/README.md:1:# Take30
+take30/.idea/modules.xml:5:      <module fileurl="file://$PROJECT_DIR$/take30.iml" filepath="$PROJECT_DIR$/take30.iml" />
+take30/.idea/modules.xml:6:      <module fileurl="file://$PROJECT_DIR$/android/take30_android.iml" filepath="$PROJECT_DIR$/android/take30_android.iml" />
+take30/android/app/google-services.json:4:    "project_id": "take30",
+take30/android/app/google-services.json:5:    "storage_bucket": "take30.firebasestorage.app"
+take30/android/app/google-services.json:12:          "package_name": "app.take30"
+take30/android/app/google-services.json:37:                "bundle_id": "app.take30."
+take30/android/app/build.gradle.kts:11:    namespace = "app.take30"
+take30/android/app/build.gradle.kts:25:        applicationId = "app.take30"
+take30/android/app/src/main/AndroidManifest.xml:18:        android:label="Take30"
+take30/android/app/src/main/AndroidManifest.xml:43:                <data android:scheme="https" android:host="take30.app" />
+take30/android/app/src/main/AndroidManifest.xml:44:                <data android:scheme="take30" />
+take30/android/app/src/main/kotlin/app/take30/MainActivity.kt:1:package app.take30
+take30/pubspec.yaml:1:name: take30
+take30/pubspec.yaml:61:    - ../take 30 images IA/
+functions/.env.backup_20260501_040428:1:GOOGLE_CLOUD_PROJECT=take30
+functions/.env.backup_20260501_040428:8:VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+functions/lib/veo/shared.js:30:        "take30.firebasestorage.app";
+functions/lib/index.js:39: * Take30 — Cloud Functions (v2)
+functions/lib/index.js:300:            title: "Take30",
+functions/lib/take30/renderTake30GuidedScene.js:425://# sourceMappingURL=renderTake30GuidedScene.js.map
+functions/package.json:2:  "name": "take30-functions",
+functions/package-lock.json:2:  "name": "take30-functions",
+functions/package-lock.json:8:      "name": "take30-functions",
+functions/src/veo/shared.ts:48:    "take30.firebasestorage.app";
+functions/src/index.ts:3: * Take30 — Cloud Functions (v2)
+functions/src/index.ts:313:        title: "Take30",
+functions/.env.bak_veo31:3:VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+functions/.env:7:VEO_OUTPUT_BUCKET=take30.firebasestorage.app
+scripts/verify_admin_access.js:8:const projectId = process.env.GCLOUD_PROJECT || "take30";
+scripts/verify_admin_access.js:44:  const routerPath = path.join(__dirname, "..", "take30", "lib", "router", "router.dart");
+scripts/verify_admin_access.js:48:    "take30",
+scripts/verify_admin_access.js:51:    "take30_admin_scene_flow.dart"
+scripts/seed_firestore.js:4: * Seed Firestore pour Take30.
+scripts/seed_firestore.js:32:    admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT || "take30" });
+scripts/package.json:2:  "name": "take30-seed",
+scripts/package-lock.json:2:  "name": "take30-seed",
+scripts/package-lock.json:8:      "name": "take30-seed",
+scripts/seed/README.md:1:# Seed Firestore — Take30
+apps/web/src/main.jsx:5:import './take30-theme.css';
+apps/web/src/lib/firebase.js:7:  authDomain: 'take30.firebaseapp.com',
+apps/web/src/lib/firebase.js:8:  projectId: 'take30',
+apps/web/src/lib/firebase.js:9:  storageBucket: 'take30.firebasestorage.app',
+apps/web/src/take30-theme.css:2:   TAKE30 PIXEL THEME
+apps/web/src/take30-theme.css:80:.take30-theme {
+apps/web/src/take30-theme.css:86:.take30-app {
+apps/web/src/take30-theme.css:97:.take30-screen {
+apps/web/src/take30-theme.css:104:.take30-h1 {
+apps/web/src/take30-theme.css:113:.take30-h2 {
+apps/web/src/take30-theme.css:122:.take30-body {
+apps/web/src/take30-theme.css:128:.take30-caption {
+apps/web/src/take30-theme.css:134:.take30-label {
+apps/web/src/take30-theme.css:140:.take30-container {
+apps/web/src/take30-theme.css:146:.take30-stack-8 > * + * { margin-top: 8px; }
+apps/web/src/take30-theme.css:147:.take30-stack-12 > * + * { margin-top: 12px; }
+apps/web/src/take30-theme.css:148:.take30-stack-16 > * + * { margin-top: 16px; }
+apps/web/src/take30-theme.css:149:.take30-stack-20 > * + * { margin-top: 20px; }
+apps/web/src/take30-theme.css:150:.take30-stack-24 > * + * { margin-top: 24px; }
+apps/web/src/take30-theme.css:152:.take30-row {
+apps/web/src/take30-theme.css:157:.take30-row-between {
+apps/web/src/take30-theme.css:164:.take30-grid-2 {
+apps/web/src/take30-theme.css:170:.take30-header {
+apps/web/src/take30-theme.css:178:.take30-header-title {
+apps/web/src/take30-theme.css:185:.take30-header-logo {
+apps/web/src/take30-theme.css:192:.take30-hero-logo {
+apps/web/src/take30-theme.css:199:.take30-icon-btn {
+apps/web/src/take30-theme.css:212:.take30-panel {
+apps/web/src/take30-theme.css:220:.take30-btn {
+apps/web/src/take30-theme.css:233:.take30-btn-primary {
+apps/web/src/take30-theme.css:240:.take30-btn-primary:hover {
+apps/web/src/take30-theme.css:244:.take30-btn-secondary {
+apps/web/src/take30-theme.css:251:.take30-chip {
+apps/web/src/take30-theme.css:265:.take30-chip-active {
+apps/web/src/take30-theme.css:271:.take30-chip-purple {
+
+===== 4. BUILD FUNCTIONS SI PRÉSENT =====

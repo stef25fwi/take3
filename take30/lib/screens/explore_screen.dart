@@ -1109,7 +1109,7 @@ class _ExplorerMockData {
       assetPath: 'assets/scenes/daily_challenge_spotlight.svg',
       fallbackColor: Color(0xFF1E4C5A),
       badgeColor: Color(0xCC25C6A6),
-      authorName: 'Take60 Studio',
+      authorName: 'Take30 Studio',
       likesCount: 1450,
       matchKeywords: ['spotlight', 'challenge', 'comedie'],
       fallbackFeedIndex: 2,

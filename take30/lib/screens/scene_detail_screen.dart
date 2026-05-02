@@ -220,7 +220,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                 for (final tag in scene.tags.take(3))
                   _TagChip(label: tag, color: AppColors.yellow),
                 if (scene.tags.isEmpty) ...const [
-                  _TagChip(label: 'Take 60', color: AppColors.yellow),
+                  _TagChip(label: 'Take 30', color: AppColors.yellow),
                 ],
               ],
             ),

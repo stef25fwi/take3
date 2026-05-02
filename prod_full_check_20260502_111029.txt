@@ -1,0 +1,360 @@
+==================================================
+ TAKE60 / TAKE30 - FULL PROD CHECK
+==================================================
+Sat May  2 11:10:29 UTC 2026
+
+===== 1. GIT STATUS =====
+32b57e7 feat: refine entry flow and take60 home ui
+5ffd099 feat: refine entry flow and take60 home ui
+3403e36 feat: refine entry flow and take60 home ui
+ M apps/web/index.html
+ M apps/web/src/App.jsx
+ M take30/lib/admin/take30_admin_scene_flow.dart
+ M take30/lib/main.dart
+ M take30/lib/providers/providers.dart
+ M take30/lib/screens/explore_screen.dart
+ M take30/lib/screens/record_screen.dart
+ M take30/lib/screens/scene_detail_screen.dart
+ M take30/lib/services/auth_service.dart
+ M take30/lib/services/notification_service.dart
+ M take30/lib/services/share_service.dart
+ M take30/lib/widgets/take30_logo.dart
+?? audit_migration_take30_20260502_025445.txt
+?? audit_take30_take60_veo_20260502_030248.txt
+?? brand_visible_take30_20260502_030022.txt
+?? migration_take60_to_take30_clean_20260502_025704.txt
+?? migration_take60_to_take30_clean_20260502_025922.txt
+?? prod_full_check_20260502_111029.txt
+?? repair_take30_take60_veo_20260502_030536.txt
+?? verify_firebase_project_deleted_20260502_110332.txt
+
+===== 2. CHECK CODE AUTH VEO =====
+2:import 'package:firebase_auth/firebase_auth.dart' as fa;
+34:  Future<fa.User> _requireFirebaseUserForVeo() async {
+41:            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.',
+48:        message: 'Compte invité non autorisé pour lancer une génération VEO.',
+52:    await user.getIdToken(true);
+63:      await _requireFirebaseUserForVeo();
+66:          _resolvedFunctions.httpsCallable('startVeoSceneGeneration');
+95:  Future<VeoGenerationJob> checkVeoSceneGeneration({
+99:      await _requireFirebaseUserForVeo();
+102:          _resolvedFunctions.httpsCallable('checkVeoSceneGeneration');
+136:            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
+
+===== 3. CHECK ADMIN LOGIN ROUTING =====
+30:  static const auth = '/auth';
+31:  static const adminAccess = '/admin-access';
+42:  static const admin = '/admin';
+62:    redirect: (_, state) {
+73:          final redirect = Uri.encodeComponent(AppRouter.admin);
+74:          return '${AppRouter.auth}?tab=login&mode=admin&redirect=$redirect';
+87:        redirect: (_, __) => AppRouter.splash,
+101:          final redirect = state.uri.queryParameters['redirect'];
+102:          return AuthScreen(initialTab: tab, redirectTo: redirect);
+107:        redirect: (_, __) =>
+108:            '${AppRouter.auth}?tab=login&mode=admin&redirect=${Uri.encodeComponent(AppRouter.admin)}',
+
+
+===== 4. CHECK ADMIN VEO UI GUARD =====
+2483:      return fa.FirebaseAuth.instance.currentUser?.uid ??
+3127:                          onPressed: _isGeneratingPreview ? null : _generatePreviewVideo,
+3230:                                  _isGeneratingPreview ? null : _generatePreviewVideo,
+3496:  Future<void> _generatePreviewVideo() async {
+3500:      final firebaseUser = fa.FirebaseAuth.instance.currentUser;
+3504:            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
+3517:            'Compte invité non autorisé pour lancer une génération VEO.';
+3528:      await firebaseUser.getIdToken(true);
+
+===== 5. CHECK RULES TAKE60 =====
+firestore.rules:136:    // TAKE60 PROD EXACT RULES
+firestore.rules:138:    // - scenes adminWorkflow
+firestore.rules:139:    // - take60_user_recordings
+firestore.rules:140:    // - take60_guided_projects
+firestore.rules:141:    // - take60_renders
+firestore.rules:171:    // Le client charge collection('scenes').where('adminWorkflow', isEqualTo: true)
+firestore.rules:173:      allow read: if resource.data.adminWorkflow == true && (
+firestore.rules:185:    // Client : collection('take60_user_recordings')
+firestore.rules:186:    match /take60_user_recordings/{recordingId} {
+firestore.rules:200:    // Client : collection('take60_guided_projects')
+firestore.rules:201:    match /take60_guided_projects/{projectId} {
+firestore.rules:215:    // Function : db.collection("take60_renders")
+firestore.rules:217:    match /take60_renders/{renderId} {
+take30/firestore.rules:106:    // TAKE60 PROD EXACT RULES
+take30/firestore.rules:108:    // - scenes adminWorkflow
+take30/firestore.rules:109:    // - take60_user_recordings
+take30/firestore.rules:110:    // - take60_guided_projects
+take30/firestore.rules:111:    // - take60_renders
+take30/firestore.rules:141:    // Le client charge collection('scenes').where('adminWorkflow', isEqualTo: true)
+take30/firestore.rules:143:      allow read: if resource.data.adminWorkflow == true && (
+take30/firestore.rules:155:    // Client : collection('take60_user_recordings')
+take30/firestore.rules:156:    match /take60_user_recordings/{recordingId} {
+take30/firestore.rules:170:    // Client : collection('take60_guided_projects')
+take30/firestore.rules:171:    match /take60_guided_projects/{projectId} {
+take30/firestore.rules:185:    // Function : db.collection("take60_renders")
+take30/firestore.rules:187:    match /take60_renders/{renderId} {
+storage.rules:42:    // TAKE60 PROD EXACT STORAGE RULES
+storage.rules:45:    // - take60_renders/{uid}/{renderId}.mp4
+storage.rules:46:    // - take60_renders/{uid}/{renderId}.jpg
+storage.rules:51:    match /scenes/{userId}/{fileName} {
+storage.rules:61:    match /take60_renders/{userId}/{fileName} {
+take30/storage.rules:8:    match /scenes/{userId}/{fileName} {
+take30/storage.rules:35:    // TAKE60 PROD EXACT STORAGE RULES
+take30/storage.rules:38:    // - take60_renders/{uid}/{renderId}.mp4
+take30/storage.rules:39:    // - take60_renders/{uid}/{renderId}.jpg
+take30/storage.rules:44:    match /scenes/{userId}/{fileName} {
+take30/storage.rules:54:    match /take60_renders/{userId}/{fileName} {
+
+===== 6. FUNCTIONS BUILD =====
+
+> take30-functions@1.0.0 build
+> tsc
+
+
+===== 7. FUNCTIONS DEPLOYED CONFIG =====
+
+----- startVeoSceneGeneration -----
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_USE_MOCK": "false"
+    },
+    "revision": "startveoscenegeneration-00011-yuj"
+  },
+  "updateTime": "2026-05-01T12:31:18.700914915Z"
+}
+
+----- checkVeoSceneGeneration -----
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_USE_MOCK": "false"
+    },
+    "revision": "checkveoscenegeneration-00010-run"
+  },
+  "updateTime": "2026-05-01T12:31:22.304165354Z"
+}
+
+----- renderTake60GuidedScene -----
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_USE_MOCK": "false"
+    },
+    "revision": "rendertake60guidedscene-00006-wud"
+  },
+  "updateTime": "2026-05-01T12:31:18.913224051Z"
+}
+
+----- veoStatus -----
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_USE_MOCK": "false"
+    },
+    "revision": "veostatus-00006-han"
+  },
+  "updateTime": "2026-05-01T12:31:19.716077956Z"
+}
+
+===== 8. VEO STATUS HTTP =====
+{
+    "ok": true,
+    "projectId": "take30",
+    "location": "us-central1",
+    "modelId": "veo-3.1-fast-generate-001",
+    "outputBucket": "take30.firebasestorage.app",
+    "useMock": false,
+    "veoApiKeyPresent": true,
+    "missingVars": [],
+    "modelProbe": {
+        "httpStatus": 404,
+        "ok": false,
+        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/take30/locations/us-central1/publishers/google/models/veo-3.1-fast-generate-001",
+        "body": "<!DOCTYPE html>\n<html lang=en>\n  <meta charset=utf-8>\n  <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n  <title>Error 404 (Not Found)!!1</title>\n  <style>\n    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat;-webkit-background-size:100% 100%}}#logo{display:inline-block;height:54px;width:150px}\n  </style>\n  <a href=//www.google.com/><span id=logo aria-label=Google></span></a>\n  <p><b>404.</b> <ins>That\u2019s an error.</ins>\n  <p>The requested URL <code>/v1/projects/take30/locations/us-central1/publishers/google/models/veo-3.1-fast-generate-001</code> was not found on this server.  <ins>That\u2019s all we know.</ins>\n"
+    }
+}
+
+===== 9. FLUTTER ANALYZE + TESTS =====
+Analyzing take30...                                             
+No issues found! (ran in 3.2s)
+00:00 +0: loading /workspaces/take3/take30/test/explore_screen_widget_test.dart
+00:00 +0: /workspaces/take3/take30/test/explore_screen_widget_test.dart: Explorer affiche un message explicite si la permission est refusee
+00:00 +1: /workspaces/take3/take30/test/explore_screen_widget_test.dart: Explorer permet de choisir une region manuellement
+00:01 +2: loading /workspaces/take3/take30/test/take60_guided_scene_service_test.dart
+00:02 +2: /workspaces/take3/take30/test/take60_guided_scene_service_test.dart: isTake60RenderableRemoteVideoUrl rejects local, asset and mock URLs
+00:02 +3: /workspaces/take3/take30/test/take60_guided_scene_service_test.dart: isTake60RenderableRemoteVideoUrl accepts remote https URLs
+00:02 +4: /workspaces/take3/take30/test/take60_guided_scene_service_test.dart: validateTake60RenderRequest rejects mock AI segment URLs outside debug fallback
+00:02 +5: /workspaces/take3/take30/test/take60_guided_scene_service_test.dart: validateTake60RenderRequest rejects user segments that are not uploaded to storage
+00:02 +6: /workspaces/take3/take30/test/take60_guided_scene_service_test.dart: validateTake60RenderRequest accepts fully uploaded remote segments
+00:02 +7: loading /workspaces/take3/take30/test/explorer_ranking_location_test.dart
+00:03 +7: /workspaces/take3/take30/test/explorer_ranking_location_test.dart: le classement regional garde uniquement la meme region
+00:03 +8: /workspaces/take3/take30/test/explorer_ranking_location_test.dart: le classement national garde uniquement le meme pays
+00:03 +9: /workspaces/take3/take30/test/explorer_ranking_location_test.dart: le classement global reste visible sans filtre geographique
+00:03 +10: loading /workspaces/take3/take30/test/explorer_filter_location_test.dart
+00:04 +10: /workspaces/take3/take30/test/explorer_filter_location_test.dart: localisation detectee initialise automatiquement le filtre region
+00:04 +11: /workspaces/take3/take30/test/explorer_filter_location_test.dart: une modification utilisateur bloque le reappli automatique suivant
+00:04 +12: /workspaces/take3/take30/test/explorer_filter_location_test.dart: logique du chip Ma region applique pays et region
+00:04 +13: /workspaces/take3/take30/test/explorer_filter_location_test.dart: logique du chip Mon pays applique seulement le pays
+00:04 +14: loading /workspaces/take3/take30/test/admin_scene_widget_test.dart
+00:04 +14: /workspaces/take3/take30/test/admin_scene_widget_test.dart: step 15 generates then validates intro video and reveals detailed preview
+00:08 +15: /workspaces/take3/take30/test/admin_scene_widget_test.dart: preview détail n'écrase pas l'écran si la timeline JSON est invalide
+00:08 +16: loading /workspaces/take3/take30/test/widget_test.dart
+00:09 +16: /workspaces/take3/take30/test/widget_test.dart: l application affiche Take30
+00:10 +17: loading /workspaces/take3/take30/test/admin_scene_workflow_test.dart
+00:11 +17: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: AiGeneratedVideo serializes and deserializes status and metadata
+00:11 +18: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: MockVeoVideoGenerationService returns a generated preview with expected metadata
+00:13 +19: /workspaces/take3/take30/test/admin_scene_workflow_test.dart: SceneFormData stores the admin workflow payload for Firestore
+00:13 +20: loading /workspaces/take3/take30/test/location_region_service_test.dart
+00:13 +20: /workspaces/take3/take30/test/location_region_service_test.dart: permission refusee retourne fallbackManualRequired
+00:13 +21: /workspaces/take3/take30/test/location_region_service_test.dart: placemark Guadeloupe normalise vers France et guadeloupe
+00:13 +22: /workspaces/take3/take30/test/location_region_service_test.dart: placemark Ile-de-France produit un regionCode stable
+00:13 +23: /workspaces/take3/take30/test/location_region_service_test.dart: localisation manuelle sauvegardee court-circuite le GPS
+00:13 +24: /workspaces/take3/take30/test/location_region_service_test.dart: forceRefresh ignore le manuel et relance le GPS
+00:13 +25: /workspaces/take3/take30/test/location_region_service_test.dart: reverse geocoding vide retombe sur la locale systeme
+00:13 +26: loading /workspaces/take3/take30/test/take60_guided_flow_test.dart
+00:14 +26: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60UserRecordingDraft roundtrips through toMap/fromMap
+00:14 +27: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60UserRecordingDraft copyWith updates uploadedVideoUrl while preserving identity
+00:14 +28: /workspaces/take3/take30/test/take60_guided_flow_test.dart: Take60GuidedFlowDraft roundtrips with nested recordings
+00:14 +29: /workspaces/take3/take30/test/take60_guided_flow_test.dart: sceneRecordingStatusFromString parses known values and falls back to notStarted
+00:14 +30: All tests passed!
+
+===== 10. FLUTTER WEB BUILD PROD =====
+mkswap: /swapfile: warning: wiping old swap signature.
+Setting up swapspace version 1, size = 6 GiB (6442446848 bytes)
+no label, UUID=3c98dd13-3bfe-440f-92a1-efacc1c8e814
+swapon: /swapfile: swapon failed: Invalid argument
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.69 available)
+  app_links 6.4.1 (7.0.0 available)
+  camera 0.10.6 (0.12.0+1 available)
+  camera_avfoundation 0.9.23+2 (0.10.1 available)
+  camera_platform_interface 2.12.0 (2.13.0 available)
+  cloud_firestore 5.6.12 (6.3.0 available)
+  cloud_firestore_platform_interface 6.6.12 (7.2.0 available)
+  cloud_firestore_web 4.4.12 (5.3.0 available)
+  cloud_functions 5.6.2 (6.2.0 available)
+  cloud_functions_platform_interface 5.8.2 (5.8.12 available)
+  cloud_functions_web 4.11.5 (5.1.5 available)
+  connectivity_plus 6.1.5 (7.1.1 available)
+  device_info_plus 10.1.2 (13.1.0 available)
+  device_info_plus_platform_interface 7.0.3 (8.1.0 available)
+  firebase_app_check 0.3.2+10 (0.4.3 available)
+  firebase_app_check_platform_interface 0.1.1+10 (0.3.0 available)
+  firebase_app_check_web 0.2.0+14 (0.2.4 available)
+  firebase_auth 5.7.0 (6.4.0 available)
+  firebase_auth_platform_interface 7.7.3 (8.1.9 available)
+  firebase_auth_web 5.15.3 (6.1.5 available)
+  firebase_core 3.15.2 (4.7.0 available)
+  firebase_core_web 2.24.1 (3.6.0 available)
+  firebase_messaging 15.2.10 (16.2.0 available)
+  firebase_messaging_platform_interface 4.6.10 (4.7.9 available)
+  firebase_messaging_web 3.10.10 (4.1.5 available)
+  firebase_remote_config 5.5.0 (6.4.0 available)
+  firebase_remote_config_platform_interface 2.0.0 (2.1.2 available)
+  firebase_remote_config_web 1.8.9 (1.10.6 available)
+  firebase_storage 12.4.10 (13.3.0 available)
+  firebase_storage_platform_interface 5.2.10 (5.2.20 available)
+  firebase_storage_web 3.10.17 (3.11.5 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  flutter_local_notifications 17.2.4 (21.0.0 available)
+  flutter_local_notifications_linux 4.0.1 (8.0.0 available)
+  flutter_local_notifications_platform_interface 7.2.0 (11.0.0 available)
+  flutter_riverpod 2.6.1 (3.3.1 available)
+  geocoding 3.0.0 (4.0.0 available)
+  geocoding_android 3.3.1 (5.0.1 available)
+  geocoding_platform_interface 3.2.0 (5.0.0 available)
+  geolocator 13.0.4 (14.0.2 available)
+  geolocator_android 4.6.2 (5.0.2 available)
+  go_router 14.8.1 (17.2.2 available)
+  google_fonts 6.3.3 (8.1.0 available)
+  google_sign_in 6.3.0 (7.2.0 available)
+  google_sign_in_android 6.2.1 (7.2.10 available)
+  google_sign_in_ios 5.9.0 (6.3.0 available)
+  google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+  google_sign_in_web 0.12.4+4 (1.1.3 available)
+  hooks 1.0.2 (1.0.3 available)
+  image_picker 1.2.1 (1.2.2 available)
+  image_picker_android 0.8.13+16 (0.8.13+17 available)
+  intl 0.19.0 (0.20.2 available)
+  lints 4.0.0 (6.1.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.17.0 (1.18.2 available)
+  mime 1.0.6 (2.0.0 available)
+  native_toolchain_c 0.17.6 (0.18.0 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  riverpod 2.6.1 (3.2.1 available)
+  share_plus 12.0.2 (13.1.0 available)
+  share_plus_platform_interface 6.1.0 (7.1.0 available)
+  sign_in_with_apple 6.1.4 (7.0.1 available)
+  sign_in_with_apple_platform_interface 1.1.0 (2.0.0 available)
+  sign_in_with_apple_web 2.1.1 (3.0.0 available)
+  test_api 0.7.10 (0.7.12 available)
+  timezone 0.9.4 (0.11.0 available)
+  vector_graphics 1.1.21 (1.2.0 available)
+  vector_math 2.2.0 (2.3.0 available)
+  vibration 2.1.0 (3.1.8 available)
+  vibration_platform_interface 0.0.3 (0.1.2 available)
+  video_player_platform_interface 6.6.0 (6.7.0 available)
+  vm_service 15.0.2 (15.2.0 available)
+  win32 5.15.0 (6.1.0 available)
+  win32_registry 1.1.5 (3.0.3 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+76 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Compiling lib/main.dart for the Web...                          
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 19700 bytes (98.8% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib/main.dart for the Web...                             61.1s
+✓ Built build/web
+BUILD WEB FILE COUNT:
+94
+
+===== 11. HOSTING HEADERS =====
+
+----- https://take30.web.app -----
+cache-control: max-age=3600
+etag: "b5ff6da246a8b6ca2db42ce800362aa29071f9c1ed8fb0d91885f9a0f1fc66af"
+last-modified: Fri, 01 May 2026 13:48:26 GMT
+date: Sat, 02 May 2026 11:12:18 GMT
+x-cache: MISS
+x-cache-hits: 0
+
+----- https://take60.web.app -----
+cache-control: max-age=3600
+etag: "191594e5df42258adbab121c9194c68ad4c20edcae20355fcd8a2612a830a8f9"
+last-modified: Fri, 01 May 2026 14:35:49 GMT
+date: Sat, 02 May 2026 11:12:18 GMT
+x-cache: MISS
+x-cache-hits: 0
+
+----- https://take30-ddfe6.web.app -----
+cache-control: max-age=0
+date: Sat, 02 May 2026 11:12:18 GMT
+x-cache: MISS
+x-cache-hits: 0
+
+===== 12. LOGS FUNCTIONS RÉCENTES =====
+
+----- startveoscenegeneration -----
+
+----- checkveoscenegeneration -----
+
+----- rendertake60guidedscene -----
+
+----- veostatus -----
+TIMESTAMP                    SEVERITY  MESSAGE  STATUS  ERROR  TEXT_PAYLOAD
+2026-05-02T11:10:35.522352Z  INFO
+2026-05-02T11:06:07.584943Z  INFO                              Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-02T11:06:05.754611Z  INFO                              Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-05-02T11:06:05.738109Z  INFO
+
+==================================================
+ FIN FULL PROD CHECK
+==================================================

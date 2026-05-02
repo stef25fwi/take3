@@ -38,7 +38,7 @@ export default function App() {
             <img
               className="take30-header-logo"
               src={logoSrc}
-              alt="Take 60"
+              alt="Take 30"
             />
             <button className="take30-icon-btn" aria-label="Ouvrir les notifications">
               ⚡
@@ -51,11 +51,11 @@ export default function App() {
               <img
                 className="take30-hero-logo"
                 src={logoSrc}
-                alt="Take 60"
+                alt="Take 30"
               />
               <h1 className="take30-h1">Crée, tourne et publie en 30 minutes.</h1>
               <p className="take30-body">
-                La version web utilise maintenant la direction Take 60 sombre avec
+                La version web utilise maintenant la direction Take 30 sombre avec
                 Navy, Yellow et Cyan.
               </p>
               <div className="take30-row" style={{ gap: '10px', flexWrap: 'wrap' }}>

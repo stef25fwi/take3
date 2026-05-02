@@ -22,7 +22,7 @@ void main() {
 
 const _kAdminIdentifier = String.fromEnvironment(
   'TAKE30_ADMIN_ID',
-  defaultValue: 'take60_admin',
+  defaultValue: 'take30_admin',
 );
 const _kAdminPassword = String.fromEnvironment(
   'TAKE30_ADMIN_PASSWORD',
@@ -256,7 +256,7 @@ class Take30AdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Take 60 Admin',
+      title: 'Take 30 Admin',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -1218,7 +1218,7 @@ class SceneFormData {
       sceneNumber: 'SC-INT-03',
       shootDate: '2026-04-30',
       location: 'Salle d’interrogatoire — commissariat',
-      director: 'Direction interne Take60',
+      director: 'Direction interne Take30',
       targetDuration: '60 secondes',
       characterName: 'Malik Renaud',
       apparentAge: '32 ans',
@@ -1374,7 +1374,7 @@ class AdminDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Take 60 • Administration'),
+        title: const Text('Take 30 • Administration'),
         backgroundColor: Colors.transparent,
         actions: [
           TextButton.icon(
@@ -3184,7 +3184,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       ],
                     ),
                     _section(
-                      '15bis) Montage automatique dialogué (timeline Take60)',
+                      '15bis) Montage automatique dialogué (timeline Take30)',
                       children: [
                         const Text(
                           'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur. Pour chaque plan, choisis le type, la durée, la réplique imposée et le cadrage caméra. La durée totale ne doit pas dépasser 60 secondes.',
@@ -3709,11 +3709,20 @@ class _AddScenePageState extends State<AddScenePage> {
     _dialogueSpeechBaseText = dialogueTextCtrl.text.trimRight();
     _dialogueReceivedSpeech = false;
 
+    final systemLocale = await _speechToText.systemLocale();
+    final localeId = (systemLocale?.localeId.startsWith('fr') ?? false)
+        ? systemLocale!.localeId
+        : 'fr_FR';
+
     await _speechToText.listen(
       onResult: _onSpeechResult,
+      localeId: localeId,
+      listenFor: const Duration(minutes: 3),
+      pauseFor: const Duration(seconds: 6),
       listenOptions: SpeechListenOptions(
         partialResults: true,
-        cancelOnError: true,
+        cancelOnError: false,
+        listenMode: ListenMode.dictation,
       ),
     );
 
@@ -4713,7 +4722,7 @@ int _previewToInt(dynamic value) {
 
 // ─────────────────────────────────────────────────────────────────────────
 // _GuidedTimelineEditor
-// Visual editor for Take60 guided scene markers. Each row exposes the
+// Visual editor for Take30 guided scene markers. Each row exposes the
 // type of plan (AI/user, role…), duration, dialogue, camera framing.
 // Total duration is enforced ≤ 60s with a visible counter and alert.
 // State is mirrored back into [controller.text] as a JSON list, so the

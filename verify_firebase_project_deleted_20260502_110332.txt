@@ -1,0 +1,8 @@
+===== VÉRIFICATION PROJET FIREBASE / GCP SUPPRIMÉ =====
+Date: Sat May  2 11:03:32 UTC 2026
+
+===== 1. COMPTE GCLOUD ACTIF =====
+ACCOUNT                   ACTIVE
+sahai.stephane@gmail.com  *
+
+===== 2. PROJET GCLOUD CONFIGURÉ =====

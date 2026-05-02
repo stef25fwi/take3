@@ -111,12 +111,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
 
   @override
   Widget build(BuildContext context) {
+    final authUser = ref.watch(authProvider.select((state) => state.user));
     final liveUser =
         ref.watch(profileProvider(widget.userId)).user ?? widget.user;
     final sceneCount = widget.scenes.length > 6 ? 6 : widget.scenes.length;
     final themeMode = ref.watch(themeModeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
     final isDemoProfile = _isDemoProfile(liveUser);
+    final canShowAdminDashboardButton = _canShowAdminDashboardButton(
+      authUser,
+      widget.userId,
+    );
     final iconColor = AppThemeTokens.primaryText(context);
     final popupColor = AppThemeTokens.chromeSurface(context);
     final textColor = AppThemeTokens.primaryText(context);
@@ -207,6 +212,12 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                   .shareProfile();
                             },
                           ),
+                          if (canShowAdminDashboardButton) ...[
+                            const SizedBox(height: 14),
+                            _AdminDashboardButton(
+                              onTap: () => context.push(AppRouter.admin),
+                            ),
+                          ],
                           if (isDemoProfile) ...[
                             const SizedBox(height: 14),
                             _ThemeToggleCard(
@@ -597,6 +608,95 @@ class _ActionButtons extends StatelessWidget {
   }
 }
 
+class _AdminDashboardButton extends StatelessWidget {
+  const _AdminDashboardButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFA14A),
+                Color(0xFFFF7A18),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF7A18).withValues(alpha: 0.24),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dashboard admin',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Gérer les scènes, VEO et publications',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.88),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Tab Bar Delegate (pinned)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -840,4 +940,14 @@ bool _isDemoProfile(UserModel user) {
   return user.id == 'demo_local' ||
       user.email == 'demo@take30.app' ||
       user.username == 'demo_take30';
+}
+
+bool _canShowAdminDashboardButton(UserModel? authUser, String profileUserId) {
+  if (authUser == null) {
+    return false;
+  }
+  if (_isDemoProfile(authUser)) {
+    return false;
+  }
+  return authUser.isAdmin && authUser.id == profileUserId;
 }

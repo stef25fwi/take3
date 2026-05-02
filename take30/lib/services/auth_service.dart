@@ -56,10 +56,13 @@ class AuthService extends AuthServiceBase {
   static const Set<String> _adminIdentifierAliases = {
     'admin',
     'admin_take60',
-    'take30admin2026',
     'take60admin2026',
     'take60_admin',
     'take 60 admin',
+    'admin_take30',
+    'take30admin2026',
+    'take30_admin',
+    'take 30 admin',
   };
 
   AuthService._() {

@@ -72,8 +72,8 @@ fi
 
 # ── 5. Git push → déclenche GitHub Actions deploy ──
 echo ""
-echo "▸ [5/5] Git push origin main..."
-git push origin main
+echo "▸ [5/5] Git push origin HEAD:main..."
+git push origin HEAD:main
 echo "  ✓ Push OK — GitHub Actions va déployer sur Pages."
 
 echo ""

@@ -115,7 +115,7 @@ class Take30App extends ConsumerWidget {
     return MaterialApp.router(
       key: const Key('take30_app_root'),
       debugShowCheckedModeBanner: false,
-      title: 'Take 60',
+      title: 'Take 30',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
