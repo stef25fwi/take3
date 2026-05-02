@@ -175,7 +175,7 @@ class _HomeHeader extends StatelessWidget {
           height: 46,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Take30Logo(height: 28),
+            child: Take30Logo(height: 46),
           ),
         ),
         Row(
