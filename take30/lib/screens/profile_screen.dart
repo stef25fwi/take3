@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../features/profile/models/take60_profile_stats.dart';
+import '../features/profile/models/take60_user_profile.dart';
+import '../features/profile/providers/take60_profile_providers.dart';
+import '../features/profile/widgets/take60_profile_components.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // PROFIL TALENT — Page 9 Pixel-Perfect
@@ -89,6 +92,9 @@ class _ProfileBody extends ConsumerStatefulWidget {
 class _ProfileBodyState extends ConsumerState<_ProfileBody>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
+  bool _isUpdatingCastingMode = false;
+  bool _isUpdatingAutoInvites = false;
+  bool _isUpdatingNotifications = false;
 
   @override
   void initState() {
@@ -109,6 +115,66 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
     }
   }
 
+  Future<void> _updateCastingMode(bool enabled) async {
+    setState(() => _isUpdatingCastingMode = true);
+    try {
+      await ref.read(take60ProfileServiceProvider).updateCastingMode(enabled);
+      ref.invalidate(currentTake60UserProfileProvider);
+      _showSavedMessage(
+        enabled ? 'Mode casting active.' : 'Mode casting desactive.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingCastingMode = false);
+      }
+    }
+  }
+
+  Future<void> _updateAutoInvites(bool enabled) async {
+    setState(() => _isUpdatingAutoInvites = true);
+    try {
+      await ref
+          .read(take60ProfileServiceProvider)
+          .updateAutoAcceptInvites(enabled);
+      ref.invalidate(currentTake60UserProfileProvider);
+      _showSavedMessage(
+        enabled
+            ? 'Invitations automatiques activees.'
+            : 'Invitations automatiques desactivees.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingAutoInvites = false);
+      }
+    }
+  }
+
+  Future<void> _updateNotifications(bool enabled) async {
+    setState(() => _isUpdatingNotifications = true);
+    try {
+      await ref
+          .read(take60ProfileServiceProvider)
+          .updateNotificationsEnabled(enabled);
+      ref.invalidate(currentTake60UserProfileProvider);
+      _showSavedMessage(
+        enabled ? 'Alertes push activees.' : 'Alertes push desactivees.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingNotifications = false);
+      }
+    }
+  }
+
+  void _showSavedMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final authUser = ref.watch(authProvider.select((state) => state.user));
@@ -117,11 +183,32 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
     final sceneCount = widget.scenes.length > 6 ? 6 : widget.scenes.length;
     final themeMode = ref.watch(themeModeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
+    final isOwnProfile = authUser?.id == widget.userId;
     final isDemoProfile = _isDemoProfile(liveUser);
     final canShowAdminDashboardButton = _canShowAdminDashboardButton(
       authUser,
       widget.userId,
     );
+    final take60Profile = isOwnProfile
+        ? (ref.watch(currentTake60UserProfileProvider).valueOrNull ??
+            Take60UserProfile.fromUserModel(
+              liveUser,
+              darkModeEnabled: isDarkMode,
+            ))
+        : Take60UserProfile.fromUserModel(
+            liveUser,
+            darkModeEnabled: isDarkMode,
+          );
+    final take60Stats = isOwnProfile
+        ? (ref.watch(currentTake60ProfileStatsProvider) ??
+            Take60ProfileStats.fromUserModel(
+              liveUser,
+              scenesCount: widget.scenes.length,
+            ))
+        : Take60ProfileStats.fromUserModel(
+            liveUser,
+            scenesCount: widget.scenes.length,
+          );
     final iconColor = AppThemeTokens.primaryText(context);
     final popupColor = AppThemeTokens.chromeSurface(context);
     final textColor = AppThemeTokens.primaryText(context);
@@ -192,26 +279,42 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                             ),
                           ),
                           const SizedBox(height: 4),
-                          _IdentityBloc(user: liveUser),
-                          const SizedBox(height: 18),
-                          _StatsRow(user: liveUser),
-                          const SizedBox(height: 18),
-                          _ActionButtons(
-                            isFollowing: liveUser.isFollowing,
-                            onFollowTap: () {
-                              ref
-                                  .read(profileProvider(widget.userId).notifier)
-                                  .toggleFollow();
-                            },
-                            onMessageTap: () {
-                              context.go(AppRouter.messages);
-                            },
-                            onShareTap: () {
-                              ref
-                                  .read(profileProvider(widget.userId).notifier)
-                                  .shareProfile();
-                            },
+                          Take60ProfileHeader(
+                            profile: take60Profile,
+                            stats: take60Stats,
+                            isOwnProfile: isOwnProfile,
+                            isCastingUpdating: _isUpdatingCastingMode,
+                            onCastingModeChanged:
+                                isOwnProfile ? _updateCastingMode : null,
                           ),
+                          const SizedBox(height: 18),
+                          if (isOwnProfile)
+                            _OwnProfileQuickActions(
+                              onEditTap: () => context.go(AppRouter.profileEdit),
+                              onMessageTap: () => context.go(AppRouter.messages),
+                              onShareTap: () {
+                                ref
+                                    .read(profileProvider(widget.userId).notifier)
+                                    .shareProfile();
+                              },
+                            )
+                          else
+                            _ActionButtons(
+                              isFollowing: liveUser.isFollowing,
+                              onFollowTap: () {
+                                ref
+                                    .read(profileProvider(widget.userId).notifier)
+                                    .toggleFollow();
+                              },
+                              onMessageTap: () {
+                                context.go(AppRouter.messages);
+                              },
+                              onShareTap: () {
+                                ref
+                                    .read(profileProvider(widget.userId).notifier)
+                                    .shareProfile();
+                              },
+                            ),
                           if (canShowAdminDashboardButton) ...[
                             const SizedBox(height: 14),
                             _AdminDashboardButton(
@@ -288,217 +391,234 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                           ),
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  if (isOwnProfile)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppThemeTokens.pageHorizontalPadding,
+                        ),
+                        child: Column(
+                          children: [
+                            _buildRankOverview(take60Stats),
+                            const SizedBox(height: 16),
+                            Take60SettingsSection(
+                              title: 'Profil & activite',
+                              subtitle:
+                                  'Raccourcis rapides vers vos actions, statistiques et publication.',
+                              children: [
+                                Take60SettingsTile(
+                                  icon: Icons.analytics_rounded,
+                                  title: 'Tableau de bord',
+                                  subtitle:
+                                      'Badges, statistiques et synthese de vos performances.',
+                                  trailingText: take60Stats.approvalRateLabel,
+                                  onTap: () => context.go(AppRouter.profileDashboard),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.video_call_rounded,
+                                  title: 'Ajouter une scene',
+                                  subtitle:
+                                      'Demarrer un nouvel enregistrement ou une performance.',
+                                  onTap: () => context.go(AppRouter.record),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.folder_copy_rounded,
+                                  title: 'Mes projets Take60',
+                                  subtitle:
+                                      'Retrouver vos brouillons, idees et travaux en cours.',
+                                  onTap: () => context.go(AppRouter.profileProjects),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.mail_outline_rounded,
+                                  title: 'Messages',
+                                  subtitle:
+                                      'Consulter votre inbox et les discussions en cours.',
+                                  onTap: () => context.go(AppRouter.messages),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.mode_comment_outlined,
+                                  title: 'Commentaires',
+                                  subtitle:
+                                      'Moderation et suivi des retours sur vos publications.',
+                                  onTap: () => context.go(AppRouter.profileComments),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Take60SettingsSection(
+                              title: 'Classements & visibilite',
+                              subtitle:
+                                  'Pilotez votre presence locale, nationale et globale dans Take60.',
+                              children: [
+                                Take60SettingsTile(
+                                  icon: Icons.place_rounded,
+                                  title: 'Classement regional',
+                                  subtitle:
+                                      'Votre position dans votre region actuelle.',
+                                  trailingText: _formatRank(take60Stats.regionalRank),
+                                  onTap: () =>
+                                      context.go(AppRouter.profileRegionalRanking),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.flag_circle_rounded,
+                                  title: 'Classement pays',
+                                  subtitle:
+                                      'Votre position dans votre pays sur Take60.',
+                                  trailingText: _formatRank(take60Stats.countryRank),
+                                  onTap: () =>
+                                      context.go(AppRouter.profileCountryRanking),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.public_rounded,
+                                  title: 'Classement global',
+                                  subtitle:
+                                      'Votre position sur l\'ensemble de la plateforme.',
+                                  trailingText: _formatRank(take60Stats.globalRank),
+                                  onTap: () =>
+                                      context.go(AppRouter.profileGlobalRanking),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.visibility_outlined,
+                                  title: 'Visibilite du compte',
+                                  subtitle:
+                                      'Choisir qui peut consulter votre profil complet.',
+                                  trailingText:
+                                      take60Profile.accountVisibility.label,
+                                  onTap: () => context.go(AppRouter.profileVisibility),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.ondemand_video_rounded,
+                                  title: 'Visibilite des videos',
+                                  subtitle:
+                                      'Controler la diffusion par defaut de vos scenes.',
+                                  trailingText:
+                                      take60Profile.videoVisibility.label,
+                                  onTap: () =>
+                                      context.go(AppRouter.profileVideoVisibility),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Take60SettingsSection(
+                              title: 'Casting & opportunites',
+                              subtitle:
+                                  'Activez les signaux qui vous rendent visible pour les castings.',
+                              children: [
+                                Take60SettingsTile(
+                                  icon: Icons.movie_filter_rounded,
+                                  title: 'Mode casting',
+                                  subtitle:
+                                      'Mettez votre profil en avant pour les opportunites.',
+                                  trailing: Switch(
+                                    value: take60Profile.castingModeEnabled,
+                                    onChanged: _isUpdatingCastingMode
+                                        ? null
+                                        : _updateCastingMode,
+                                  ),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.auto_awesome_motion_rounded,
+                                  title: 'Invitations automatiques',
+                                  subtitle:
+                                      'Recevoir les invitations premium sans validation manuelle.',
+                                  trailing: Switch(
+                                    value: take60Profile.autoAcceptInvites,
+                                    onChanged: _isUpdatingAutoInvites
+                                        ? null
+                                        : _updateAutoInvites,
+                                  ),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.bookmark_added_rounded,
+                                  title: 'Mes favoris',
+                                  subtitle:
+                                      'Scenes, talents et castings que vous avez sauvegardes.',
+                                  onTap: () => context.go(AppRouter.profileBookmarks),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.payments_outlined,
+                                  title: 'Monetisation',
+                                  subtitle:
+                                      'Suivre revenus, primes et opportunites monetisees.',
+                                  onTap: () => context.go(AppRouter.profileEarnings),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.workspace_premium_outlined,
+                                  title: 'Mon abonnement',
+                                  subtitle:
+                                      'Gerer votre formule premium et ses avantages.',
+                                  onTap: () =>
+                                      context.go(AppRouter.profileSubscription),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Take60SettingsSection(
+                              title: 'Application & support',
+                              subtitle:
+                                  'Reglez les alertes, les permissions et l\'assistance du compte.',
+                              children: [
+                                Take60SettingsTile(
+                                  icon: Icons.notifications_active_outlined,
+                                  title: 'Alertes push',
+                                  subtitle:
+                                      'Activer ou couper les rappels et invitations instantanees.',
+                                  trailing: Switch(
+                                    value: take60Profile.notificationsEnabled,
+                                    onChanged: _isUpdatingNotifications
+                                        ? null
+                                        : _updateNotifications,
+                                  ),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.notifications_none_rounded,
+                                  title: 'Centre de notifications',
+                                  subtitle:
+                                      'Voir les alertes, nouveaux messages et activite recente.',
+                                  onTap: () => context.go(AppRouter.notifications),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.settings_applications_rounded,
+                                  title: 'Permissions appareil',
+                                  subtitle:
+                                      'Verifier camera, micro, stockage et notifications.',
+                                  onTap: () =>
+                                      context.go(AppRouter.profileDevicePermissions),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.edit_note_rounded,
+                                  title: 'Modifier mon profil',
+                                  subtitle:
+                                      'Ajuster votre presentation, vos medias et votre univers.',
+                                  onTap: () => context.go(AppRouter.profileEdit),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.shield_outlined,
+                                  title: 'Confidentialite & securite',
+                                  subtitle:
+                                      'Sessions, protection du compte et regles de confidentialite.',
+                                  onTap: () => context.go(AppRouter.profileSecurity),
+                                ),
+                                Take60SettingsTile(
+                                  icon: Icons.support_agent_rounded,
+                                  title: 'Aide & support',
+                                  subtitle:
+                                      'FAQ, accompagnement et support Take60.',
+                                  onTap: () => context.go(AppRouter.profileHelp),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 28)),
                 ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Identity Bloc
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _IdentityBloc extends StatelessWidget {
-  const _IdentityBloc({required this.user});
-
-  final UserModel user;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _ProfileAvatar(user: user, size: 78),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      user.displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: AppThemeTokens.primaryText(context),
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ),
-                  if (user.isVerified) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1DA1F2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        size: 10,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Actrice / Créatrice',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppThemeTokens.secondaryText(context),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Profile Avatar with warm cinema border
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({required this.user, required this.size});
-
-  final UserModel user;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final asset = avatarPhotoAssetForUserId(user.id);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFF9A42),
-            Color(0xFFFFB800),
-            Color(0xFFFF6B2C),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF9A42).withValues(alpha: 0.25),
-            blurRadius: 16,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(2.5),
-      child: ClipOval(
-        child: Container(
-          color: const Color(0xFF111827),
-          child: asset != null
-              ? Image.asset(
-                  asset,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.network(
-                    user.avatarUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFF1A2540),
-                      child: Icon(
-                        Icons.person,
-                        size: size * 0.5,
-                        color: Colors.white38,
-                      ),
-                    ),
-                  ),
-                )
-              : Image.network(
-                  user.avatarUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: const Color(0xFF1A2540),
-                    child: Icon(
-                      Icons.person,
-                      size: size * 0.5,
-                      color: Colors.white38,
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Stats Row
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.user});
-
-  final UserModel user;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatColumn(value: '${user.scenesCount}', label: 'Scènes'),
-        ),
-        Expanded(
-          child: _StatColumn(
-              value: _fmtK(user.followersCount), label: 'Followers'),
-        ),
-        Expanded(
-          child:
-              _StatColumn(value: _fmtK(user.likesCount), label: 'Likes'),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatColumn extends StatelessWidget {
-  const _StatColumn({required this.value, required this.label});
-
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.dmSans(
-            fontSize: 21,
-            fontWeight: FontWeight.w600,
-            color: AppThemeTokens.primaryText(context),
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppThemeTokens.secondaryText(context),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -604,6 +724,106 @@ class _ActionButtons extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _OwnProfileQuickActions extends StatelessWidget {
+  const _OwnProfileQuickActions({
+    required this.onEditTap,
+    required this.onMessageTap,
+    required this.onShareTap,
+  });
+
+  final VoidCallback onEditTap;
+  final VoidCallback onMessageTap;
+  final VoidCallback onShareTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickActionButton(
+            label: 'Modifier',
+            icon: Icons.edit_rounded,
+            primary: true,
+            onTap: onEditTap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _QuickActionButton(
+            label: 'Messages',
+            icon: Icons.mail_outline_rounded,
+            onTap: onMessageTap,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _QuickActionButton(
+            label: 'Partager',
+            icon: Icons.ios_share_rounded,
+            onTap: onShareTap,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          height: 48,
+          decoration: BoxDecoration(
+            color: primary ? accent : AppThemeTokens.softAction(context),
+            borderRadius: BorderRadius.circular(16),
+            border: primary
+                ? null
+                : Border.all(color: AppThemeTokens.softBorder(context)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: primary ? Colors.white : AppThemeTokens.primaryText(context),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      primary ? Colors.white : AppThemeTokens.primaryText(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -737,8 +957,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
               dividerHeight: 0,
               tabs: const [
                 Tab(text: 'Performances'),
-                Tab(text: 'Badges'),
-                Tab(text: 'Favoris'),
+                Tab(text: 'Activite'),
+                Tab(text: 'Parametres'),
               ],
             ),
           ),
@@ -950,4 +1170,76 @@ bool _canShowAdminDashboardButton(UserModel? authUser, String profileUserId) {
     return false;
   }
   return authUser.isAdmin && authUser.id == profileUserId;
+}
+
+Widget _buildRankOverview(Take60ProfileStats stats) {
+  return Builder(
+    builder: (context) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppThemeTokens.surface(context),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppThemeTokens.border(context)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Classements Take60',
+              style: GoogleFonts.dmSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppThemeTokens.primaryText(context),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Vue synthese de votre position regionale, pays et globale.',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppThemeTokens.secondaryText(context),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Take60StatItem(
+                    value: _formatRank(stats.regionalRank),
+                    label: 'Region',
+                    icon: Icons.place_rounded,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Take60StatItem(
+                    value: _formatRank(stats.countryRank),
+                    label: 'Pays',
+                    icon: Icons.flag_circle_rounded,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Take60StatItem(
+                    value: _formatRank(stats.globalRank),
+                    label: 'Global',
+                    icon: Icons.public_rounded,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+String _formatRank(int? rank) {
+  if (rank == null || rank <= 0) {
+    return '--';
+  }
+  return '#$rank';
 }
