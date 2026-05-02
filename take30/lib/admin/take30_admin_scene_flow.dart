@@ -37,6 +37,583 @@ const _kDefaultVeoPrompt =
     'La scene se termine sur un cadrage fixe devant la porte, comme si un personnage allait entrer dans le champ. '
     'Aucun texte a l\'image, aucun logo, aucun visage identifiable.';
 
+const _kExamplePoliceScenePrompt = '''
+TITRE DE LA SCÈNE
+Interrogatoire sous tension
+
+CATÉGORIE
+Policier
+
+GENRE
+Drame / Thriller
+
+TEXTE / DIALOGUE ACTEUR
+Je n'ai rien vu, lieutenant. Vous voulez que je dise quoi exactement ?
+
+PROMPT VEO POUR LA VIDÉO IA D’INTRO 15 SECONDES
+Plan large d'une salle d'interrogatoire sobre, néons froids, caméra lente qui glisse vers la table métallique, tension policière réaliste, fin sur une chaise vide prête à accueillir le suspect.
+
+TIMELINE TAKE60 GUIDÉE JSON
+[
+  {
+    "id": "intro_ai_001",
+    "type": "ai_intro",
+    "role": "ai",
+    "startSecond": 0,
+    "endSecond": 15,
+    "durationSeconds": 15,
+    "camera": "travelling avant lent",
+    "dialogue": "",
+    "direction": "Installer une tension policière froide avant l'entrée du personnage."
+  },
+  {
+    "id": "actor_001",
+    "type": "user_take",
+    "role": "user",
+    "startSecond": 15,
+    "endSecond": 60,
+    "durationSeconds": 45,
+    "camera": "plan poitrine fixe",
+    "dialogue": "Je n'ai rien vu, lieutenant. Vous voulez que je dise quoi exactement ?",
+    "direction": "Démarrer méfiant, puis laisser apparaître une fissure dans la voix."
+  }
+]''';
+
+const _kPromptImportTitleHeadings = <String>[
+  'titre',
+  'titre de la scene',
+  'titre scene',
+];
+const _kPromptImportCategoryHeadings = <String>['categorie'];
+const _kPromptImportGenreHeadings = <String>['genre'];
+const _kPromptImportSceneTypeHeadings = <String>[
+  'type de scene',
+  'type scene',
+];
+const _kPromptImportDifficultyHeadings = <String>[
+  'difficulte',
+  'niveau de difficulte',
+];
+const _kPromptImportDurationHeadings = <String>[
+  'duree cible',
+  'duree visee',
+  'duree',
+];
+const _kPromptImportCountryRegionHeadings = <String>[
+  'pays region',
+  'pays / region',
+  'region',
+  'pays',
+];
+const _kPromptImportLocationHeadings = <String>['lieu', 'decor'];
+const _kPromptImportLoglineHeadings = <String>['logline'];
+const _kPromptImportSynopsisHeadings = <String>['synopsis court', 'synopsis'];
+const _kPromptImportDirectorIntentHeadings = <String>[
+  'intention de realisation',
+  'intention de réalisation',
+  'intention de mise en scene',
+  'intention',
+];
+const _kPromptImportUserCharacterHeadings = <String>[
+  'personnage a jouer par l utilisateur',
+  'personnage a jouer par l\'utilisateur',
+  'personnage utilisateur',
+  'personnage principal',
+];
+const _kPromptImportAiCharacterHeadings = <String>[
+  'personnage ia / intro',
+  'personnage ia intro',
+  'personnage ia',
+  'intro ia',
+];
+const _kPromptImportDialogueHeadings = <String>[
+  'texte / dialogue acteur',
+  'texte dialogue acteur',
+  'dialogue acteur',
+  'dialogue',
+  'texte',
+];
+const _kPromptImportActingGuidanceHeadings = <String>[
+  'consignes de jeu',
+  'consigne de jeu',
+  'direction de jeu',
+];
+const _kPromptImportRhythmHeadings = <String>['rythme', 'tempo'];
+const _kPromptImportVeoPromptHeadings = <String>[
+  'prompt veo pour la video ia d intro 15 secondes',
+  'prompt veo pour la video ia d\'intro 15 secondes',
+  'prompt veo',
+  'prompt video ia',
+];
+const _kPromptImportVeoPromptFrenchHeadings = <String>[
+  'prompt veo version francaise',
+  'prompt veo version française',
+  'prompt veo fr',
+];
+const _kPromptImportTimelineHeadings = <String>[
+  'timeline take60 guidee json',
+  'timeline take60 guidée json',
+  'timeline json',
+  'montage guide json',
+  'montage guidé json',
+];
+const _kPromptImportTechnicalNotesHeadings = <String>[
+  'notes techniques',
+  'note technique',
+];
+const _kPromptImportKeywordsHeadings = <String>[
+  'mots cles',
+  'mots clés',
+  'mots-clés',
+  'keywords',
+  'tags',
+];
+
+const _kAllPromptImportHeadings = <String>[
+  ..._kPromptImportTitleHeadings,
+  ..._kPromptImportCategoryHeadings,
+  ..._kPromptImportGenreHeadings,
+  ..._kPromptImportSceneTypeHeadings,
+  ..._kPromptImportDifficultyHeadings,
+  ..._kPromptImportDurationHeadings,
+  ..._kPromptImportCountryRegionHeadings,
+  ..._kPromptImportLocationHeadings,
+  ..._kPromptImportLoglineHeadings,
+  ..._kPromptImportSynopsisHeadings,
+  ..._kPromptImportDirectorIntentHeadings,
+  ..._kPromptImportUserCharacterHeadings,
+  ..._kPromptImportAiCharacterHeadings,
+  ..._kPromptImportDialogueHeadings,
+  ..._kPromptImportActingGuidanceHeadings,
+  ..._kPromptImportRhythmHeadings,
+  ..._kPromptImportVeoPromptHeadings,
+  ..._kPromptImportVeoPromptFrenchHeadings,
+  ..._kPromptImportTimelineHeadings,
+  ..._kPromptImportTechnicalNotesHeadings,
+  ..._kPromptImportKeywordsHeadings,
+];
+
+class _ParsedScenePrompt {
+  const _ParsedScenePrompt({
+    this.title = '',
+    this.category = '',
+    this.genre = '',
+    this.sceneType = '',
+    this.difficulty = '',
+    this.targetDuration = '',
+    this.countryRegion = '',
+    this.location = '',
+    this.logline = '',
+    this.synopsis = '',
+    this.directorIntent = '',
+    this.userCharacter = '',
+    this.aiCharacter = '',
+    this.dialogue = '',
+    this.actingGuidance = '',
+    this.rhythm = '',
+    this.veoPrompt = '',
+    this.veoPromptFrench = '',
+    this.guidedTimelineJson = '',
+    this.technicalNotes = '',
+    this.keywords = '',
+  });
+
+  final String title;
+  final String category;
+  final String genre;
+  final String sceneType;
+  final String difficulty;
+  final String targetDuration;
+  final String countryRegion;
+  final String location;
+  final String logline;
+  final String synopsis;
+  final String directorIntent;
+  final String userCharacter;
+  final String aiCharacter;
+  final String dialogue;
+  final String actingGuidance;
+  final String rhythm;
+  final String veoPrompt;
+  final String veoPromptFrench;
+  final String guidedTimelineJson;
+  final String technicalNotes;
+  final String keywords;
+
+  bool get hasAnyData => detectedFieldCount > 0;
+
+  int get detectedFieldCount => [
+        title,
+        category,
+        genre,
+        sceneType,
+        difficulty,
+        targetDuration,
+        countryRegion,
+        location,
+        logline,
+        synopsis,
+        directorIntent,
+        userCharacter,
+        aiCharacter,
+        dialogue,
+        actingGuidance,
+        rhythm,
+        veoPrompt,
+        veoPromptFrench,
+        guidedTimelineJson,
+        technicalNotes,
+        keywords,
+      ].where((value) => value.trim().isNotEmpty).length;
+}
+
+class _PromptImportSummary {
+  const _PromptImportSummary({
+    required this.detectedFieldCount,
+    required this.hasTimeline,
+    required this.hasVeoPrompt,
+    required this.hasDialogue,
+  });
+
+  final int detectedFieldCount;
+  final bool hasTimeline;
+  final bool hasVeoPrompt;
+  final bool hasDialogue;
+}
+
+String _normalizePromptToken(String value) {
+  const replacements = <String, String>{
+    'à': 'a',
+    'á': 'a',
+    'â': 'a',
+    'ä': 'a',
+    'ã': 'a',
+    'å': 'a',
+    'ç': 'c',
+    'è': 'e',
+    'é': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'ì': 'i',
+    'í': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ñ': 'n',
+    'ò': 'o',
+    'ó': 'o',
+    'ô': 'o',
+    'ö': 'o',
+    'õ': 'o',
+    'ù': 'u',
+    'ú': 'u',
+    'û': 'u',
+    'ü': 'u',
+    'ý': 'y',
+    'ÿ': 'y',
+    'œ': 'oe',
+    'æ': 'ae',
+    '’': '\'',
+    '‘': '\'',
+  };
+
+  final buffer = StringBuffer();
+  for (final rune in value.toLowerCase().runes) {
+    final char = String.fromCharCode(rune);
+    buffer.write(replacements[char] ?? char);
+  }
+  return buffer
+      .toString()
+      .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+bool _matchesPromptHeading(String line, List<String> headings) {
+  final normalizedLine = _normalizePromptToken(line);
+  if (normalizedLine.isEmpty) {
+    return false;
+  }
+  for (final heading in headings) {
+    final normalizedHeading = _normalizePromptToken(heading);
+    if (normalizedLine == normalizedHeading ||
+        normalizedLine.startsWith('$normalizedHeading ')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+String _normalizeExtractedPromptBlock(String value) {
+  return value
+      .replaceAll('\r\n', '\n')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .trim();
+}
+
+String _extractSection(
+  String raw,
+  List<String> headings,
+  List<String> allHeadings,
+) {
+  final lines = const LineSplitter().convert(raw.replaceAll('\r\n', '\n'));
+  var startIndex = -1;
+  var inlineContent = '';
+
+  for (var index = 0; index < lines.length; index++) {
+    final line = lines[index].trim();
+    if (_matchesPromptHeading(line, headings)) {
+      startIndex = index;
+      final colonIndex = line.indexOf(':');
+      if (colonIndex >= 0 && colonIndex + 1 < line.length) {
+        inlineContent = line.substring(colonIndex + 1).trim();
+      }
+      break;
+    }
+  }
+
+  if (startIndex < 0) {
+    return '';
+  }
+
+  final buffer = <String>[];
+  if (inlineContent.isNotEmpty) {
+    buffer.add(inlineContent);
+  }
+
+  for (var index = startIndex + 1; index < lines.length; index++) {
+    final trimmed = lines[index].trim();
+    if (_matchesPromptHeading(trimmed, allHeadings)) {
+      break;
+    }
+    buffer.add(lines[index].trimRight());
+  }
+
+  return _normalizeExtractedPromptBlock(buffer.join('\n'));
+}
+
+String? _extractJsonArrayAfterHeading(String raw, List<String> headings) {
+  final lines = const LineSplitter().convert(raw.replaceAll('\r\n', '\n'));
+
+  for (var index = 0; index < lines.length; index++) {
+    final line = lines[index].trim();
+    if (!_matchesPromptHeading(line, headings)) {
+      continue;
+    }
+
+    final colonIndex = line.indexOf(':');
+    final inlineContent = colonIndex >= 0 && colonIndex + 1 < line.length
+        ? line.substring(colonIndex + 1).trim()
+        : '';
+    final tail = [
+      if (inlineContent.isNotEmpty) inlineContent,
+      ...lines.sublist(index + 1),
+    ].join('\n');
+    final start = tail.indexOf('[');
+    if (start < 0) {
+      return null;
+    }
+
+    var depth = 0;
+    var inString = false;
+    var escaped = false;
+    for (var cursor = start; cursor < tail.length; cursor++) {
+      final char = tail[cursor];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char == '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char == '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) {
+        continue;
+      }
+      if (char == '[') {
+        depth += 1;
+      } else if (char == ']') {
+        depth -= 1;
+        if (depth == 0) {
+          return tail.substring(start, cursor + 1).trim();
+        }
+      }
+    }
+    return null;
+  }
+
+  return null;
+}
+
+Map<String, String> _extractColonFields(String block) {
+  final fields = <String, String>{};
+  String? currentKey;
+
+  for (final rawLine in const LineSplitter().convert(block.replaceAll('\r\n', '\n'))) {
+    final line = rawLine.trim();
+    if (line.isEmpty) {
+      currentKey = null;
+      continue;
+    }
+    final colonIndex = line.indexOf(':');
+    if (colonIndex > 0) {
+      currentKey = line.substring(0, colonIndex).trim();
+      fields[currentKey] = line.substring(colonIndex + 1).trim();
+      continue;
+    }
+    if (currentKey != null) {
+      final previous = fields[currentKey] ?? '';
+      fields[currentKey] = previous.isEmpty ? line : '$previous\n$line';
+    }
+  }
+
+  return fields;
+}
+
+String _pickColonField(Map<String, String> fields, List<String> aliases) {
+  for (final entry in fields.entries) {
+    final normalizedKey = _normalizePromptToken(entry.key);
+    for (final alias in aliases) {
+      if (normalizedKey == _normalizePromptToken(alias)) {
+        return entry.value.trim();
+      }
+    }
+  }
+  return '';
+}
+
+_ParsedScenePrompt _parseScenePrompt(String raw) {
+  final sanitizedRaw = raw.trim();
+  final userCharacter = _extractSection(
+    sanitizedRaw,
+    _kPromptImportUserCharacterHeadings,
+    _kAllPromptImportHeadings,
+  );
+  final aiCharacter = _extractSection(
+    sanitizedRaw,
+    _kPromptImportAiCharacterHeadings,
+    _kAllPromptImportHeadings,
+  );
+  final userCharacterFields = _extractColonFields(userCharacter);
+  final aiCharacterFields = _extractColonFields(aiCharacter);
+
+  final parsedUserCharacter = [
+    _pickColonField(userCharacterFields, const ['nom']),
+    _pickColonField(userCharacterFields, const ['age', 'âge']),
+    _pickColonField(userCharacterFields, const ['profil', 'role', 'rôle']),
+    _pickColonField(userCharacterFields, const ['objectif']),
+    _pickColonField(userCharacterFields, const ['etat emotionnel', 'état émotionnel']),
+    _pickColonField(userCharacterFields, const ['sous texte', 'sous-texte']),
+  ].where((value) => value.isNotEmpty).join('\n');
+
+  final parsedAiCharacter = [
+    _pickColonField(aiCharacterFields, const ['nom']),
+    _pickColonField(aiCharacterFields, const ['profil', 'role', 'rôle']),
+    _pickColonField(aiCharacterFields, const ['objectif']),
+    _pickColonField(aiCharacterFields, const ['ton']),
+  ].where((value) => value.isNotEmpty).join('\n');
+
+  return _ParsedScenePrompt(
+    title: _extractSection(
+      sanitizedRaw,
+      _kPromptImportTitleHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    category: _extractSection(
+      sanitizedRaw,
+      _kPromptImportCategoryHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    genre: _extractSection(
+      sanitizedRaw,
+      _kPromptImportGenreHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    sceneType: _extractSection(
+      sanitizedRaw,
+      _kPromptImportSceneTypeHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    difficulty: _extractSection(
+      sanitizedRaw,
+      _kPromptImportDifficultyHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    targetDuration: _extractSection(
+      sanitizedRaw,
+      _kPromptImportDurationHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    countryRegion: _extractSection(
+      sanitizedRaw,
+      _kPromptImportCountryRegionHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    location: _extractSection(
+      sanitizedRaw,
+      _kPromptImportLocationHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    logline: _extractSection(
+      sanitizedRaw,
+      _kPromptImportLoglineHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    synopsis: _extractSection(
+      sanitizedRaw,
+      _kPromptImportSynopsisHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    directorIntent: _extractSection(
+      sanitizedRaw,
+      _kPromptImportDirectorIntentHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    userCharacter: parsedUserCharacter.isEmpty ? userCharacter : userCharacter,
+    aiCharacter: parsedAiCharacter.isEmpty ? aiCharacter : aiCharacter,
+    dialogue: _extractSection(
+      sanitizedRaw,
+      _kPromptImportDialogueHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    actingGuidance: _extractSection(
+      sanitizedRaw,
+      _kPromptImportActingGuidanceHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    rhythm: _extractSection(
+      sanitizedRaw,
+      _kPromptImportRhythmHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    veoPrompt: _extractSection(
+      sanitizedRaw,
+      _kPromptImportVeoPromptHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    veoPromptFrench: _extractSection(
+      sanitizedRaw,
+      _kPromptImportVeoPromptFrenchHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    guidedTimelineJson:
+        _extractJsonArrayAfterHeading(sanitizedRaw, _kPromptImportTimelineHeadings) ?? '',
+    technicalNotes: _extractSection(
+      sanitizedRaw,
+      _kPromptImportTechnicalNotesHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    keywords: _extractSection(
+      sanitizedRaw,
+      _kPromptImportKeywordsHeadings,
+      _kAllPromptImportHeadings,
+    ),
+  );
+}
+
 DateTime _readAdminDate(dynamic value) {
   if (value is Timestamp) {
     return value.toDate();
@@ -2021,6 +2598,7 @@ class _AddScenePageState extends State<AddScenePage> {
   final firstExpectedEmotionCtrl = TextEditingController();
   final lastAiFrameDescriptionCtrl = TextEditingController();
   final markersJsonCtrl = TextEditingController(text: '[]');
+  final importPromptCtrl = TextEditingController();
 
   String selectedMainObjective = 'convaincre';
   String selectedDominantEmotion = 'détermination';
@@ -2130,6 +2708,7 @@ class _AddScenePageState extends State<AddScenePage> {
   String? _dialogueSpeechStatus;
   String? _dialogueSpeechError;
   bool _isGeneratingPreview = false;
+  bool _isPromptImporterExpanded = true;
   bool _isVeoPromptLocked = false;
   String _veoStatusValue = 'none';
   String? _veoOperationId;
@@ -2139,6 +2718,7 @@ class _AddScenePageState extends State<AddScenePage> {
   AiGeneratedVideo? _validatedPreviewVideo;
   List<String> _testedPrompts = [];
   SceneStatus _selectedPublicationTarget = SceneStatus.draft;
+  _PromptImportSummary? _lastPromptImportSummary;
 
   @override
   void initState() {
@@ -2341,6 +2921,7 @@ class _AddScenePageState extends State<AddScenePage> {
       firstExpectedEmotionCtrl,
       lastAiFrameDescriptionCtrl,
       markersJsonCtrl,
+      importPromptCtrl,
     ]) {
       c.dispose();
     }
@@ -2489,6 +3070,556 @@ class _AddScenePageState extends State<AddScenePage> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: backgroundColor),
+    );
+  }
+
+  bool _setControllerText(
+    TextEditingController controller,
+    String value, {
+    bool onlyWhenEmpty = false,
+  }) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+    if (onlyWhenEmpty && controller.text.trim().isNotEmpty) {
+      return false;
+    }
+    if (controller.text.trim() == trimmed) {
+      return false;
+    }
+    controller.text = trimmed;
+    return true;
+  }
+
+  bool _appendLabeledText(
+    TextEditingController controller,
+    String label,
+    String value,
+  ) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+    final chunk = '$label: $trimmed';
+    final existing = controller.text.trim();
+    if (existing.contains(chunk) || existing.contains(trimmed)) {
+      return false;
+    }
+    controller.text = existing.isEmpty ? chunk : '$existing\n\n$chunk';
+    return true;
+  }
+
+  String? _matchOption(String input, List<String> options) {
+    final normalizedInput = _normalizePromptToken(input);
+    if (normalizedInput.isEmpty) {
+      return null;
+    }
+    for (final option in options) {
+      final normalizedOption = _normalizePromptToken(option);
+      if (normalizedInput == normalizedOption ||
+          normalizedInput.contains(normalizedOption) ||
+          normalizedOption.contains(normalizedInput)) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String? _mapDifficultyToRecommendedLevel(String input) {
+    final normalized = _normalizePromptToken(input);
+    if (normalized.isEmpty) {
+      return null;
+    }
+    if (normalized.contains('avance') ||
+        normalized.contains('eleve') ||
+        normalized.contains('intense') ||
+        normalized.contains('expert')) {
+      return 'avancé';
+    }
+    if (normalized.contains('confirm')) {
+      return 'confirmé';
+    }
+    if (normalized.contains('debut') ||
+        normalized.contains('simple') ||
+        normalized.contains('facile')) {
+      return 'débutant';
+    }
+    if (normalized.contains('inter') ||
+        normalized.contains('moyen') ||
+        normalized.contains('modere')) {
+      return 'intermédiaire';
+    }
+    return _matchOption(input, recommendedLevelOptions);
+  }
+
+  String? _mapImportedObjective(String input) {
+    final directMatch = _matchOption(input, objectiveOptions);
+    if (directMatch != null) {
+      return directMatch;
+    }
+
+    final normalized = _normalizePromptToken(input);
+    if (normalized.isEmpty) {
+      return null;
+    }
+    if (normalized.contains('convain') || normalized.contains('persuad')) {
+      return 'convaincre';
+    }
+    if (normalized.contains('sedui')) {
+      return 'séduire';
+    }
+    if (normalized.contains('defend') ||
+        normalized.contains('justifi') ||
+        normalized.contains('disculp') ||
+        normalized.contains('innocent')) {
+      return 'se défendre';
+    }
+    if (normalized.contains('cache sa peur') ||
+        normalized.contains('cacher sa peur') ||
+        normalized.contains('masquer sa peur')) {
+      return 'cacher sa peur';
+    }
+    if (normalized.contains('nier') ||
+        normalized.contains('ment') ||
+        normalized.contains('dissimul') ||
+        normalized.contains('taire') ||
+        normalized.contains('verite')) {
+      return 'cacher la vérité';
+    }
+    if (normalized.contains('confiance') || normalized.contains('rassur')) {
+      return 'récupérer la confiance';
+    }
+    if (normalized.contains('impression')) {
+      return 'impressionner';
+    }
+    if (normalized.contains('rire') || normalized.contains('amus')) {
+      return 'faire rire';
+    }
+    if (normalized.contains('dominer') || normalized.contains('intimid')) {
+      return 'dominer la situation';
+    }
+    if (normalized.contains('pardon') || normalized.contains('excuse')) {
+      return 'demander pardon';
+    }
+    if (normalized.contains('retenir')) {
+      return 'retenir quelqu’un';
+    }
+    return null;
+  }
+
+  void _applyKeywordStyles(String keywords) {
+    final parts = keywords
+        .split(RegExp(r'[,;/\n]'))
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty);
+
+    for (final part in parts) {
+      final matchedStyle = _matchOption(part, styleOptions);
+      if (matchedStyle != null && !selectedStyles.contains(matchedStyle)) {
+        selectedStyles.add(matchedStyle);
+      }
+    }
+  }
+
+  void _applyPromptImport() {
+    final raw = importPromptCtrl.text.trim();
+    if (raw.isEmpty) {
+      _showAdminMessage(
+        'Aucune donnée exploitable détectée.',
+        backgroundColor: const Color(0xFF991B1B),
+      );
+      return;
+    }
+
+    final parsed = _parseScenePrompt(raw);
+    if (!parsed.hasAnyData) {
+      _showAdminMessage(
+        'Aucune donnée exploitable détectée.',
+        backgroundColor: const Color(0xFF991B1B),
+      );
+      return;
+    }
+
+    final userCharacterFields = _extractColonFields(parsed.userCharacter);
+    final timelineWarning = <String>[];
+    var veoPreviewInvalidated = false;
+
+    setState(() {
+      final previousSceneName = sceneNameCtrl.text.trim();
+      final previousProjectTitle = projectTitleCtrl.text.trim();
+
+      _setControllerText(sceneNameCtrl, parsed.title);
+      if (parsed.title.trim().isNotEmpty &&
+          (previousProjectTitle.isEmpty ||
+              previousProjectTitle == previousSceneName)) {
+        _setControllerText(projectTitleCtrl, parsed.title);
+      }
+      _setControllerText(categoryCtrl, parsed.category);
+      _setControllerText(genreCtrl, parsed.genre);
+      _setControllerText(targetDurationCtrl, parsed.targetDuration);
+      _setControllerText(locationCtrl, parsed.location);
+
+      final combinedContext = [
+        if (parsed.logline.isNotEmpty) 'Logline: ${parsed.logline}',
+        if (parsed.synopsis.isNotEmpty) parsed.synopsis,
+      ].join('\n\n');
+      _setControllerText(contextSummaryCtrl, combinedContext);
+      if (whyImportantCtrl.text.trim().isEmpty) {
+        _setControllerText(whyImportantCtrl, parsed.logline);
+      }
+
+      _setControllerText(directorFinalNoteCtrl, parsed.directorIntent);
+      _setControllerText(dialogueTextCtrl, parsed.dialogue);
+      if (parsed.dialogue.trim().isNotEmpty) {
+        selectedTextType = 'dialogue';
+      }
+      _setControllerText(actingDirectionCtrl, parsed.actingGuidance);
+      _setControllerText(technicalConstraintsCtrl, parsed.technicalNotes);
+
+      final recommendedLevel = _mapDifficultyToRecommendedLevel(parsed.difficulty);
+      if (recommendedLevel != null) {
+        selectedRecommendedLevel = recommendedLevel;
+      }
+
+      final tempo = _matchOption(parsed.rhythm, tempoOptions);
+      if (tempo != null) {
+        selectedGlobalTempo = tempo;
+      } else {
+        _appendLabeledText(dramaticRiseCtrl, 'Rythme global', parsed.rhythm);
+      }
+
+      if (parsed.countryRegion.trim().isNotEmpty) {
+        if (whereAreWeCtrl.text.trim().isEmpty) {
+          whereAreWeCtrl.text = parsed.countryRegion.trim();
+        } else {
+          _appendLabeledText(
+            whereAreWeCtrl,
+            'Cadre géographique',
+            parsed.countryRegion,
+          );
+        }
+      }
+
+      final characterName = _pickColonField(userCharacterFields, const ['nom']);
+      final characterAge =
+          _pickColonField(userCharacterFields, const ['age', 'âge']);
+      final characterProfile =
+          _pickColonField(userCharacterFields, const ['profil', 'role', 'rôle']);
+      final characterObjective =
+          _pickColonField(userCharacterFields, const ['objectif']);
+      final characterEmotion = _pickColonField(
+        userCharacterFields,
+        const ['etat emotionnel', 'état émotionnel'],
+      );
+      final subtext = _pickColonField(
+        userCharacterFields,
+        const ['sous texte', 'sous-texte'],
+      );
+
+      _setControllerText(characterNameCtrl, characterName);
+      _setControllerText(apparentAgeCtrl, characterAge);
+      _setControllerText(profileRoleCtrl, characterProfile);
+      _setControllerText(initialStateCtrl, characterEmotion);
+      _setControllerText(characterSummaryCtrl, parsed.userCharacter);
+
+      final mappedObjective = _mapImportedObjective(characterObjective);
+      if (mappedObjective != null) {
+        selectedMainObjective = mappedObjective;
+      } else {
+        _appendLabeledText(
+          referencesCtrl,
+          'Objectif importé',
+          characterObjective,
+        );
+      }
+
+      final mappedEmotion = _matchOption(characterEmotion, emotionOptions);
+      if (mappedEmotion != null) {
+        selectedDominantEmotion = mappedEmotion;
+      }
+
+      _appendLabeledText(stakesCtrl, 'Sous-texte', subtext);
+      _appendLabeledText(referencesCtrl, 'Type de scène', parsed.sceneType);
+      _appendLabeledText(
+        referencesCtrl,
+        'Personnage IA / intro',
+        parsed.aiCharacter,
+      );
+
+      final veoPrompt = parsed.veoPrompt.trim().isNotEmpty
+          ? parsed.veoPrompt
+          : parsed.veoPromptFrench;
+      final previousVeoPrompt = veoPromptCtrl.text.trim();
+      _setControllerText(veoPromptCtrl, veoPrompt);
+      if (veoPrompt.trim().isNotEmpty &&
+          veoPrompt.trim() != previousVeoPrompt &&
+          (_validatedPreviewVideo != null || _generatedPreviewVideo != null)) {
+        _validatedPreviewVideo = null;
+        _generatedPreviewVideo = null;
+        _isVeoPromptLocked = false;
+        _veoStatusValue = 'none';
+        _veoOperationId = null;
+        _veoGenerationError = null;
+        _veoGenerationStatus =
+            'Prompt VEO importé. Génère une nouvelle preview avant publication.';
+        veoPreviewInvalidated = true;
+      }
+      if (parsed.veoPrompt.trim().isNotEmpty &&
+          parsed.veoPromptFrench.trim().isNotEmpty) {
+        _appendLabeledText(
+          referencesCtrl,
+          'Prompt VEO FR',
+          parsed.veoPromptFrench,
+        );
+      }
+
+      _applyKeywordStyles(parsed.keywords);
+      _appendLabeledText(referencesCtrl, 'Mots-clés', parsed.keywords);
+
+      if (parsed.guidedTimelineJson.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(parsed.guidedTimelineJson);
+          markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert(decoded);
+        } catch (_) {
+          markersJsonCtrl.text = parsed.guidedTimelineJson.trim();
+          timelineWarning.add('Timeline JSON importée mais à vérifier.');
+        }
+      }
+
+      _lastPromptImportSummary = _PromptImportSummary(
+        detectedFieldCount: parsed.detectedFieldCount,
+        hasTimeline: parsed.guidedTimelineJson.trim().isNotEmpty,
+        hasVeoPrompt: veoPrompt.trim().isNotEmpty,
+        hasDialogue: parsed.dialogue.trim().isNotEmpty,
+      );
+    });
+
+    _showAdminMessage(
+      'Champs remplis automatiquement.',
+      backgroundColor: const Color(0xFF065F46),
+    );
+    if (timelineWarning.isNotEmpty) {
+      _showAdminMessage(
+        timelineWarning.first,
+        backgroundColor: const Color(0xFF92400E),
+      );
+    }
+    if (veoPreviewInvalidated) {
+      _showAdminMessage(
+        'Le prompt VEO a changé. Génère une nouvelle preview avant de publier.',
+        backgroundColor: const Color(0xFF92400E),
+      );
+    }
+  }
+
+  Widget _promptImporterCard() {
+    final summary = _lastPromptImportSummary;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF111827), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFFB923C).withValues(alpha: 0.45)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 22,
+            offset: Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: const Color(0xFFFB923C).withValues(alpha: 0.14),
+                    border: Border.all(
+                      color: const Color(0xFF60A5FA).withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Color(0xFFF8FAFC),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Importer un prompt scénario',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Colle un scénario complet Take60, puis remplis automatiquement les champs de la fiche.',
+                        style: TextStyle(
+                          color: Color(0xFFCBD5E1),
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isPromptImporterExpanded = !_isPromptImporterExpanded;
+                    });
+                  },
+                  icon: Icon(
+                    _isPromptImporterExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: Colors.white,
+                  ),
+                  tooltip: 'Coller un prompt complet',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _isPromptImporterExpanded = !_isPromptImporterExpanded;
+                });
+              },
+              icon: const Icon(Icons.content_paste_go_rounded),
+              label: Text(
+                _isPromptImporterExpanded
+                    ? 'Masquer le prompt complet'
+                    : 'Coller un prompt complet',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(
+                  color: const Color(0xFF60A5FA).withValues(alpha: 0.55),
+                ),
+              ),
+            ),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 220),
+              crossFadeState: _isPromptImporterExpanded
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: importPromptCtrl,
+                    minLines: 5,
+                    maxLines: 16,
+                    decoration: InputDecoration(
+                      labelText: 'Prompt scénario complet',
+                      alignLabelWithHint: true,
+                      helperText:
+                          'Exemple : titre, catégorie, dialogue, prompt VEO et timeline JSON.',
+                      fillColor: Colors.white.withValues(alpha: 0.08),
+                      helperStyle: const TextStyle(color: Color(0xFFCBD5E1)),
+                      labelStyle: const TextStyle(color: Color(0xFFE2E8F0)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: BorderSide(
+                          color: const Color(0xFF60A5FA).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFB923C),
+                          width: 1.4,
+                        ),
+                      ),
+                    ),
+                    style: const TextStyle(color: Colors.white, height: 1.45),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _applyPromptImport,
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: const Text('Remplir automatiquement'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFFB923C),
+                          foregroundColor: const Color(0xFF111827),
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            importPromptCtrl.clear();
+                            _lastPromptImportSummary = null;
+                          });
+                        },
+                        icon: const Icon(Icons.delete_sweep_rounded),
+                        label: const Text('Effacer le prompt'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color:
+                                const Color(0xFF94A3B8).withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            importPromptCtrl.text = _kExamplePoliceScenePrompt;
+                            _isPromptImporterExpanded = true;
+                          });
+                        },
+                        child: const Text('Insérer exemple police'),
+                      ),
+                    ],
+                  ),
+                  if (summary != null) ...[
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Chip(
+                          label: Text('${summary.detectedFieldCount} champs détectés'),
+                        ),
+                        if (summary.hasTimeline)
+                          const Chip(label: Text('Timeline JSON détectée')),
+                        if (summary.hasVeoPrompt)
+                          const Chip(label: Text('Prompt VEO détecté')),
+                        if (summary.hasDialogue)
+                          const Chip(label: Text('Dialogue détecté')),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+              secondChild: const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2731,6 +3862,7 @@ class _AddScenePageState extends State<AddScenePage> {
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
+                    _promptImporterCard(),
                     _section(
                       '1) Informations générales',
                       children: [

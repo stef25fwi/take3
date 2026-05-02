@@ -135,4 +135,96 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'importe un prompt scénario et remplit les champs clés sans casser la page',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: SceneFormData.testPoliceInterrogation(),
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      expect(find.text('Importer un prompt scénario'), findsOneWidget);
+      await tester.tap(find.text('Insérer exemple police'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Remplir automatiquement'));
+      await tester.pump();
+
+      expect(find.text('Champs remplis automatiquement.'), findsOneWidget);
+      expect(find.textContaining('champs détectés'), findsOneWidget);
+      expect(find.text('Timeline JSON détectée'), findsOneWidget);
+      expect(find.text('Prompt VEO détecté'), findsOneWidget);
+      expect(find.text('Dialogue détecté'), findsOneWidget);
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      expect(state.sceneNameCtrl.text, 'Interrogatoire sous tension');
+      expect(state.categoryCtrl.text, 'Policier');
+      expect(state.genreCtrl.text, 'Drame / Thriller');
+      expect(
+        state.dialogueTextCtrl.text,
+        contains('Je n\'ai rien vu, lieutenant.'),
+      );
+      expect(state.veoPromptCtrl.text, contains('salle d\'interrogatoire')); 
+      expect(state.markersJsonCtrl.text, contains('intro_ai_001'));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'objectif libre importé ne remplace pas l’obstacle et titre projet reste synchronisé si lié à la scène',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: SceneFormData.testPoliceInterrogation(),
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      state.projectTitleCtrl.text = state.sceneNameCtrl.text;
+      state.importPromptCtrl.text = '''
+TITRE DE LA SCÈNE
+Interrogatoire sous tension
+
+PERSONNAGE À JOUER PAR L’UTILISATEUR
+Nom : Malik Darcel
+Objectif : gagner du temps face au policier
+État émotionnel : méfiance
+
+TEXTE / DIALOGUE ACTEUR
+Je n'ai rien vu.
+''';
+      state.setState(() {});
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Remplir automatiquement'));
+      await tester.pumpAndSettle();
+
+      expect(state.sceneNameCtrl.text, 'Interrogatoire sous tension');
+      expect(state.projectTitleCtrl.text, 'Interrogatoire sous tension');
+      expect(
+        state.mainObstacleCtrl.text,
+        'Pression psychologique et preuves présentées par l’enquêteur.',
+      );
+      expect(state.selectedMainObjective, 'cacher la vérité');
+      expect(state.referencesCtrl.text, contains('Objectif importé'));
+    },
+  );
 }
