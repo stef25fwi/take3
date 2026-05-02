@@ -142,6 +142,7 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
     final isLiked = _likedOverride ?? scene.isLiked;
     final likesCount = _likesCountOverride ?? scene.likesCount;
     final commentsCount = isDemoMode ? demoComments.length : scene.commentsCount;
+    final isCompact = MediaQuery.sizeOf(context).width < 380;
 
     return Scaffold(
       backgroundColor: AppThemeTokens.pageBackground(context),
@@ -177,61 +178,28 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppThemeTokens.pageHorizontalPadding,
-          8,
+          isCompact ? 6 : 8,
           AppThemeTokens.pageHorizontalPadding,
-          24,
+          isCompact ? 18 : 24,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 220,
-                    child: _SceneThumbnail(imageUrl: scene.thumbnailUrl),
-                  ),
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.45)],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Positioned.fill(
-                    child: Center(
-                      child: Icon(Icons.play_circle_fill, color: AppColors.white, size: 62),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
+            _SceneHeroCard(scene: scene),
+            SizedBox(height: isCompact ? 12 : 16),
             Text(
               scene.title,
               style: GoogleFonts.dmSans(
-                fontSize: 20,
+                fontSize: isCompact ? 18 : 20,
                 fontWeight: FontWeight.w700,
                 color: AppThemeTokens.primaryText(context),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'par ${scene.author.displayName} • ${scene.category} • ${scene.durationFormatted}',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 10),
+            SizedBox(height: isCompact ? 8 : 10),
+            _SceneMetaHeader(scene: scene, compact: isCompact),
+            SizedBox(height: isCompact ? 8 : 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -243,120 +211,87 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                 ],
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: isCompact ? 10 : 12),
             GridView.count(
               crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1.55,
+              crossAxisSpacing: isCompact ? 6 : 8,
+              mainAxisSpacing: isCompact ? 6 : 8,
+              childAspectRatio: isCompact ? 2.15 : 1.95,
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
               children: [
-                const _StatBox(value: '4.8⭐', label: 'note'),
-                _StatBox(value: '${scene.viewsCount}👁️', label: 'vues'),
-                _StatBox(value: '$commentsCount💬', label: 'commentaires'),
-                _StatBox(value: '$likesCount❤️', label: 'likes'),
+                const _StatBox(
+                  value: '4.8',
+                  label: 'note',
+                  icon: Icons.workspace_premium_rounded,
+                  accentColor: Color(0xFFFFB84D),
+                  compact: false,
+                ),
+                _StatBox(
+                  value: '${scene.viewsCount}',
+                  label: 'vues',
+                  icon: Icons.visibility_rounded,
+                  accentColor: const Color(0xFF79B8FF),
+                  compact: isCompact,
+                ),
+                _StatBox(
+                  value: '$commentsCount',
+                  label: 'commentaires',
+                  icon: Icons.forum_rounded,
+                  accentColor: const Color(0xFF5ED0B0),
+                  compact: isCompact,
+                ),
+                _StatBox(
+                  value: '$likesCount',
+                  label: 'likes',
+                  icon: Icons.favorite_rounded,
+                  accentColor: const Color(0xFFFF7D8F),
+                  compact: isCompact,
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppThemeTokens.surface(context),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppThemeTokens.border(context)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Description',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppThemeTokens.primaryText(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Une exploration chaleureuse des textures, du rythme et des petits gestes qui font vivre cette scene.',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
+            SizedBox(height: isCompact ? 10 : 12),
+            _SceneDescriptionCard(
+              description: scene.description.isNotEmpty
+                  ? scene.description
+                  : 'Une exploration chaleureuse des textures, du rythme et des petits gestes qui font vivre cette scene.',
+              compact: isCompact,
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: isCompact ? 12 : 14),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _toggleLike(scene),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: isLiked ? AppColors.red : AppColors.borderSubtle,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Text(
-                      isLiked ? 'Liké' : 'Liker',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: isLiked
-                            ? AppColors.red
-                            : AppThemeTokens.primaryText(context),
-                      ),
-                    ),
+                  child: _SceneActionButton(
+                    label: isLiked ? 'Liké' : 'Liker',
+                    icon: isLiked
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    accentColor: const Color(0xFFFF7D8F),
+                    onTap: () => _toggleLike(scene),
+                    filled: false,
+                    compact: isCompact,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: _openComments,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.cyan,
-                      foregroundColor: AppColors.navy,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Text(
-                      'Commenter',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  child: _SceneActionButton(
+                    label: 'Commenter',
+                    icon: Icons.mode_comment_outlined,
+                    accentColor: const Color(0xFF5ED0B0),
+                    onTap: _openComments,
+                    filled: true,
+                    compact: isCompact,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => ref.read(shareServiceProvider).shareScene(scene),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppThemeTokens.border(context)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: Text(
-                      'Partager',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppThemeTokens.primaryText(context),
-                      ),
-                    ),
+                  child: _SceneActionButton(
+                    label: 'Partager',
+                    icon: Icons.ios_share_rounded,
+                    accentColor: const Color(0xFF79B8FF),
+                    onTap: () => ref.read(shareServiceProvider).shareScene(scene),
+                    filled: false,
+                    compact: isCompact,
                   ),
                 ),
               ],
@@ -394,41 +329,660 @@ class _TagChip extends StatelessWidget {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  const _StatBox({required this.value, required this.label});
+class _SceneHeroCard extends StatelessWidget {
+  const _SceneHeroCard({required this.scene});
 
-  final String value;
+  final SceneModel scene;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+    final accent = Theme.of(context).colorScheme.primary;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppThemeTokens.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.10),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: isCompact ? 220 : 244,
+              child: _SceneThumbnail(imageUrl: scene.thumbnailUrl),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.10),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.62),
+                    ],
+                    stops: const [0, 0.42, 1],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: isCompact ? 12 : 14,
+              left: isCompact ? 12 : 14,
+              right: isCompact ? 12 : 14,
+              child: isCompact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _HeroMetaChip(
+                              icon: Icons.auto_awesome_rounded,
+                              label: scene.category,
+                              accentColor: const Color(0xFFFFB84D),
+                              compact: true,
+                            ),
+                            _HeroMetaChip(
+                              icon: Icons.schedule_rounded,
+                              label: scene.durationFormatted,
+                              accentColor: const Color(0xFF79B8FF),
+                              compact: true,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: _HeroMetaChip(
+                            icon: Icons.visibility_rounded,
+                            label: _formatSceneMetric(scene.viewsCount),
+                            accentColor: const Color(0xFF5ED0B0),
+                            compact: true,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        _HeroMetaChip(
+                          icon: Icons.auto_awesome_rounded,
+                          label: scene.category,
+                          accentColor: const Color(0xFFFFB84D),
+                        ),
+                        const SizedBox(width: 8),
+                        _HeroMetaChip(
+                          icon: Icons.schedule_rounded,
+                          label: scene.durationFormatted,
+                          accentColor: const Color(0xFF79B8FF),
+                        ),
+                        const Spacer(),
+                        _HeroMetaChip(
+                          icon: Icons.visibility_rounded,
+                          label: _formatSceneMetric(scene.viewsCount),
+                          accentColor: const Color(0xFF5ED0B0),
+                        ),
+                      ],
+                    ),
+            ),
+            Positioned.fill(
+              child: Center(
+                child: Container(
+                  width: isCompact ? 72 : 84,
+                  height: isCompact ? 72 : 84,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.16),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: isCompact ? 54 : 62,
+                      height: isCompact ? 54 : 62,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFFFD36E),
+                            Color(0xFFFF8A5B),
+                          ],
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: isCompact ? 28 : 34,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: isCompact ? 12 : 16,
+              right: isCompact ? 12 : 16,
+              bottom: isCompact ? 12 : 14,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selection Take30',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.dmSans(
+                            fontSize: isCompact ? 11 : 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                            color: Colors.white.withValues(alpha: 0.92),
+                          ),
+                        ),
+                        SizedBox(height: isCompact ? 2 : 4),
+                        Text(
+                          scene.author.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.dmSans(
+                            fontSize: isCompact ? 13 : 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.84),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: isCompact ? 8 : 12),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 10 : 12,
+                      vertical: isCompact ? 7 : 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.favorite_rounded,
+                          color: Color(0xFFFFA1B0),
+                          size: 15,
+                        ),
+                        SizedBox(width: isCompact ? 4 : 6),
+                        Text(
+                          _formatSceneMetric(scene.likesCount),
+                          style: GoogleFonts.dmSans(
+                            fontSize: isCompact ? 11 : 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroMetaChip extends StatelessWidget {
+  const _HeroMetaChip({
+    required this.icon,
+    required this.label,
+    required this.accentColor,
+    this.compact = false,
+  });
+
+  final IconData icon;
   final String label;
+  final Color accentColor;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppThemeTokens.surfaceMuted(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppThemeTokens.border(context)),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 9 : 10,
+        vertical: compact ? 7 : 8,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.24),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: GoogleFonts.dmSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppThemeTokens.primaryText(context),
-            ),
-          ),
-          const SizedBox(height: 4),
+          Icon(icon, size: compact ? 13 : 14, color: accentColor),
+          SizedBox(width: compact ? 5 : 6),
           Text(
             label,
             style: GoogleFonts.dmSans(
-              fontSize: 11,
-              color: AppColors.textMuted,
+              fontSize: compact ? 10 : 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+String _formatSceneMetric(int value) {
+  if (value >= 1000000) {
+    return '${(value / 1000000).toStringAsFixed(1)}M';
+  }
+  if (value >= 1000) {
+    return '${(value / 1000).toStringAsFixed(1)}k';
+  }
+  return value.toString();
+}
+
+class _SceneMetaHeader extends StatelessWidget {
+  const _SceneMetaHeader({required this.scene, this.compact = false});
+
+  final SceneModel scene;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final accent = Theme.of(context).colorScheme.primary;
+    final initials = scene.author.displayName.trim().isEmpty
+        ? 'T'
+        : scene.author.displayName
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((part) => part.isNotEmpty)
+            .take(2)
+            .map((part) => part.characters.first.toUpperCase())
+            .join();
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 10 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: AppThemeTokens.surfaceMuted(context),
+        borderRadius: BorderRadius.circular(compact ? 16 : 18),
+        border: Border.all(color: AppThemeTokens.border(context)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 38 : 42,
+            height: compact ? 38 : 42,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accent.withValues(alpha: 0.85),
+                  const Color(0xFF5ED0B0),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(compact ? 12 : 14),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: GoogleFonts.dmSans(
+                fontSize: compact ? 13 : 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  scene.author.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w700,
+                    color: primaryText,
+                  ),
+                ),
+                SizedBox(height: compact ? 2 : 3),
+                Text(
+                  'Createur • ${scene.category}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: compact ? 11 : 12,
+                    fontWeight: FontWeight.w500,
+                    color: secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 9 : 10,
+              vertical: compact ? 7 : 8,
+            ),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  size: compact ? 13 : 14,
+                  color: accent,
+                ),
+                SizedBox(width: compact ? 5 : 6),
+                Text(
+                  scene.durationFormatted,
+                  style: GoogleFonts.dmSans(
+                    fontSize: compact ? 11 : 12,
+                    fontWeight: FontWeight.w700,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SceneDescriptionCard extends StatelessWidget {
+  const _SceneDescriptionCard({
+    required this.description,
+    this.compact = false,
+  });
+
+  final String description;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final accent = Theme.of(context).colorScheme.primary;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 14 : 16),
+      decoration: BoxDecoration(
+        color: AppThemeTokens.surface(context),
+        borderRadius: BorderRadius.circular(compact ? 18 : 20),
+        border: Border.all(color: AppThemeTokens.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: compact ? 34 : 38,
+                height: compact ? 34 : 38,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(compact ? 10 : 12),
+                ),
+                child: Icon(
+                  Icons.auto_stories_rounded,
+                  size: compact ? 16 : 18,
+                  color: accent,
+                ),
+              ),
+              SizedBox(width: compact ? 8 : 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Description',
+                      style: GoogleFonts.dmSans(
+                        fontSize: compact ? 14 : 15,
+                        fontWeight: FontWeight.w700,
+                        color: primaryText,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 1 : 2),
+                    Text(
+                      'Intentions, ambiance et direction de jeu',
+                      style: GoogleFonts.dmSans(
+                        fontSize: compact ? 10 : 11,
+                        fontWeight: FontWeight.w600,
+                        color: secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 10 : 14),
+          Text(
+            description,
+            style: GoogleFonts.dmSans(
+              fontSize: compact ? 12 : 13,
+              height: 1.55,
+              fontWeight: FontWeight.w500,
+              color: secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.accentColor,
+    this.compact = false,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color accentColor;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: AppThemeTokens.surfaceMuted(context),
+        borderRadius: BorderRadius.circular(compact ? 14 : 16),
+        border: Border.all(color: AppThemeTokens.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 30 : 34,
+            height: compact ? 30 : 34,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(compact ? 10 : 12),
+              border: Border.all(color: accentColor.withValues(alpha: 0.22)),
+            ),
+            child: Icon(icon, size: compact ? 16 : 18, color: accentColor),
+          ),
+          SizedBox(width: compact ? 8 : 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: compact ? 16 : 18,
+                    fontWeight: FontWeight.w700,
+                    color: primaryText,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                SizedBox(height: compact ? 1 : 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontSize: compact ? 10 : 11,
+                    fontWeight: FontWeight.w600,
+                    color: secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SceneActionButton extends StatelessWidget {
+  const _SceneActionButton({
+    required this.label,
+    required this.icon,
+    required this.accentColor,
+    required this.onTap,
+    required this.filled,
+    this.compact = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback onTap;
+  final bool filled;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final backgroundColor = filled
+        ? accentColor.withValues(alpha: 0.16)
+        : AppThemeTokens.surface(context);
+    final borderColor = filled
+        ? accentColor.withValues(alpha: 0.28)
+        : AppThemeTokens.border(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          height: compact ? 48 : 52,
+          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: filled ? 0.12 : 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: compact ? 28 : 30,
+                height: compact ? 28 : 30,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: filled ? 0.18 : 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: compact ? 15 : 16,
+                  color: accentColor,
+                ),
+              ),
+              SizedBox(width: compact ? 8 : 10),
+              Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: compact ? 13 : 14,
+                  fontWeight: FontWeight.w700,
+                  color: filled ? accentColor : primaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
