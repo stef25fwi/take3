@@ -189,12 +189,16 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
           children: [
             _SceneHeroCard(scene: scene),
             SizedBox(height: isCompact ? 12 : 16),
-            Text(
-              scene.title,
-              style: GoogleFonts.dmSans(
-                fontSize: isCompact ? 18 : 20,
-                fontWeight: FontWeight.w700,
-                color: AppThemeTokens.primaryText(context),
+            SizedBox(
+              width: double.infinity,
+              child: Text(
+                scene.title,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: isCompact ? 18 : 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppThemeTokens.primaryText(context),
+                ),
               ),
             ),
             SizedBox(height: isCompact ? 8 : 10),
@@ -940,48 +944,69 @@ class _SceneActionButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          height: compact ? 48 : 52,
-          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: accentColor.withValues(alpha: filled ? 0.12 : 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 110;
+            final height = isNarrow ? 46.0 : (compact ? 48.0 : 52.0);
+            final horizontalPadding = isNarrow ? 8.0 : (compact ? 10.0 : 12.0);
+            final iconBoxSize = isNarrow ? 24.0 : (compact ? 28.0 : 30.0);
+            final iconSize = isNarrow ? 14.0 : (compact ? 15.0 : 16.0);
+            final gap = isNarrow ? 6.0 : (compact ? 8.0 : 10.0);
+            final fontSize = isNarrow ? 12.0 : (compact ? 13.0 : 14.0);
+
+            return Ink(
+              height: height,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: filled ? 0.12 : 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: compact ? 28 : 30,
-                height: compact ? 28 : 30,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: filled ? 0.18 : 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  size: compact ? 15 : 16,
-                  color: accentColor,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: iconBoxSize,
+                    height: iconBoxSize,
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: filled ? 0.18 : 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: iconSize,
+                      color: accentColor,
+                    ),
+                  ),
+                  SizedBox(width: gap),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: GoogleFonts.dmSans(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.w700,
+                            color: filled ? accentColor : primaryText,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: compact ? 8 : 10),
-              Text(
-                label,
-                style: GoogleFonts.dmSans(
-                  fontSize: compact ? 13 : 14,
-                  fontWeight: FontWeight.w700,
-                  color: filled ? accentColor : primaryText,
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

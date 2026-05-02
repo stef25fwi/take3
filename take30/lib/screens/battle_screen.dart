@@ -213,18 +213,18 @@ class _BattleBodyState extends State<_BattleBody> {
                     AppThemeTokens.pageHorizontalPadding,
                     4,
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Duel d’interprétation',
-                        style: GoogleFonts.dmSans(
-                          color: AppThemeTokens.primaryText(context),
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                        ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Battle d’interprétation',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        color: AppThemeTokens.primaryText(context),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
