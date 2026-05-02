@@ -218,6 +218,8 @@ class _BattleBodyState extends State<_BattleBody> {
                     child: Text(
                       'Battle d’interprétation',
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.dmSans(
                         color: AppThemeTokens.primaryText(context),
                         fontSize: 24,
