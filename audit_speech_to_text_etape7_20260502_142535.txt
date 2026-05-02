@@ -1,0 +1,216 @@
+==================================================
+ AUDIT SPEECH TO TEXT - AJOUT SCÈNE ÉTAPE 7
+==================================================
+Sat May  2 14:25:35 UTC 2026
+
+===== 1. PACKAGES SPEECH / MICRO DANS PUBSPEC =====
+22:  permission_handler: ^11.3.1
+45:  speech_to_text: ^7.0.0
+
+===== 2. IMPORTS SPEECH / MICRO =====
+take30/lib/providers/providers.dart:1070:    final microphoneGranted = await _permissions.requestWithExplanation(
+take30/lib/providers/providers.dart:1072:      AppPermission.microphone,
+take30/lib/providers/providers.dart:1074:      message: 'Take 30 a besoin du microphone pour capturer le son.',
+take30/lib/providers/providers.dart:1076:    if (!microphoneGranted) {
+take30/lib/providers/providers.dart:1077:      final microphoneStatus = await _permissions.status(AppPermission.microphone);
+take30/lib/providers/providers.dart:1079:        needsSettings: _needsPermissionSettings(microphoneStatus),
+take30/lib/providers/providers.dart:1080:        missingPermissions: const [AppPermission.microphone],
+take30/lib/screens/take60_guided_record_screen.dart:368:            AppPermission.microphone => 'microphone',
+take30/lib/screens/record_screen.dart:100:            AppPermission.microphone => 'microphone',
+take30/lib/services/connectivity_service.dart:32:    _subscription = _connectivity.onConnectivityChanged.listen(_updateStatus);
+take30/lib/services/auth_service.dart:69:    _auth.authStateChanges().listen(_onAuthStateChanged);
+take30/lib/services/auth_service.dart.before_email_verify:33:    _auth.authStateChanges().listen(_onAuthStateChanged);
+take30/lib/services/notification_service.dart:43:    _auth.authStateChanges().listen((user) {
+take30/lib/services/notification_service.dart:90:      _messaging.onTokenRefresh.listen((newToken) async {
+take30/lib/services/notification_service.dart:99:      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+take30/lib/services/notification_service.dart:100:      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+take30/lib/services/permission_service.dart:6:  microphone,
+take30/lib/services/permission_service.dart:47:      AppPermission.microphone,
+take30/lib/services/permission_service.dart:99:      case AppPermission.microphone:
+take30/lib/services/permission_service.dart:100:        return Permission.microphone;
+take30/lib/admin/take30_admin_scene_flow.dart:8:import 'package:speech_to_text/speech_recognition_error.dart';
+take30/lib/admin/take30_admin_scene_flow.dart:9:import 'package:speech_to_text/speech_recognition_result.dart';
+take30/lib/admin/take30_admin_scene_flow.dart:10:import 'package:speech_to_text/speech_to_text.dart';
+take30/lib/admin/take30_admin_scene_flow.dart:1917:  final SpeechToText _speechToText = SpeechToText();
+take30/lib/admin/take30_admin_scene_flow.dart:3717:    await _speechToText.listen(
+take30/lib/admin/take30_admin_scene_flow.dart:3720:      listenFor: const Duration(minutes: 3),
+take30/lib/admin/take30_admin_scene_flow.dart:3760:    final status = await Permission.microphone.status;
+take30/lib/admin/take30_admin_scene_flow.dart:3765:    final requested = await Permission.microphone.request();
+take30/lib/admin/take30_admin_scene_flow.dart:3780:          ? 'Microphone refusé. Active-le dans les réglages du système.'
+take30/lib/admin/take30_admin_scene_flow.dart:3781:          : 'Microphone refusé. Autorise-le pour dicter le dialogue.';
+take30/lib/admin/take30_admin_scene_flow.dart:3819:      message = 'Microphone refusé. Autorise-le pour utiliser la dictée.';
+
+===== 3. ÉTAPE 7 / DIALOGUE / MICRO DANS ADMIN FLOW =====
+8:import 'package:speech_to_text/speech_recognition_error.dart';
+9:import 'package:speech_to_text/speech_recognition_result.dart';
+10:import 'package:speech_to_text/speech_to_text.dart';
+1274:          'Doigts qui tapent, micro-tensions dans les mains.',
+1284:          'Micro-expressions, regard dur au début puis regard fuyant à la fin.',
+1917:  final SpeechToText _speechToText = SpeechToText();
+1963:  final dialogueTextCtrl = TextEditingController();
+2113:  bool _speechAvailable = false;
+2114:  bool _speechInitializing = false;
+2115:  bool _isListeningToDialogue = false;
+2177:    dialogueTextCtrl.text = data.dialogueText;
+2258:    _speechToText.cancel();
+2290:      dialogueTextCtrl,
+2399:      dialogueText: dialogueTextCtrl.text.trim(),
+2469:        dialogueTextCtrl.text.trim().isNotEmpty;
+2702:                      _MenuHintItem('7. Texte'),
+2862:                      '7) Texte',
+3043:                                  color: Color(0xFF111827),
+3393:          controller: dialogueTextCtrl,
+3397:            labelText: 'Dialogue / monologue',
+3408:                  onTap: _speechInitializing
+3411:                          if (_isListeningToDialogue) {
+3412:                            _stopDialogueListening();
+3414:                            _startDialogueListening();
+3422:                      color: _isListeningToDialogue
+3427:                        color: _isListeningToDialogue
+3431:                      boxShadow: _isListeningToDialogue
+3443:                      child: _speechInitializing
+3450:                              _isListeningToDialogue
+3454:                              color: _isListeningToDialogue
+3456:                                  : const Color(0xFF111827),
+3472:                    : (_isListeningToDialogue
+3670:  Future<void> _startDialogueListening() async {
+3671:    if (_speechInitializing || _isListeningToDialogue) {
+3676:      _speechInitializing = true;
+3678:      _dialogueSpeechStatus = 'Préparation du micro…';
+3684:        _speechInitializing = false;
+3689:    if (!_speechAvailable) {
+3690:      _speechAvailable = await _speechToText.initialize(
+3696:    if (!_speechAvailable) {
+3701:        _speechInitializing = false;
+3709:    _dialogueSpeechBaseText = dialogueTextCtrl.text.trimRight();
+3712:    final systemLocale = await _speechToText.systemLocale();
+3717:    await _speechToText.listen(
+3733:      _speechInitializing = false;
+3734:      _isListeningToDialogue = true;
+3740:  Future<void> _stopDialogueListening() async {
+3741:    await _speechToText.stop();
+3746:      _isListeningToDialogue = false;
+3760:    final status = await Permission.microphone.status;
+3765:    final requested = await Permission.microphone.request();
+3780:          ? 'Microphone refusé. Active-le dans les réglages du système.'
+3781:          : 'Microphone refusé. Autorise-le pour dicter le dialogue.';
+3793:        _isListeningToDialogue = true;
+3801:        _isListeningToDialogue = false;
+3819:      message = 'Microphone refusé. Autorise-le pour utiliser la dictée.';
+3829:      _speechInitializing = false;
+3830:      _isListeningToDialogue = false;
+3851:    dialogueTextCtrl.value = dialogueTextCtrl.value.copyWith(
+4068:        SceneStatus.published => const Color(0xFFDCFCE7),
+4364:      MapEntry('Dialogue', marker.dialogue),
+4385:              color: Color(0xFF111827),
+4432:      MapEntry('Texte ou consigne de jeu', scene.dialogueText),
+4673:              color: Color(0xFF111827),
+4957:                    : const Color(0xFF1F2937),
+5164:                    labelText: 'Texte imposé / réplique',
+
+===== 4. ZONE ÉTAPE 7 COMPLÈTE =====
+8:import 'package:speech_to_text/speech_recognition_error.dart';
+9:import 'package:speech_to_text/speech_recognition_result.dart';
+10:import 'package:speech_to_text/speech_to_text.dart';
+38:    'Aucun texte a l\'image, aucun logo, aucun visage identifiable.';
+1274:          'Doigts qui tapent, micro-tensions dans les mains.',
+1284:          'Micro-expressions, regard dur au début puis regard fuyant à la fin.',
+1294:      exactEnd: 'Finir sur un regard fuyant, sans ajouter de texte.',
+1306:          'Vidéo cinématique réaliste, salle d’interrogatoire sombre. Lumière froide au-dessus d’une table métallique. Un homme est assis, légèrement en tension. Caméra en plan fixe avec léger zoom progressif. Atmosphère lourde, silence pesant. Style film policier réaliste. Aucun texte, aucun visage identifiable. La scène se termine sur un regard intense vers la caméra.',
+1917:  final SpeechToText _speechToText = SpeechToText();
+1963:  final dialogueTextCtrl = TextEditingController();
+2017:  String selectedTextType = 'texte exact à respecter';
+2074:    'texte exact à respecter',
+2075:    'texte semi-libre',
+2113:  bool _speechAvailable = false;
+2114:  bool _speechInitializing = false;
+2115:  bool _isListeningToDialogue = false;
+2177:    dialogueTextCtrl.text = data.dialogueText;
+2258:    _speechToText.cancel();
+2290:      dialogueTextCtrl,
+2399:      dialogueText: dialogueTextCtrl.text.trim(),
+2469:        dialogueTextCtrl.text.trim().isNotEmpty;
+2618:        'La fiche acteur doit au minimum contenir un personnage et un texte.',
+2698:                      _MenuHintItem('3. Contexte immédiat'),
+2702:                      _MenuHintItem('7. Texte'),
+2767:                      '3) Contexte immédiat de la scène',
+2783:                          'Résumé du contexte en 2 lignes',
+2862:                      '7) Texte',
+2865:                          label: 'Type de texte',
+2960:                        _textField(idealTextDurationCtrl, 'Durée idéale du texte'),
+3051:                              Text('• Éviter le texte à l’image.'),
+3393:          controller: dialogueTextCtrl,
+3397:            labelText: 'Dialogue / monologue',
+3408:                  onTap: _speechInitializing
+3411:                          if (_isListeningToDialogue) {
+3412:                            _stopDialogueListening();
+3414:                            _startDialogueListening();
+3422:                      color: _isListeningToDialogue
+3427:                        color: _isListeningToDialogue
+3431:                      boxShadow: _isListeningToDialogue
+3443:                      child: _speechInitializing
+3450:                              _isListeningToDialogue
+3454:                              color: _isListeningToDialogue
+3472:                    : (_isListeningToDialogue
+3644:          'Prompt réactivé. Corrige le texte puis relance une génération.';
+3670:  Future<void> _startDialogueListening() async {
+3671:    if (_speechInitializing || _isListeningToDialogue) {
+3676:      _speechInitializing = true;
+3678:      _dialogueSpeechStatus = 'Préparation du micro…';
+3684:        _speechInitializing = false;
+3689:    if (!_speechAvailable) {
+3690:      _speechAvailable = await _speechToText.initialize(
+3696:    if (!_speechAvailable) {
+3701:        _speechInitializing = false;
+3709:    _dialogueSpeechBaseText = dialogueTextCtrl.text.trimRight();
+3712:    final systemLocale = await _speechToText.systemLocale();
+3717:    await _speechToText.listen(
+3733:      _speechInitializing = false;
+3734:      _isListeningToDialogue = true;
+3740:  Future<void> _stopDialogueListening() async {
+3741:    await _speechToText.stop();
+3746:      _isListeningToDialogue = false;
+3760:    final status = await Permission.microphone.status;
+3765:    final requested = await Permission.microphone.request();
+3780:          ? 'Microphone refusé. Active-le dans les réglages du système.'
+3781:          : 'Microphone refusé. Autorise-le pour dicter le dialogue.';
+3793:        _isListeningToDialogue = true;
+3801:        _isListeningToDialogue = false;
+3819:      message = 'Microphone refusé. Autorise-le pour utiliser la dictée.';
+3829:      _speechInitializing = false;
+3830:      _isListeningToDialogue = false;
+3851:    dialogueTextCtrl.value = dialogueTextCtrl.value.copyWith(
+4364:      MapEntry('Dialogue', marker.dialogue),
+4418:      MapEntry('Contexte dramatique', scene.contextSummary),
+4432:      MapEntry('Texte ou consigne de jeu', scene.dialogueText),
+5164:                    labelText: 'Texte imposé / réplique',
+
+===== 5. PERMISSIONS ANDROID MICRO =====
+take30/android/app/src/main/AndroidManifest.xml:4:    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+===== 6. PERMISSIONS iOS MICRO =====
+44:	<key>NSMicrophoneUsageDescription</key>
+46:	<key>NSSpeechRecognitionUsageDescription</key>
+
+===== 7. WEB INDEX / PERMISSION POLICY =====
+take30/lib/providers/providers.dart:1070:    final microphoneGranted = await _permissions.requestWithExplanation(
+take30/lib/providers/providers.dart:1072:      AppPermission.microphone,
+take30/lib/providers/providers.dart:1074:      message: 'Take 30 a besoin du microphone pour capturer le son.',
+take30/lib/providers/providers.dart:1076:    if (!microphoneGranted) {
+take30/lib/providers/providers.dart:1077:      final microphoneStatus = await _permissions.status(AppPermission.microphone);
+take30/lib/providers/providers.dart:1079:        needsSettings: _needsPermissionSettings(microphoneStatus),
+take30/lib/providers/providers.dart:1080:        missingPermissions: const [AppPermission.microphone],
+take30/lib/screens/take60_guided_record_screen.dart:368:            AppPermission.microphone => 'microphone',
+take30/lib/screens/record_screen.dart:100:            AppPermission.microphone => 'microphone',
+take30/lib/services/permission_service.dart:6:  microphone,
+take30/lib/services/permission_service.dart:47:      AppPermission.microphone,
+take30/lib/services/permission_service.dart:99:      case AppPermission.microphone:
+take30/lib/services/permission_service.dart:100:        return Permission.microphone;
+take30/lib/admin/take30_admin_scene_flow.dart:3760:    final status = await Permission.microphone.status;
+take30/lib/admin/take30_admin_scene_flow.dart:3765:    final requested = await Permission.microphone.request();
+take30/lib/admin/take30_admin_scene_flow.dart:3811:  void _onSpeechError(SpeechRecognitionError error) {
+take30/lib/admin/take30_admin_scene_flow.dart:3836:  void _onSpeechResult(SpeechRecognitionResult result) {
+
+===== 8. FLUTTER ANALYZE =====
+Analyzing take30...                                             
+No issues found! (ran in 2.9s)
