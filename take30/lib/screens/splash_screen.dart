@@ -16,7 +16,9 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
-  static const _bg = AppColors.navy;
+  static const _bg = Color(0xFFF7F8FC);
+  static const _text = Color(0xFF0D1220);
+  static const _subtle = Color(0xFFDCE2EE);
   static const _yellow = Color(0xFFF4C20D);
 
   late final AnimationController _master;
@@ -211,9 +213,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final isSmall = size.width < 380;
-    final backgroundColor = AppThemeTokens.pageBackground(context);
-    final textColor = AppThemeTokens.primaryText(context);
-    final subtleGrey = AppThemeTokens.border(context);
+    const textColor = _text;
 
     final logoTextSize = isSmall ? 74.0 : 88.0;
     final hourglassHeight = logoTextSize;
@@ -221,15 +221,15 @@ class _SplashScreenState extends State<SplashScreen>
     final rightTuck = -(logoTextSize * 0.19);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: _bg,
       body: AnimatedBuilder(
         animation: Listenable.merge([_master, _shineController]),
         builder: (context, _) {
           return Stack(
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: backgroundColor),
+                  decoration: BoxDecoration(color: _bg),
                 ),
               ),
               Positioned.fill(
@@ -325,14 +325,14 @@ class _SplashScreenState extends State<SplashScreen>
                           opacity: _taglineOpacity.value,
                           child: Transform.translate(
                             offset: Offset(0, _taglineSlide.value),
-                            child: Text(
+                            child: const Text(
                               'Rejoue des scènes\n& deviens viral',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 24,
                                 height: 1.08,
                                 fontWeight: FontWeight.w800,
-                                color: textColor,
+                                color: _text,
                                 letterSpacing: -0.9,
                               ),
                             ),
@@ -344,18 +344,18 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Container(
                             width: 54,
                             height: 4,
-                            decoration: BoxDecoration(
-                              color: subtleGrey,
-                              borderRadius: BorderRadius.circular(999),
+                            decoration: const BoxDecoration(
+                              color: _subtle,
+                              borderRadius: BorderRadius.all(Radius.circular(999)),
                             ),
                             alignment: Alignment.centerLeft,
                             child: FractionallySizedBox(
                               widthFactor:
                                   0.68 + (_shineController.value * 0.18),
                               child: Container(
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: _yellow,
-                                  borderRadius: BorderRadius.circular(999),
+                                  borderRadius: BorderRadius.all(Radius.circular(999)),
                                 ),
                               ),
                             ),
