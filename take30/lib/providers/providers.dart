@@ -1058,7 +1058,7 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       context,
       AppPermission.camera,
       title: 'Caméra requise',
-      message: 'Take 30 a besoin de ta caméra pour enregistrer tes performances.',
+      message: 'Take 60 a besoin de ta caméra pour enregistrer tes performances.',
     );
     if (!cameraGranted) {
       final cameraStatus = await _permissions.status(AppPermission.camera);
@@ -1076,7 +1076,7 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
       context,
       AppPermission.microphone,
       title: 'Micro requis',
-      message: 'Take 30 a besoin du microphone pour capturer le son.',
+      message: 'Take 60 a besoin du microphone pour capturer le son.',
     );
     if (!microphoneGranted) {
       final microphoneStatus = await _permissions.status(AppPermission.microphone);
@@ -1586,7 +1586,7 @@ class DuelNotifier extends StateNotifier<DuelState> {
 
     final sceneA = SceneModel(
       id: 's_demo_battle_a',
-      title: 'Take 30 — Spotlight A',
+      title: 'Take 60 — Spotlight A',
       category: 'drama',
       thumbnailUrl: 'assets/scenes/battle_player_a.png',
       durationSeconds: 60,
@@ -1600,7 +1600,7 @@ class DuelNotifier extends StateNotifier<DuelState> {
 
     final sceneB = SceneModel(
       id: 's_demo_battle_b',
-      title: 'Take 30 — Spotlight B',
+      title: 'Take 60 — Spotlight B',
       category: 'comedy',
       thumbnailUrl: 'assets/scenes/battle_player_b.png',
       durationSeconds: 60,
@@ -1704,7 +1704,7 @@ List<NotificationModel> _buildDemoNotifications() {
     NotificationModel(
       id: 'n_demo_duel',
       message: 'Ta battle démo est prête',
-      subMessage: 'Vote maintenant pour voir le duel Take 30 en action.',
+      subMessage: 'Vote maintenant pour voir le duel Take 60 en action.',
       type: NotificationType.duel,
       time: now.subtract(const Duration(minutes: 2)),
       avatarUrl: 'assets/scenes/battle_player_a.png',
@@ -1855,7 +1855,7 @@ UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
       displayName: currentUser.displayName,
       avatarUrl: currentUser.avatarUrl,
       email: currentUser.email,
-      bio: 'Tu explores Take 30 en mode démo avec un profil instantané.',
+      bio: 'Tu explores Take 60 en mode démo avec un profil instantané.',
       scenesCount: 3,
       followersCount: 124,
       likesCount: 418,
@@ -1958,7 +1958,7 @@ UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
         username: 'IrisPrime',
         displayName: 'Iris Prime',
         avatarUrl: Take30Assets.avatarIaFemaleLead,
-        bio: 'Top créatrice Take 30, connue pour ses scènes ultra nettes.',
+        bio: 'Top créatrice Take 60, connue pour ses scènes ultra nettes.',
         scenesCount: 18,
         followersCount: 18400,
         likesCount: 76200,
@@ -1990,7 +1990,7 @@ UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
         displayName: 'Mode Demo',
         avatarUrl: Take30Assets.avatarCurrentUser,
         email: 'demo@take30.app',
-        bio: 'Profil démo instantané pour parcourir Take 30 sans attendre.',
+        bio: 'Profil démo instantané pour parcourir Take 60 sans attendre.',
         scenesCount: 3,
         followersCount: 124,
         likesCount: 418,
@@ -2001,8 +2001,8 @@ UserModel _buildDemoProfileUser(String userId, UserModel? currentUser) {
     default:
       return buildUser(
         id: userId,
-        username: 'TalentTake30',
-        displayName: 'Talent Take 30',
+        username: 'TalentTake60',
+        displayName: 'Talent Take 60',
         avatarUrl: Take30Assets.avatarCurrentUser,
         bio: 'Profil de démonstration généré localement.',
         scenesCount: 3,

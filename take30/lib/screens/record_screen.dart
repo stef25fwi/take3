@@ -109,7 +109,7 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         return AlertDialog(
           title: const Text('Autorisation requise'),
           content: Text(
-            'L’accès au $labels a été refusé de façon permanente. Ouvre les réglages système pour autoriser Take 30.',
+            'L’accès au $labels a été refusé de façon permanente. Ouvre les réglages système pour autoriser Take 60.',
           ),
           actions: [
             TextButton(

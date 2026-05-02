@@ -259,7 +259,7 @@ class Take30AdminApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Take 30 Admin',
+      title: 'Take 60 Admin',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -1234,7 +1234,7 @@ class SceneFormData {
       sceneNumber: 'SC-INT-03',
       shootDate: '2026-04-30',
       location: 'Salle d’interrogatoire — commissariat',
-      director: 'Direction interne Take30',
+      director: 'Direction interne Take 60',
       targetDuration: '60 secondes',
       characterName: 'Malik Renaud',
       apparentAge: '32 ans',
@@ -1383,7 +1383,7 @@ class AdminDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Take 30 • Administration'),
+        title: const Text('Take 60 • Administration'),
         backgroundColor: Colors.transparent,
         actions: [
           TextButton.icon(
@@ -3222,7 +3222,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       ],
                     ),
                     _section(
-                      '15bis) Montage automatique dialogué (timeline Take30)',
+                      '15bis) Montage automatique dialogué (timeline Take 60)',
                       children: [
                         const Text(
                           'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur. Pour chaque plan, choisis le type, la durée, la réplique imposée et le cadrage caméra. La durée totale ne doit pas dépasser 60 secondes.',
