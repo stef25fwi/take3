@@ -27,6 +27,21 @@ class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
   }
 }
 
+AiGeneratedVideo _validatedTestVideo({String prompt = 'Prompt VEO validé'}) {
+  final now = DateTime(2026, 4, 27, 18, 0);
+  return AiGeneratedVideo(
+    provider: 'veo3',
+    prompt: prompt,
+    videoUrl: 'https://example.com/validated.mp4',
+    thumbnailUrl: 'https://example.com/validated.jpg',
+    durationSeconds: 15,
+    aspectRatio: '16:9',
+    status: AiIntroVideoStatus.validated,
+    generatedAt: now,
+    updatedAt: now,
+  );
+}
+
 void main() {
   testWidgets(
     'step 15 generates then validates intro video and reveals detailed preview',
@@ -224,6 +239,118 @@ Je n'ai rien vu.
         'Pression psychologique et preuves présentées par l’enquêteur.',
       );
       expect(state.selectedMainObjective, 'cacher la vérité');
+      expect(state.referencesCtrl.text, contains('Objectif importé'));
+    },
+  );
+
+  testWidgets(
+    'prompt VEO importé est ignoré si une preview IA est déjà validée',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const lockedPrompt = 'Prompt VEO déjà validé et verrouillé.';
+      final initialData = SceneFormData.testPoliceInterrogation().copyWith(
+        aiIntroVideo: _validatedTestVideo(prompt: lockedPrompt),
+        veoPrompt: lockedPrompt,
+        veoStatus: 'completed',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: initialData,
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      state.importPromptCtrl.text = '''
+TITRE DE LA SCÈNE
+Import VEO verrouillé
+
+PROMPT VEO POUR LA VIDÉO IA D’INTRO 15 SECONDES
+Nouveau prompt qui ne doit pas remplacer la vidéo validée.
+
+TEXTE / DIALOGUE ACTEUR
+Je garde mon ancienne preview.
+''';
+      state.setState(() {});
+      await tester.pump();
+
+      state.debugApplyPromptImport();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(state.veoPromptCtrl.text, lockedPrompt);
+      expect(find.text('Prompt VEO détecté'), findsOneWidget);
+      expect(find.text('Prompt VEO non importé'), findsOneWidget);
+      expect(
+        find.text(
+          'Prompt VEO ignoré : une vidéo IA est déjà validée. Supprime ou régénère la preview pour changer le prompt.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'titre du projet séparé et obstacle explicite sont importés sans casser les sous-champs personnage',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: SceneFormData.testPoliceInterrogation(),
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      final dynamic state = tester.state(find.byType(AddScenePage));
+      state.importPromptCtrl.text = '''
+TITRE DU PROJET
+Dossier Moreau
+
+TITRE DE LA SCÈNE
+Interrogatoire sous tension
+
+PERSONNAGE À JOUER PAR L’UTILISATEUR
+Nom : Malik Darcel
+Profil : suspect intelligent
+Objectif : gagner du temps face au policier
+Ton : sec et méfiant
+
+OBSTACLE
+La preuve ADN vient d'arriver sur la table.
+
+TEXTE / DIALOGUE ACTEUR
+Je n'ai rien vu.
+''';
+      state.setState(() {});
+      await tester.pump();
+
+      state.debugApplyPromptImport();
+      await tester.pumpAndSettle();
+
+      expect(state.projectTitleCtrl.text, 'Dossier Moreau');
+      expect(state.sceneNameCtrl.text, 'Interrogatoire sous tension');
+      expect(
+        state.characterSummaryCtrl.text,
+        contains('Objectif : gagner du temps face au policier'),
+      );
+      expect(state.characterSummaryCtrl.text, contains('Ton : sec et méfiant'));
+      expect(
+        state.mainObstacleCtrl.text,
+        "La preuve ADN vient d'arriver sur la table.",
+      );
       expect(state.referencesCtrl.text, contains('Objectif importé'));
     },
   );

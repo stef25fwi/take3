@@ -80,15 +80,15 @@ TIMELINE TAKE60 GUIDÉE JSON
 ]''';
 
 const _kPromptImportTitleHeadings = <String>[
-  'titre',
   'titre de la scene',
-  'titre scene',
+  'titre de la scène',
 ];
+const _kPromptImportProjectTitleHeadings = <String>['titre du projet'];
 const _kPromptImportCategoryHeadings = <String>['categorie'];
 const _kPromptImportGenreHeadings = <String>['genre'];
 const _kPromptImportSceneTypeHeadings = <String>[
   'type de scene',
-  'type scene',
+  'type de scène',
 ];
 const _kPromptImportDifficultyHeadings = <String>[
   'difficulte',
@@ -97,22 +97,23 @@ const _kPromptImportDifficultyHeadings = <String>[
 const _kPromptImportDurationHeadings = <String>[
   'duree cible',
   'duree visee',
-  'duree',
+  'durée cible',
+  'durée visée',
 ];
 const _kPromptImportCountryRegionHeadings = <String>[
   'pays region',
   'pays / region',
-  'region',
-  'pays',
+  'pays région',
+  'pays / région',
 ];
-const _kPromptImportLocationHeadings = <String>['lieu', 'decor'];
+const _kPromptImportLocationHeadings = <String>['lieu', 'décor'];
 const _kPromptImportLoglineHeadings = <String>['logline'];
 const _kPromptImportSynopsisHeadings = <String>['synopsis court', 'synopsis'];
 const _kPromptImportDirectorIntentHeadings = <String>[
   'intention de realisation',
   'intention de réalisation',
   'intention de mise en scene',
-  'intention',
+  'intention de mise en scène',
 ];
 const _kPromptImportUserCharacterHeadings = <String>[
   'personnage a jouer par l utilisateur',
@@ -130,8 +131,6 @@ const _kPromptImportDialogueHeadings = <String>[
   'texte / dialogue acteur',
   'texte dialogue acteur',
   'dialogue acteur',
-  'dialogue',
-  'texte',
 ];
 const _kPromptImportActingGuidanceHeadings = <String>[
   'consignes de jeu',
@@ -142,13 +141,12 @@ const _kPromptImportRhythmHeadings = <String>['rythme', 'tempo'];
 const _kPromptImportVeoPromptHeadings = <String>[
   'prompt veo pour la video ia d intro 15 secondes',
   'prompt veo pour la video ia d\'intro 15 secondes',
-  'prompt veo',
-  'prompt video ia',
+  'prompt veo pour la vidéo ia d intro 15 secondes',
+  'prompt veo pour la vidéo ia d\'intro 15 secondes',
 ];
 const _kPromptImportVeoPromptFrenchHeadings = <String>[
   'prompt veo version francaise',
   'prompt veo version française',
-  'prompt veo fr',
 ];
 const _kPromptImportTimelineHeadings = <String>[
   'timeline take60 guidee json',
@@ -168,9 +166,17 @@ const _kPromptImportKeywordsHeadings = <String>[
   'keywords',
   'tags',
 ];
+const _kPromptImportObstacleHeadings = <String>[
+  'obstacle',
+  'obstacles',
+  'obstacle principal',
+  'contrainte',
+  'contraintes',
+];
 
 const _kAllPromptImportHeadings = <String>[
   ..._kPromptImportTitleHeadings,
+  ..._kPromptImportProjectTitleHeadings,
   ..._kPromptImportCategoryHeadings,
   ..._kPromptImportGenreHeadings,
   ..._kPromptImportSceneTypeHeadings,
@@ -191,11 +197,13 @@ const _kAllPromptImportHeadings = <String>[
   ..._kPromptImportTimelineHeadings,
   ..._kPromptImportTechnicalNotesHeadings,
   ..._kPromptImportKeywordsHeadings,
+  ..._kPromptImportObstacleHeadings,
 ];
 
 class _ParsedScenePrompt {
   const _ParsedScenePrompt({
     this.title = '',
+    this.projectTitle = '',
     this.category = '',
     this.genre = '',
     this.sceneType = '',
@@ -216,9 +224,11 @@ class _ParsedScenePrompt {
     this.guidedTimelineJson = '',
     this.technicalNotes = '',
     this.keywords = '',
+    this.obstacle = '',
   });
 
   final String title;
+  final String projectTitle;
   final String category;
   final String genre;
   final String sceneType;
@@ -239,11 +249,13 @@ class _ParsedScenePrompt {
   final String guidedTimelineJson;
   final String technicalNotes;
   final String keywords;
+  final String obstacle;
 
   bool get hasAnyData => detectedFieldCount > 0;
 
   int get detectedFieldCount => [
         title,
+        projectTitle,
         category,
         genre,
         sceneType,
@@ -264,6 +276,7 @@ class _ParsedScenePrompt {
         guidedTimelineJson,
         technicalNotes,
         keywords,
+        obstacle,
       ].where((value) => value.trim().isNotEmpty).length;
 }
 
@@ -272,12 +285,14 @@ class _PromptImportSummary {
     required this.detectedFieldCount,
     required this.hasTimeline,
     required this.hasVeoPrompt,
+    this.wasVeoPromptSkipped = false,
     required this.hasDialogue,
   });
 
   final int detectedFieldCount;
   final bool hasTimeline;
   final bool hasVeoPrompt;
+  final bool wasVeoPromptSkipped;
   final bool hasDialogue;
 }
 
@@ -329,14 +344,15 @@ String _normalizePromptToken(String value) {
 }
 
 bool _matchesPromptHeading(String line, List<String> headings) {
-  final normalizedLine = _normalizePromptToken(line);
+  final normalizedLine = _normalizePromptToken(line.endsWith(':')
+      ? line.substring(0, line.length - 1)
+      : line);
   if (normalizedLine.isEmpty) {
     return false;
   }
   for (final heading in headings) {
     final normalizedHeading = _normalizePromptToken(heading);
-    if (normalizedLine == normalizedHeading ||
-        normalizedLine.startsWith('$normalizedHeading ')) {
+    if (normalizedLine == normalizedHeading) {
       return true;
     }
   }
@@ -522,6 +538,11 @@ _ParsedScenePrompt _parseScenePrompt(String raw) {
       _kPromptImportTitleHeadings,
       _kAllPromptImportHeadings,
     ),
+    projectTitle: _extractSection(
+      sanitizedRaw,
+      _kPromptImportProjectTitleHeadings,
+      _kAllPromptImportHeadings,
+    ),
     category: _extractSection(
       sanitizedRaw,
       _kPromptImportCategoryHeadings,
@@ -609,6 +630,11 @@ _ParsedScenePrompt _parseScenePrompt(String raw) {
     keywords: _extractSection(
       sanitizedRaw,
       _kPromptImportKeywordsHeadings,
+      _kAllPromptImportHeadings,
+    ),
+    obstacle: _extractSection(
+      sanitizedRaw,
+      _kPromptImportObstacleHeadings,
       _kAllPromptImportHeadings,
     ),
   );
@@ -3222,6 +3248,19 @@ class _AddScenePageState extends State<AddScenePage> {
     }
   }
 
+  bool get _hasValidatedVeoPreview =>
+      _validatedPreviewVideo != null ||
+      widget.initialData?.aiIntroVideo?.isValidated == true;
+
+  bool _canImportVeoPrompt() {
+    return !_isVeoPromptLocked && !_hasValidatedVeoPreview;
+  }
+
+  @visibleForTesting
+  void debugApplyPromptImport() {
+    _applyPromptImport();
+  }
+
   void _applyPromptImport() {
     final raw = importPromptCtrl.text.trim();
     if (raw.isEmpty) {
@@ -3243,16 +3282,13 @@ class _AddScenePageState extends State<AddScenePage> {
 
     final userCharacterFields = _extractColonFields(parsed.userCharacter);
     final timelineWarning = <String>[];
-    var veoPreviewInvalidated = false;
+    var veoPromptSkipped = false;
 
     setState(() {
-      final previousSceneName = sceneNameCtrl.text.trim();
-      final previousProjectTitle = projectTitleCtrl.text.trim();
-
       _setControllerText(sceneNameCtrl, parsed.title);
-      if (parsed.title.trim().isNotEmpty &&
-          (previousProjectTitle.isEmpty ||
-              previousProjectTitle == previousSceneName)) {
+      if (parsed.projectTitle.trim().isNotEmpty) {
+        _setControllerText(projectTitleCtrl, parsed.projectTitle);
+      } else if (parsed.title.trim().isNotEmpty) {
         _setControllerText(projectTitleCtrl, parsed.title);
       }
       _setControllerText(categoryCtrl, parsed.category);
@@ -3276,6 +3312,7 @@ class _AddScenePageState extends State<AddScenePage> {
       }
       _setControllerText(actingDirectionCtrl, parsed.actingGuidance);
       _setControllerText(technicalConstraintsCtrl, parsed.technicalNotes);
+      _setControllerText(mainObstacleCtrl, parsed.obstacle);
 
       final recommendedLevel = _mapDifficultyToRecommendedLevel(parsed.difficulty);
       if (recommendedLevel != null) {
@@ -3350,20 +3387,12 @@ class _AddScenePageState extends State<AddScenePage> {
       final veoPrompt = parsed.veoPrompt.trim().isNotEmpty
           ? parsed.veoPrompt
           : parsed.veoPromptFrench;
-      final previousVeoPrompt = veoPromptCtrl.text.trim();
-      _setControllerText(veoPromptCtrl, veoPrompt);
-      if (veoPrompt.trim().isNotEmpty &&
-          veoPrompt.trim() != previousVeoPrompt &&
-          (_validatedPreviewVideo != null || _generatedPreviewVideo != null)) {
-        _validatedPreviewVideo = null;
-        _generatedPreviewVideo = null;
-        _isVeoPromptLocked = false;
-        _veoStatusValue = 'none';
-        _veoOperationId = null;
-        _veoGenerationError = null;
-        _veoGenerationStatus =
-            'Prompt VEO importé. Génère une nouvelle preview avant publication.';
-        veoPreviewInvalidated = true;
+      if (veoPrompt.trim().isNotEmpty) {
+        if (_canImportVeoPrompt()) {
+          _setControllerText(veoPromptCtrl, veoPrompt);
+        } else {
+          veoPromptSkipped = true;
+        }
       }
       if (parsed.veoPrompt.trim().isNotEmpty &&
           parsed.veoPromptFrench.trim().isNotEmpty) {
@@ -3391,6 +3420,7 @@ class _AddScenePageState extends State<AddScenePage> {
         detectedFieldCount: parsed.detectedFieldCount,
         hasTimeline: parsed.guidedTimelineJson.trim().isNotEmpty,
         hasVeoPrompt: veoPrompt.trim().isNotEmpty,
+        wasVeoPromptSkipped: veoPromptSkipped,
         hasDialogue: parsed.dialogue.trim().isNotEmpty,
       );
     });
@@ -3405,9 +3435,9 @@ class _AddScenePageState extends State<AddScenePage> {
         backgroundColor: const Color(0xFF92400E),
       );
     }
-    if (veoPreviewInvalidated) {
+    if (veoPromptSkipped) {
       _showAdminMessage(
-        'Le prompt VEO a changé. Génère une nouvelle preview avant de publier.',
+        'Prompt VEO ignoré : une vidéo IA est déjà validée. Supprime ou régénère la preview pour changer le prompt.',
         backgroundColor: const Color(0xFF92400E),
       );
     }
@@ -3608,10 +3638,23 @@ class _AddScenePageState extends State<AddScenePage> {
                           const Chip(label: Text('Timeline JSON détectée')),
                         if (summary.hasVeoPrompt)
                           const Chip(label: Text('Prompt VEO détecté')),
+                        if (summary.wasVeoPromptSkipped)
+                          const Chip(label: Text('Prompt VEO non importé')),
                         if (summary.hasDialogue)
                           const Chip(label: Text('Dialogue détecté')),
                       ],
                     ),
+                    if (summary.wasVeoPromptSkipped) ...[
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Prompt VEO ignoré : une vidéo IA est déjà validée. Supprime ou régénère la preview pour changer le prompt.',
+                        style: TextStyle(
+                          color: Color(0xFFFDE68A),
+                          fontWeight: FontWeight.w700,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               ),
