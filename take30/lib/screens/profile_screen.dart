@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../features/profile/models/take60_profile_stats.dart';
+import '../features/profile/models/profile_activity_history.dart';
 import '../features/profile/models/take60_user_profile.dart';
 import '../features/profile/providers/take60_profile_providers.dart';
 import '../features/profile/widgets/take60_profile_components.dart';
@@ -209,6 +210,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
             liveUser,
             scenesCount: widget.scenes.length,
           );
+    final viewedHistoryAsync =
+      isOwnProfile ? ref.watch(currentViewedSceneHistoryProvider) : null;
+    final duelVoteHistoryAsync =
+      isOwnProfile ? ref.watch(currentDuelVoteHistoryProvider) : null;
     final iconColor = AppThemeTokens.primaryText(context);
     final popupColor = AppThemeTokens.chromeSurface(context);
     final textColor = AppThemeTokens.primaryText(context);
@@ -443,6 +448,17 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                   onTap: () => context.go(AppRouter.profileComments),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 16),
+                            Take60SettingsSection(
+                              title: 'Historique recent',
+                              subtitle:
+                                  'Retrouvez vos dernieres videos consultees et les duels pour lesquels vous avez vote.',
+                              children: _buildHistorySectionChildren(
+                                context,
+                                viewedHistoryAsync,
+                                duelVoteHistoryAsync,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Take60SettingsSection(
@@ -1242,4 +1258,479 @@ String _formatRank(int? rank) {
     return '--';
   }
   return '#$rank';
+}
+
+List<Widget> _buildHistorySectionChildren(
+  BuildContext context,
+  AsyncValue<List<ProfileViewedSceneHistoryItem>>? historyAsync,
+  AsyncValue<List<ProfileDuelVoteHistoryItem>>? duelHistoryAsync,
+) {
+  if (historyAsync == null || duelHistoryAsync == null) {
+    return const [];
+  }
+
+  final viewedItems = historyAsync.valueOrNull;
+  final duelItems = duelHistoryAsync.valueOrNull;
+
+  if ((historyAsync.isLoading && viewedItems == null) ||
+      (duelHistoryAsync.isLoading && duelItems == null)) {
+    return const [
+      _HistoryPlaceholderTile(
+        icon: Icons.play_circle_outline_rounded,
+        title: 'Chargement de l\'historique',
+        subtitle: 'Preparation de vos dernieres activites...',
+      ),
+    ];
+  }
+
+  final entries = <_ProfileHistoryEntry>[
+    for (final item in viewedItems ?? const <ProfileViewedSceneHistoryItem>[])
+      _ViewedSceneHistoryEntry(item),
+    for (final item in duelItems ?? const <ProfileDuelVoteHistoryItem>[])
+      _DuelVoteHistoryEntry(item),
+  ]
+    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+  if (entries.isEmpty) {
+    return const [
+      _HistoryPlaceholderTile(
+        icon: Icons.play_circle_outline_rounded,
+        title: 'Aucune activite recente',
+        subtitle: 'Vos videos vues et vos votes de duel apparaitront ici.',
+      ),
+    ];
+  }
+
+  final children = <Widget>[];
+  String? previousDayKey;
+  for (final entry in entries) {
+    final dayKey = _historyDayKey(entry.timestamp);
+    if (dayKey != previousDayKey) {
+      children.add(
+        _HistoryDateHeader(label: _formatHistoryGroupLabel(entry.timestamp)),
+      );
+      previousDayKey = dayKey;
+    }
+    children.add(entry.build(context));
+  }
+  return children;
+}
+
+String _historyDayKey(DateTime value) {
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '${value.year}-$month-$day';
+}
+
+String _formatHistoryGroupLabel(DateTime value) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final current = DateTime(value.year, value.month, value.day);
+  final difference = today.difference(current).inDays;
+  if (difference == 0) {
+    return 'Aujourd\'hui';
+  }
+  if (difference == 1) {
+    return 'Hier';
+  }
+  final day = value.day.toString().padLeft(2, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  return '$day/$month/${value.year}';
+}
+
+String _formatHistoryTime(DateTime value) {
+  final day = value.day.toString().padLeft(2, '0');
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$day • $hour:$minute';
+}
+
+class _HistoryPlaceholderTile extends StatelessWidget {
+  const _HistoryPlaceholderTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Take60SettingsTile(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      onTap: null,
+    );
+  }
+}
+
+abstract class _ProfileHistoryEntry {
+  DateTime get timestamp;
+  Widget build(BuildContext context);
+}
+
+class _ViewedSceneHistoryEntry implements _ProfileHistoryEntry {
+  const _ViewedSceneHistoryEntry(this.item);
+
+  final ProfileViewedSceneHistoryItem item;
+
+  @override
+  DateTime get timestamp => item.viewedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HistorySceneCard(item: item);
+  }
+}
+
+class _DuelVoteHistoryEntry implements _ProfileHistoryEntry {
+  const _DuelVoteHistoryEntry(this.item);
+
+  final ProfileDuelVoteHistoryItem item;
+
+  @override
+  DateTime get timestamp => item.votedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HistoryDuelCard(item: item);
+  }
+}
+
+class _HistoryDateHeader extends StatelessWidget {
+  const _HistoryDateHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppThemeTokens.surfaceMuted(context),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: AppThemeTokens.border(context)),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: secondaryText,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: AppThemeTokens.border(context),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistorySceneCard extends StatelessWidget {
+  const _HistorySceneCard({required this.item});
+
+  final ProfileViewedSceneHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HistoryCardShell(
+      onTap: () => context.go(AppRouter.scenePath(item.sceneId)),
+      leading: _HistoryThumbnail(
+        imageUrl: item.thumbnailUrl,
+        icon: Icons.play_circle_fill_rounded,
+      ),
+      label: 'Video vue',
+      title: item.title,
+      subtitle: 'par ${item.authorDisplayName}',
+      meta: 'Consultee a ${_formatHistoryTime(item.viewedAt)}',
+    );
+  }
+}
+
+class _HistoryDuelCard extends StatelessWidget {
+  const _HistoryDuelCard({required this.item});
+
+  final ProfileDuelVoteHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HistoryCardShell(
+      onTap: () => context.go(AppRouter.battle),
+      leading: _HistoryDuelThumbnailStack(item: item),
+      label: 'Duel vote',
+      title: '${item.selectedSceneTitle} vs ${item.otherSceneTitle}',
+      subtitle: 'Choix: ${item.votedForLabel}',
+      meta: 'Vote enregistre a ${_formatHistoryTime(item.votedAt)}',
+    );
+  }
+}
+
+class _HistoryCardShell extends StatelessWidget {
+  const _HistoryCardShell({
+    required this.leading,
+    required this.label,
+    required this.title,
+    required this.subtitle,
+    required this.meta,
+    this.onTap,
+  });
+
+  final Widget leading;
+  final String label;
+  final String title;
+  final String subtitle;
+  final String meta;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final accent = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppThemeTokens.surfaceMuted(context),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppThemeTokens.border(context)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              leading,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        label,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule_rounded,
+                          size: 14,
+                          color: secondaryText,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            meta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: secondaryText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryThumbnail extends StatelessWidget {
+  const _HistoryThumbnail({
+    required this.imageUrl,
+    required this.icon,
+  });
+
+  final String imageUrl;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        width: 76,
+        height: 76,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _HistoryImage(imageUrl: imageUrl),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.34),
+                  ],
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Container(
+                margin: const EdgeInsets.all(6),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.48),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: Colors.white, size: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryDuelThumbnailStack extends StatelessWidget {
+  const _HistoryDuelThumbnailStack({required this.item});
+
+  final ProfileDuelVoteHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        width: 76,
+        height: 76,
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _HistoryImage(imageUrl: item.selectedThumbnailUrl),
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(height: 2, color: AppThemeTokens.pageBackground(context)),
+            Expanded(
+              child: _HistoryImage(imageUrl: item.otherThumbnailUrl),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryImage extends StatelessWidget {
+  const _HistoryImage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return _buildPlaceholder(context);
+    }
+    if (imageUrl.startsWith('assets/')) {
+      return Image.asset(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPlaceholder(context),
+      );
+    }
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _buildPlaceholder(context),
+    );
+  }
+
+  Widget _buildPlaceholder(BuildContext context) {
+    return Container(
+      color: AppThemeTokens.chromeSurface(context),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.image_outlined,
+        size: 22,
+        color: AppThemeTokens.secondaryText(context),
+      ),
+    );
+  }
 }

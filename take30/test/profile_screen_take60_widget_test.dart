@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:take30/features/profile/models/profile_activity_history.dart';
 import 'package:take30/features/profile/models/take60_profile_stats.dart';
 import 'package:take30/features/profile/models/take60_user_profile.dart';
 import 'package:take30/features/profile/providers/take60_profile_providers.dart';
@@ -76,6 +77,25 @@ void main() {
       countryRank: 5,
       globalRank: 11,
     );
+    final viewedHistory = [
+      ProfileViewedSceneHistoryItem.fromScene(
+        scene,
+        viewedAt: DateTime(2026, 5, 2, 10, 30),
+      ),
+    ];
+    final duelHistory = [
+      ProfileDuelVoteHistoryItem(
+        duelId: 'duel_1',
+        selectedSceneTitle: 'Take studio',
+        otherSceneTitle: 'Face camera',
+        selectedThumbnailUrl: 'https://example.com/thumb_a.png',
+        otherThumbnailUrl: 'https://example.com/thumb_b.png',
+        selectedAuthorName: 'Admin Take60',
+        otherAuthorName: 'Lina Take60',
+        choice: 0,
+        votedAt: DateTime(2026, 5, 2, 11, 15),
+      ),
+    ];
 
     await tester.pumpWidget(
       ProviderScope(
@@ -87,6 +107,12 @@ void main() {
           ),
           currentTake60ProfileStatsProvider.overrideWith(
             (ref) => take60Stats,
+          ),
+          currentViewedSceneHistoryProvider.overrideWith(
+            (ref) async => viewedHistory,
+          ),
+          currentDuelVoteHistoryProvider.overrideWith(
+            (ref) async => duelHistory,
           ),
           profileProvider(user.id).overrideWith(
             (ref) => ProfileNotifier(
@@ -113,8 +139,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Profil & activite'), findsOneWidget);
+    expect(find.text('Historique recent'), findsOneWidget);
     expect(find.text('Mode casting'), findsWidgets);
     expect(find.text('Classements Take60'), findsOneWidget);
+    expect(find.text('Take studio'), findsWidgets);
+    expect(find.text('Take studio vs Face camera'), findsOneWidget);
+    expect(find.text('Video vue'), findsOneWidget);
+    expect(find.text('Duel vote'), findsOneWidget);
   });
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/ranking_entry.dart';
 import '../../../providers/explorer_providers.dart';
 import '../../../providers/providers.dart';
+import '../models/profile_activity_history.dart';
 import '../models/take60_profile_stats.dart';
 import '../models/take60_user_profile.dart';
 import '../services/take60_profile_service.dart';
@@ -111,4 +112,28 @@ final currentTake60ProfileStatsProvider = Provider<Take60ProfileStats?>((ref) {
         : null,
     globalRank: findRank(globalRanking),
   );
+});
+
+final currentViewedSceneHistoryProvider =
+    FutureProvider<List<ProfileViewedSceneHistoryItem>>((ref) async {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  if (authUser == null) {
+    return const [];
+  }
+
+  return ref
+      .read(profileActivityHistoryServiceProvider)
+      .getViewedScenes(authUser.id);
+});
+
+final currentDuelVoteHistoryProvider =
+    FutureProvider<List<ProfileDuelVoteHistoryItem>>((ref) async {
+  final authUser = ref.watch(authProvider.select((state) => state.user));
+  if (authUser == null) {
+    return const [];
+  }
+
+  return ref
+      .read(profileActivityHistoryServiceProvider)
+      .getVotedDuels(authUser.id);
 });

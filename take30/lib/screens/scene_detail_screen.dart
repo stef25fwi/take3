@@ -25,6 +25,7 @@ class SceneDetailScreen extends ConsumerStatefulWidget {
 class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
   bool? _likedOverride;
   int? _likesCountOverride;
+  bool _viewTracked = false;
 
   bool _isDemoUser(UserModel? user) {
     if (user == null) {
@@ -83,6 +84,22 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
     );
   }
 
+  void _trackSceneView(SceneModel scene) {
+    if (_viewTracked) {
+      return;
+    }
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+    _viewTracked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(profileActivityHistoryServiceProvider)
+          .recordSceneViewed(userId, scene);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authUser = ref.watch(authProvider).user;
@@ -119,6 +136,8 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
               ),
       );
     }
+
+    _trackSceneView(scene);
 
     final isLiked = _likedOverride ?? scene.isLiked;
     final likesCount = _likesCountOverride ?? scene.likesCount;

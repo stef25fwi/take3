@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart' show PermissionStatu
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/models.dart';
+import '../features/profile/services/profile_activity_history_service.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/camera_service.dart';
@@ -30,6 +31,10 @@ final shareServiceProvider = Provider<ShareService>((ref) => ShareService());
 final hapticsProvider = Provider<HapticsService>((ref) => HapticsService());
 final connectivityProvider = ChangeNotifierProvider<ConnectivityService>((ref) => ConnectivityService());
 final permissionProvider = Provider<PermissionService>((ref) => PermissionService());
+final profileActivityHistoryServiceProvider =
+    Provider<ProfileActivityHistoryService>(
+  (ref) => ProfileActivityHistoryService(ref.read(sharedPreferencesProvider)),
+);
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   ThemeModeNotifier(this._prefs) : super(initialModeFromPrefs(_prefs));
@@ -1488,12 +1493,14 @@ class DuelNotifier extends StateNotifier<DuelState> {
   static const String _demoUsername = 'demo_take30';
   static const String _demoDisplayName = 'Mode Demo';
 
-  DuelNotifier(this._api, this._haptics) : super(const DuelState()) {
+  DuelNotifier(this._api, this._haptics, this._activityHistory)
+      : super(const DuelState()) {
     load();
   }
 
   final ApiService _api;
   final HapticsService _haptics;
+  final ProfileActivityHistoryService _activityHistory;
 
   Future<void> load() async {
     if (_isDemoMode) {
@@ -1533,11 +1540,19 @@ class DuelNotifier extends StateNotifier<DuelState> {
         votesB: choice == 1 ? state.duel!.votesB + 1 : state.duel!.votesB,
       );
       state = state.copyWith(duel: updated);
+      final userId = _api.currentUser?.id;
+      if (userId != null && userId.isNotEmpty) {
+        await _activityHistory.recordDuelVote(userId, updated, choice);
+      }
       return;
     }
 
     final updated = await _api.vote(state.duel!.id, choice);
     state = state.copyWith(duel: updated);
+    final userId = _api.currentUser?.id;
+    if (updated != null && userId != null && userId.isNotEmpty) {
+      await _activityHistory.recordDuelVote(userId, updated, choice);
+    }
   }
 
   bool get _isDemoMode {
@@ -1628,6 +1643,7 @@ final duelProvider = StateNotifierProvider<DuelNotifier, DuelState>(
     final notifier = DuelNotifier(
       ref.read(apiServiceProvider),
       ref.read(hapticsProvider),
+      ref.read(profileActivityHistoryServiceProvider),
     );
     ref.listen<UserModel?>(
       authProvider.select((state) => state.user),
