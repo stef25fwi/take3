@@ -103,8 +103,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     if (requestedPath != null && requestedPath.startsWith('/')) {
       return requestedPath;
     }
-    if (state.user?.isAdmin ?? false) {
-      return '/admin';
+    final authUser = state.user;
+    if ((authUser?.isAdmin ?? false) && authUser != null) {
+      return '/profile/${authUser.id}';
     }
     return '/home';
   }
