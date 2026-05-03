@@ -1,9 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
@@ -150,18 +147,58 @@ class _BattleBodyState extends State<_BattleBody> {
     return 'Partager ${_candidateName(scene, fallbackSide)}';
   }
 
+  String _battleRoundLabel() {
+    final digits = widget.duel.id.replaceAll(RegExp(r'\D'), '');
+    if (digits.isNotEmpty) {
+      final shortDigits = digits.length > 2
+          ? digits.substring(digits.length - 2)
+          : digits.padLeft(2, '0');
+      return 'Battle #$shortDigits';
+    }
+    return 'Battle en cours';
+  }
+
+  String _battleThemeLabel() {
+    final category = widget.duel.sceneA.category.trim();
+    if (category.isNotEmpty) {
+      return category;
+    }
+    final title = widget.duel.sceneA.title.trim();
+    if (title.isNotEmpty) {
+      return title;
+    }
+    return 'Interprétation';
+  }
+
+  Duration _remainingTime() {
+    final remaining = widget.duel.expiresAt.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  int _participantCount() {
+    final totalVotes = widget.duel.totalVotes;
+    return totalVotes > 0 ? totalVotes : 2;
+  }
+
+  String _sideStatusLabel(int side) {
+    if (_voteSubmitted && _selectedVote == side) {
+      return 'voté';
+    }
+    if (_voteSubmitted) {
+      return 'en lice';
+    }
+    return 'à départager';
+  }
+
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
-    final screenW = mq.size.width;
     const hPad = AppThemeTokens.pageHorizontalPadding;
-    final cardAreaW = screenW - hPad * 2;
     const cardGap = 12.0;
-    final cardW = (cardAreaW - cardGap) / 2;
-    final actionColumnW = (cardAreaW - cardGap) / 2;
-    // Card height: proportional, targeting ~46% of screen
-    final cardH = (mq.size.height * 0.46).clamp(260.0, 400.0);
+    final actionColumnW = (mq.size.width - hPad * 2 - cardGap) / 2;
     final isDark = AppThemeTokens.isDark(context);
+    final remaining = _remainingTime();
+    final isLive = widget.duel.status == 'active' && remaining > Duration.zero;
 
     return Container(
       decoration: BoxDecoration(
@@ -204,91 +241,85 @@ class _BattleBodyState extends State<_BattleBody> {
 
           SafeArea(
             bottom: false,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppThemeTokens.pageHorizontalPadding,
-                    8,
-                    AppThemeTokens.pageHorizontalPadding,
-                    4,
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      'Battle d’interprétation',
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        color: AppThemeTokens.primaryText(context),
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // ── Cards ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: hPad),
-                  child: Row(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(hPad, 8, hPad, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     children: [
-                      SizedBox(
-                        width: cardW,
-                        height: cardH,
-                        child: _BattleCard(
+                      Expanded(
+                        child: Text(
+                          'Battle',
+                          style: GoogleFonts.dmSans(
+                            color: AppThemeTokens.primaryText(context),
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      if (isLive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF4D6D).withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: const Color(0xFFFF6B81).withValues(alpha: 0.45),
+                            ),
+                          ),
+                          child: Text(
+                            '● EN DIRECT',
+                            style: GoogleFonts.dmSans(
+                              color: const Color(0xFFFF8BA0),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  _BattleSummaryCard(
+                    title: _battleRoundLabel(),
+                    subtitle: 'Duel du soir • thème « ${_battleThemeLabel()} »',
+                    participantsLabel:
+                        '${_fmtCount(_participantCount())} participants',
+                    remaining: remaining,
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _BattleCompactCard(
+                          user: widget.duel.sceneA.author,
                           sideLabel: 'A',
-                          borderColor: _P.cyan,
-                          glowColor: _P.cyan,
-                          borderGradient: _P.cyanBorderGrad,
-                          scene: widget.duel.sceneA,
-                          metrics:
-                              '${_fmtCount(widget.duel.sceneA.viewsCount)} vues • ${_fmtCount(widget.duel.sceneA.likesCount)} ♥',
+                          accentColor: _P.cyan,
+                          scoreLabel: '${(widget.duel.percentA * 100).round()}%',
+                          statusLabel: _sideStatusLabel(0),
                           isSelected: _selectedVote == 0,
                         ),
                       ),
-                      const SizedBox(width: cardGap),
-                      SizedBox(
-                        width: cardW,
-                        height: cardH,
-                        child: _BattleCard(
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _BattleCompactCard(
+                          user: widget.duel.sceneB.author,
                           sideLabel: 'B',
-                          borderColor: _P.gold,
-                          glowColor: _P.gold,
-                          borderGradient: _P.goldBorderGrad,
-                          scene: widget.duel.sceneB,
-                          metrics:
-                              '${_fmtCount(widget.duel.sceneB.viewsCount)} vues • ${_fmtCount(widget.duel.sceneB.likesCount)} ♥',
+                          accentColor: _P.gold,
+                          scoreLabel: '${(widget.duel.percentB * 100).round()}%',
+                          statusLabel: _sideStatusLabel(1),
                           isSelected: _selectedVote == 1,
                         ),
                       ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Title ──
-                Text(
-                  'Qui a livré la meilleure performance ?',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    color: AppThemeTokens.primaryText(context),
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                    height: 1.1,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Candidate Actions ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: hPad),
-                  child: Row(
+                  const SizedBox(height: 18),
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
@@ -350,11 +381,8 @@ class _BattleBodyState extends State<_BattleBody> {
                       ),
                     ],
                   ),
-                ),
-
-                // Spacer — dark empty zone as in the reference
-                const Spacer(),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -363,206 +391,200 @@ class _BattleBodyState extends State<_BattleBody> {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Battle Card
-// ──────────────────────────────────────────────────────────────────────────────
+class _BattleSummaryCard extends StatelessWidget {
+  const _BattleSummaryCard({
+    required this.title,
+    required this.subtitle,
+    required this.participantsLabel,
+    required this.remaining,
+  });
 
-class _BattleCard extends StatelessWidget {
-  const _BattleCard({
+  final String title;
+  final String subtitle;
+  final String participantsLabel;
+  final Duration remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final hours = remaining.inHours;
+    final minutes = remaining.inMinutes.remainder(60);
+    final seconds = remaining.inSeconds.remainder(60);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141A2B),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.4,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              color: const Color(0xFFB8BFD0),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _CountdownBox(value: hours, unit: 'h'),
+              const SizedBox(width: 10),
+              _CountdownBox(value: minutes, unit: 'm'),
+              const SizedBox(width: 10),
+              _CountdownBox(value: seconds, unit: 's'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            participantsLabel,
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CountdownBox extends StatelessWidget {
+  const _CountdownBox({required this.value, required this.unit});
+
+  final int value;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 64,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E1321),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value.toString().padLeft(2, '0'),
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            unit,
+            style: GoogleFonts.dmSans(
+              color: const Color(0xFFB8BFD0),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BattleCompactCard extends StatelessWidget {
+  const _BattleCompactCard({
+    required this.user,
     required this.sideLabel,
-    required this.borderColor,
-    required this.glowColor,
-    required this.borderGradient,
-    required this.scene,
-    required this.metrics,
+    required this.accentColor,
+    required this.scoreLabel,
+    required this.statusLabel,
     required this.isSelected,
   });
 
+  final UserModel user;
   final String sideLabel;
-  final Color borderColor;
-  final Color glowColor;
-  final Gradient borderGradient;
-  final SceneModel scene;
-  final String metrics;
+  final Color accentColor;
+  final String scoreLabel;
+  final String statusLabel;
   final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
-    const outerR = 24.0;
-    const bw = 2.5;
-    const innerR = outerR - bw;
-    const bannerH = 64.0;
-
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(outerR),
-        gradient: borderGradient,
+        color: const Color(0xFF141A2B),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isSelected
+              ? accentColor.withValues(alpha: 0.85)
+              : Colors.white.withValues(alpha: 0.08),
+          width: isSelected ? 1.6 : 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: glowColor.withValues(alpha: 0.22),
-            blurRadius: 22,
-            spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: glowColor.withValues(alpha: 0.10),
-            blurRadius: 44,
-            spreadRadius: -4,
+            color: accentColor.withValues(alpha: isSelected ? 0.16 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(bw),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(innerR),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // ── Thumbnail ──
-            _SceneArtwork(scene: scene, side: sideLabel),
-
-            // ── Dark vignette ──
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.0),
-                    Colors.black.withValues(alpha: 0.06),
-                    Colors.black.withValues(alpha: 0.30),
-                    Colors.black.withValues(alpha: 0.78),
-                  ],
-                  stops: const [0.0, 0.40, 0.68, 1.0],
-                ),
-              ),
+      child: Column(
+        children: [
+          _Avatar(user: user, size: 56, battleSide: sideLabel),
+          const SizedBox(height: 10),
+          Text(
+            user.displayName.trim().isEmpty ? sideLabel : user.displayName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
             ),
-
-            // ── Side label badge ──
-            Positioned(
-              top: 10,
-              left: 10,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.38),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.10),
-                  ),
-                ),
-                child: Text(
-                  sideLabel,
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            scoreLabel,
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
             ),
-
-            // ── Selected check ──
-            if (isSelected)
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: borderColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: borderColor.withValues(alpha: 0.5),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: Color(0xFF07111D),
-                    size: 20,
-                  ),
-                ),
-              ),
-
-            // ── Bottom banner ──
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(
-                    height: bannerH,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111524).withValues(alpha: 0.88),
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.06),
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        _Avatar(user: scene.author, size: 34, battleSide: sideLabel),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                scene.author.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.dmSans(
-                                  color: _P.textWhite,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.1,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                metrics,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.dmSans(
-                                  color: const Color(0xFFB8BFD0),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1C2134),
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            statusLabel,
+            style: GoogleFonts.dmSans(
+              color: accentColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -799,46 +821,6 @@ class _SecondaryBattleButton extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Scene Artwork
-// ──────────────────────────────────────────────────────────────────────────────
-
-class _SceneArtwork extends StatelessWidget {
-  const _SceneArtwork({required this.scene, this.side = 'A'});
-  final SceneModel scene;
-  final String side;
-
-  @override
-  Widget build(BuildContext context) {
-    // Use battle PNG photos first
-    final battleAsset = side == 'A'
-        ? 'assets/scenes/battle_player_a.png'
-        : 'assets/scenes/battle_player_b.png';
-
-    return Image.asset(
-      battleAsset,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) {
-        // Fallback: SVG scene asset
-        final svgAsset = _sceneAssetFor(scene.id);
-        if (svgAsset != null) {
-          return DecoratedBox(
-            decoration: const BoxDecoration(color: Color(0xFF111524)),
-            child: SvgPicture.asset(svgAsset, fit: BoxFit.cover),
-          );
-        }
-        // Fallback: network thumbnail
-        return Image.network(
-          scene.thumbnailUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) =>
-              Container(color: const Color(0xFF111524)),
-        );
-      },
-    );
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // Avatar
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -930,30 +912,6 @@ class _P {
   static const cyan = Color(0xFF47D7FF);
   static const gold = Color(0xFFF2B33A);
 
-  // Text
-  static const textWhite = Color(0xFFF7F8FC);
-
-  // Card border gradients
-  static const cyanBorderGrad = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF47D7FF),
-      Color(0xFF3DCCFF),
-      Color(0xFF5A9BFF),
-    ],
-  );
-
-  static const goldBorderGrad = LinearGradient(
-    begin: Alignment.topRight,
-    end: Alignment.bottomLeft,
-    colors: [
-      Color(0xFFFFE168),
-      Color(0xFFF2B33A),
-      Color(0xFFFF9A42),
-    ],
-  );
-
   // Vote button gradients
   static const voteAGrad = LinearGradient(
     begin: Alignment.topLeft,
@@ -978,27 +936,6 @@ class _P {
     ],
     stops: [0.0, 0.34, 0.7, 1.0],
   );
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Asset mappings
-// ──────────────────────────────────────────────────────────────────────────────
-
-String? _sceneAssetFor(String id) {
-  switch (id) {
-    case 's1':
-      return 'assets/scenes/scene_rupture_telephone.svg';
-    case 's2':
-      return 'assets/scenes/scene_interrogatoire.svg';
-    case 's3':
-      return 'assets/scenes/scene_declaration_amour.svg';
-    case 's4':
-      return 'assets/scenes/scene_mauvaise_nouvelle.svg';
-    case 's5':
-      return 'assets/scenes/scene_confrontation.svg';
-    default:
-      return null;
-  }
 }
 
 String _fmtCount(int n) {

@@ -79,6 +79,64 @@ TIMELINE TAKE60 GUIDÉE JSON
   }
 ]''';
 
+List<Map<String, dynamic>> _buildDefaultTimelineTemplate() => [
+      {
+        'id': 'ai_intro',
+        'type': 'intro_cinema',
+        'durationSeconds': 8,
+        'label': 'Intro cinéma',
+        'dialogue': '',
+        'cameraPlan': 'Plan large',
+        'character': '',
+      },
+      {
+        'id': 'user_1',
+        'type': 'user_dialogue',
+        'durationSeconds': 10,
+        'label': 'Plan utilisateur 1',
+        'dialogue': 'Première réplique',
+        'cameraPlan': 'Plan rapproché',
+        'character': 'Personnage principal',
+        'cueText': 'Joue avec calme.',
+      },
+      {
+        'id': 'ai_react',
+        'type': 'ai_reaction',
+        'durationSeconds': 10,
+        'label': 'Réaction IA',
+        'dialogue': '',
+        'cameraPlan': 'Champ contre-champ',
+      },
+      {
+        'id': 'user_2',
+        'type': 'user_dialogue',
+        'durationSeconds': 12,
+        'label': 'Plan utilisateur 2',
+        'dialogue': 'Réplique tournante',
+        'cameraPlan': 'Plan moyen',
+        'character': 'Personnage principal',
+        'cueText': 'Monte en intensité.',
+      },
+      {
+        'id': 'user_3',
+        'type': 'user_reply',
+        'durationSeconds': 12,
+        'label': 'Plan utilisateur final',
+        'dialogue': 'Conclusion forte',
+        'cameraPlan': 'Gros plan visage',
+        'character': 'Personnage principal',
+        'cueText': 'Finis en regardant l\'objectif.',
+      },
+      {
+        'id': 'ai_outro',
+        'type': 'ai_outro',
+        'durationSeconds': 8,
+        'label': 'Plan IA de clôture',
+        'dialogue': '',
+        'cameraPlan': 'Plan large',
+      },
+    ];
+
 const _kPromptImportTitleHeadings = <String>[
   'titre de la scene',
   'titre de la scène',
@@ -1241,6 +1299,64 @@ String _encodeMarkersList(dynamic raw) {
     return '[]';
   }
 }
+
+List<Map<String, dynamic>> _defaultGuidedTimelineTemplate60s() => [
+      {
+        'id': 'ai_intro',
+        'type': 'intro_cinema',
+        'durationSeconds': 8,
+        'label': 'Intro cinéma',
+        'dialogue': '',
+        'cameraPlan': 'Plan large',
+        'character': '',
+      },
+      {
+        'id': 'user_1',
+        'type': 'user_dialogue',
+        'durationSeconds': 10,
+        'label': 'Plan utilisateur 1',
+        'dialogue': 'Première réplique',
+        'cameraPlan': 'Plan rapproché',
+        'character': 'Personnage principal',
+        'cueText': 'Joue avec calme.',
+      },
+      {
+        'id': 'ai_react',
+        'type': 'ai_reaction',
+        'durationSeconds': 10,
+        'label': 'Réaction IA',
+        'dialogue': '',
+        'cameraPlan': 'Champ contre-champ',
+      },
+      {
+        'id': 'user_2',
+        'type': 'user_dialogue',
+        'durationSeconds': 12,
+        'label': 'Plan utilisateur 2',
+        'dialogue': 'Réplique tournante',
+        'cameraPlan': 'Plan moyen',
+        'character': 'Personnage principal',
+        'cueText': 'Monte en intensité.',
+      },
+      {
+        'id': 'user_3',
+        'type': 'user_reply',
+        'durationSeconds': 12,
+        'label': 'Plan utilisateur final',
+        'dialogue': 'Conclusion forte',
+        'cameraPlan': 'Gros plan visage',
+        'character': 'Personnage principal',
+        'cueText': 'Finis en regardant l\'objectif.',
+      },
+      {
+        'id': 'ai_outro',
+        'type': 'ai_outro',
+        'durationSeconds': 8,
+        'label': 'Plan IA de clôture',
+        'dialogue': '',
+        'cameraPlan': 'Plan large',
+      },
+    ].map((item) => Map<String, dynamic>.from(item)).toList();
 
 class SceneFormData {
   final String id;
@@ -2515,6 +2631,75 @@ class _LegendDot extends StatelessWidget {
   }
 }
 
+enum _SectionComplexity { requiredField, recommended, advanced }
+
+extension _SectionComplexityLabel on _SectionComplexity {
+  String get label {
+    return switch (this) {
+      _SectionComplexity.requiredField => 'Requis',
+      _SectionComplexity.recommended => 'Recommandé',
+      _SectionComplexity.advanced => 'Avancé',
+    };
+  }
+
+  Color get backgroundColor {
+    return switch (this) {
+      _SectionComplexity.requiredField => const Color(0xFFFEF2F2),
+      _SectionComplexity.recommended => const Color(0xFFFFFBEB),
+      _SectionComplexity.advanced => const Color(0xFFEFF6FF),
+    };
+  }
+
+  Color get foregroundColor {
+    return switch (this) {
+      _SectionComplexity.requiredField => const Color(0xFFB91C1C),
+      _SectionComplexity.recommended => const Color(0xFF92400E),
+      _SectionComplexity.advanced => const Color(0xFF1D4ED8),
+    };
+  }
+
+  IconData get icon {
+    return switch (this) {
+      _SectionComplexity.requiredField => Icons.error_outline_rounded,
+      _SectionComplexity.recommended => Icons.star_outline_rounded,
+      _SectionComplexity.advanced => Icons.tune_rounded,
+    };
+  }
+}
+
+class _ComplexityBadge extends StatelessWidget {
+  const _ComplexityBadge(this.type);
+
+  final _SectionComplexity type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: type.backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: type.foregroundColor.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(type.icon, size: 14, color: type.foregroundColor),
+          const SizedBox(width: 5),
+          Text(
+            type.label,
+            style: TextStyle(
+              color: type.foregroundColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 List<MapEntry<String, int>> _sortedCountEntries(
   Iterable<String> rawValues, {
   required String emptyLabel,
@@ -2561,6 +2746,7 @@ class _AddScenePageState extends State<AddScenePage> {
   late final VeoVideoGenerationService _veoVideoGenerationService;
   late final VeoSceneGenerationService _veoSceneGenerationService;
   late final bool _useCallableVeoFlow;
+  final _timelineSectionKey = GlobalKey();
   final _step15SectionKey = GlobalKey();
   final _step16SectionKey = GlobalKey();
 
@@ -2764,6 +2950,8 @@ class _AddScenePageState extends State<AddScenePage> {
   bool _isGeneratingPreview = false;
   bool _isPromptImporterExpanded = true;
   bool _isVeoPromptLocked = false;
+  bool _isVeoHelpExpanded = false;
+  bool _isTimelineAdvancedVisible = false;
   String _veoStatusValue = 'none';
   String? _veoOperationId;
   String? _veoGenerationStatus;
@@ -2773,6 +2961,7 @@ class _AddScenePageState extends State<AddScenePage> {
   List<String> _testedPrompts = [];
   SceneStatus _selectedPublicationTarget = SceneStatus.draft;
   _PromptImportSummary? _lastPromptImportSummary;
+  int _currentStepIndex = 0;
 
   @override
   void initState() {
@@ -3849,6 +4038,159 @@ class _AddScenePageState extends State<AddScenePage> {
     );
   }
 
+  void _setCurrentStep(int index, {GlobalKey? sectionKey}) {
+    final targetIndex = index.clamp(0, 3);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _currentStepIndex = targetIndex;
+    });
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+    if (sectionKey != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToSection(sectionKey);
+      });
+    }
+  }
+
+  List<String> _missingRequiredPublicationFields() {
+    final missing = <String>[];
+    if (sceneNameCtrl.text.trim().isEmpty) {
+      missing.add('Nom de la scène');
+    }
+    if (characterNameCtrl.text.trim().isEmpty) {
+      missing.add('Nom du personnage');
+    }
+    if (!_hasContextSummary()) {
+      missing.add('Contexte de la scène');
+    }
+    if (dialogueTextCtrl.text.trim().isEmpty) {
+      missing.add('Texte ou dialogue');
+    }
+    return missing;
+  }
+
+  bool _hasContextSummary() {
+    final values = [
+      previousMomentCtrl.text,
+      whereAreWeCtrl.text,
+      withWhoCtrl.text,
+      whyImportantCtrl.text,
+      contextSummaryCtrl.text,
+    ];
+    return values.any((value) => value.trim().isNotEmpty);
+  }
+
+  String _veoWorkflowStatusLabel() {
+    if (_veoGenerationError != null) {
+      return 'Erreur de génération';
+    }
+    if (_validatedPreviewVideo != null) {
+      return 'Vidéo validée';
+    }
+    if (_generatedPreviewVideo != null) {
+      return 'Preview générée';
+    }
+    if (_isGeneratingPreview) {
+      return 'Génération en cours';
+    }
+    if (veoPromptCtrl.text.trim().isEmpty) {
+      return 'Aucun prompt vidéo';
+    }
+    return 'Prompt prêt à tester';
+  }
+
+  List<Map<String, dynamic>>? _tryReadTimelineMarkers() {
+    final raw = markersJsonCtrl.text.trim();
+    if (raw.isEmpty || raw == '[]') {
+      return const [];
+    }
+
+    try {
+      final decoded = jsonDecode(_extractFirstJsonBlock(raw));
+      if (decoded is List) {
+        return decoded
+            .whereType<Map>()
+            .map((item) => item.map((k, v) => MapEntry(k.toString(), v)))
+            .toList();
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
+  String _timelineStatusLabel() {
+    final markers = _tryReadTimelineMarkers();
+    if (markers == null) {
+      return 'Timeline invalide';
+    }
+    if (markers.isEmpty) {
+      return 'Aucune timeline';
+    }
+    final total = markers.fold<int>(
+      0,
+      (totalSeconds, marker) =>
+          totalSeconds + ((marker['durationSeconds'] as num?)?.toInt() ?? 0),
+    );
+    return 'Timeline prête · ${markers.length} plans · ${total}s/60s';
+  }
+
+  String _primaryActionLabel() {
+    if (_currentStepIndex < 3) {
+      return 'Continuer';
+    }
+
+    return switch (_selectedPublicationTarget) {
+      SceneStatus.draft => 'Enregistrer le brouillon',
+      SceneStatus.pendingPublication => 'Envoyer pour validation',
+      SceneStatus.published => 'Publier maintenant',
+    };
+  }
+
+  String _publicationTargetLabel(SceneStatus status) {
+    return switch (status) {
+      SceneStatus.draft => 'Brouillon',
+      SceneStatus.pendingPublication => 'En attente de validation',
+      SceneStatus.published => 'Publié',
+    };
+  }
+
+  Future<void> _handlePrimaryAction() async {
+    if (_currentStepIndex < 3) {
+      _setCurrentStep(_currentStepIndex + 1);
+      return;
+    }
+
+    if (_selectedPublicationTarget != SceneStatus.draft) {
+      final missing = _missingRequiredPublicationFields();
+      if (missing.isNotEmpty) {
+        final message =
+            'Avant validation ou publication, complète : ${missing.join(', ')}.';
+        _showAdminMessage(
+          message,
+          backgroundColor: const Color(0xFFB91C1C),
+        );
+        final needsStepTwo = missing.contains('Texte ou dialogue');
+        _setCurrentStep(needsStepTwo ? 1 : 0);
+        return;
+      }
+    }
+
+    switch (_selectedPublicationTarget) {
+      case SceneStatus.draft:
+        await _saveDraft();
+      case SceneStatus.pendingPublication:
+      case SceneStatus.published:
+        await _generateScene();
+    }
+  }
+
   Future<void> _persistScene(
     SceneStatus status, {
     required bool requireValidatedVideo,
@@ -3875,11 +4217,13 @@ class _AddScenePageState extends State<AddScenePage> {
         'Une video IA validee est requise avant de generer la scene.',
         backgroundColor: const Color(0xFFB91C1C),
       );
-      await _scrollToSection(_step15SectionKey);
+      _setCurrentStep(2, sectionKey: _step15SectionKey);
       return;
     }
 
-    if (_tryDecodeGuidedTimelineJson(showError: true) == null) {
+    final timeline = _tryDecodeGuidedTimelineJson(showError: true);
+    if (timeline == null) {
+      _setCurrentStep(2, sectionKey: _timelineSectionKey);
       return;
     }
 
@@ -3935,44 +4279,19 @@ class _AddScenePageState extends State<AddScenePage> {
                   width: 280,
                   padding: const EdgeInsets.all(16),
                   color: const Color(0xFFF1F3FA),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Menu',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _MenuHintItem('1. Informations générales'),
-                      _MenuHintItem('2. Identité du personnage'),
-                      _MenuHintItem('3. Contexte immédiat'),
-                      _MenuHintItem('4. Objectif de jeu'),
-                      _MenuHintItem('5. Direction émotionnelle'),
-                      _MenuHintItem('6. Ton et style'),
-                      _MenuHintItem('7. Texte'),
-                      _MenuHintItem('8. Intentions par bloc'),
-                      _MenuHintItem('9. Actions physiques'),
-                      _MenuHintItem('10. Regard / caméra'),
-                      _MenuHintItem('11. Rythme'),
-                      _MenuHintItem('12. Repères techniques'),
-                      _MenuHintItem('13. Ressenti spectateur'),
-                      _MenuHintItem('14. Note finale'),
-                      _MenuHintItem('15. Vidéo IA d’introduction'),
-                      _MenuHintItem('16. Preview détail'),
-                    ],
-                  ),
+                  child: _desktopStepSummary(),
                 ),
               Expanded(
                 child: ListView(
                   controller: _scrollController,
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                   children: [
-                    _promptImporterCard(),
-                    _section(
+                    _stepHeader(),
+                    if (_currentStepIndex == 0) ...[
+                      _promptImporterCard(),
+                      _section(
                       '1) Informations générales',
+                      badges: const [_SectionComplexity.requiredField],
                       children: [
                         _requiredField(projectTitleCtrl, 'Titre du projet'),
                         _requiredField(sceneNameCtrl, 'Nom de la scène'),
@@ -3997,6 +4316,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '2) Identité du personnage',
+                      badges: const [_SectionComplexity.requiredField],
                       children: [
                         _requiredField(characterNameCtrl, 'Nom du personnage'),
                         _textField(apparentAgeCtrl, 'Âge apparent'),
@@ -4019,6 +4339,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '3) Contexte immédiat de la scène',
+                      badges: const [_SectionComplexity.requiredField],
                       children: [
                         _textField(
                           previousMomentCtrl,
@@ -4039,8 +4360,11 @@ class _AddScenePageState extends State<AddScenePage> {
                         ),
                       ],
                     ),
-                    _section(
+                    ],
+                    if (_currentStepIndex == 1) ...[
+                      _section(
                       '4) Objectif de jeu',
+                      badges: const [_SectionComplexity.recommended],
                       children: [
                         _dropdown(
                           label: 'Objectif principal du personnage',
@@ -4056,6 +4380,9 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '5) Direction émotionnelle',
+                      badges: const [_SectionComplexity.recommended],
+                      benefit:
+                          'Aide l’acteur à comprendre l’évolution du jeu.',
                       children: [
                         _dropdown(
                           label: 'Émotion dominante',
@@ -4096,6 +4423,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '6) Ton et style de jeu',
+                      badges: const [_SectionComplexity.recommended],
                       children: [
                         _chipSelector(
                           title: 'Styles recherchés',
@@ -4119,6 +4447,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '7) Texte',
+                      badges: const [_SectionComplexity.requiredField],
                       children: [
                         _dropdown(
                           label: 'Type de texte',
@@ -4142,6 +4471,9 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '8) Intentions par bloc',
+                      badges: const [_SectionComplexity.recommended],
+                      benefit:
+                          'Permet d’affiner la scène minute par minute.',
                       children: [
                         _subBlockTitle('Bloc 1 — 0:00 à 0:20'),
                         _textField(block1IntentionCtrl, 'Intention'),
@@ -4160,8 +4492,11 @@ class _AddScenePageState extends State<AddScenePage> {
                         _textField(block3RhythmCtrl, 'Rythme'),
                       ],
                     ),
-                    _section(
+                    ],
+                    if (_currentStepIndex == 2) ...[
+                      _section(
                       '9) Actions physiques',
+                      badges: const [_SectionComplexity.advanced],
                       children: [
                         _textField(startPositionCtrl, 'Position de départ'),
                         _textField(plannedMovementCtrl, 'Déplacement prévu'),
@@ -4181,6 +4516,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '10) Regard / caméra',
+                      badges: const [_SectionComplexity.advanced],
                       children: [
                         _dropdown(
                           label: 'Type de cadrage',
@@ -4203,6 +4539,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '11) Rythme et respiration',
+                      badges: const [_SectionComplexity.recommended],
                       children: [
                         _dropdown(
                           label: 'Tempo global',
@@ -4219,6 +4556,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '12) Repères techniques',
+                      badges: const [_SectionComplexity.advanced],
                       children: [
                         _textField(floorMarkCtrl, 'Marque au sol / position'),
                         _textField(startCueCtrl, 'Top départ'),
@@ -4235,6 +4573,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '13) Ce que doit ressentir le spectateur',
+                      badges: const [_SectionComplexity.recommended],
                       children: [
                         _textField(
                           spectatorFeelingCtrl,
@@ -4245,6 +4584,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '14) Note finale du réalisateur',
+                      badges: const [_SectionComplexity.recommended],
                       children: [
                         _textField(
                           directorFinalNoteCtrl,
@@ -4256,11 +4596,44 @@ class _AddScenePageState extends State<AddScenePage> {
                     _section(
                       '15) Vidéo IA d’introduction',
                       sectionKey: _step15SectionKey,
+                      badges: const [
+                        _SectionComplexity.advanced,
+                        _SectionComplexity.requiredField,
+                      ],
+                      benefit:
+                          'Crée une introduction vidéo qui installe l’ambiance avant la prise utilisateur.',
                       children: [
                         const Text(
                           'Rédigez ici le prompt qui servira à générer une vidéo cinématique d’environ 15 secondes. Cette vidéo doit préparer l’ambiance émotionnelle de la scène sans voler la place de l’acteur. Elle doit idéalement se terminer sur un cadrage permettant un raccord naturel avec la scène jouée.',
                           style:
                               TextStyle(height: 1.5, color: Color(0xFF4B5563)),
+                        ),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.movie_filter_rounded,
+                                color: Color(0xFF4F46E5),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _veoWorkflowStatusLabel(),
+                                  style: const TextStyle(
+                                    color: Color(0xFF111827),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         TextFormField(
                           controller: veoPromptCtrl,
@@ -4302,27 +4675,53 @@ class _AddScenePageState extends State<AddScenePage> {
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                          child: const Column(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Aide prompt VEO3',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF111827),
-                                ),
+                              Row(
+                                children: [
+                                  const Expanded(
+                                    child: Text(
+                                      'Aide avancée prompt VEO3',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF111827),
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _isVeoHelpExpanded =
+                                            !_isVeoHelpExpanded;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _isVeoHelpExpanded
+                                          ? Icons.expand_less_rounded
+                                          : Icons.expand_more_rounded,
+                                    ),
+                                    label: Text(
+                                      _isVeoHelpExpanded
+                                          ? 'Masquer'
+                                          : 'Afficher',
+                                    ),
+                                  ),
+                                ],
                               ),
-                              SizedBox(height: 10),
-                              Text(
-                                  '• Durée recommandée : environ 15 secondes.'),
-                              Text('• Format recommandé : 16:9.'),
-                              Text(
-                                  '• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
-                              Text('• Éviter les visages identifiables.'),
-                              Text('• Éviter le texte à l’image.'),
-                              Text('• Éviter les logos.'),
-                              Text(
-                                  '• La vidéo IA doit servir d’introduction émotionnelle.'),
+                              if (_isVeoHelpExpanded) ...[
+                                const SizedBox(height: 10),
+                                const Text(
+                                    '• Durée recommandée : environ 15 secondes.'),
+                                const Text('• Format recommandé : 16:9.'),
+                                const Text(
+                                    '• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
+                                const Text('• Éviter les visages identifiables.'),
+                                const Text('• Éviter le texte à l’image.'),
+                                const Text('• Éviter les logos.'),
+                                const Text(
+                                    '• La vidéo IA doit servir d’introduction émotionnelle.'),
+                              ],
                             ],
                           ),
                         ),
@@ -4416,7 +4815,7 @@ class _AddScenePageState extends State<AddScenePage> {
                           label: Text(
                             _isGeneratingPreview
                                 ? 'Génération de la preview vidéo en cours…'
-                                : 'Valider et générer la preview',
+                              : 'Tester la vidéo IA',
                           ),
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(56),
@@ -4453,7 +4852,7 @@ class _AddScenePageState extends State<AddScenePage> {
                                 label: Text(
                                   _validatedPreviewVideo != null
                                       ? 'Vidéo validée'
-                                      : 'Valider cette vidéo',
+                                      : 'Utiliser cette vidéo pour la scène',
                                 ),
                               ),
                             ],
@@ -4463,27 +4862,104 @@ class _AddScenePageState extends State<AddScenePage> {
                     ),
                     _section(
                       '15bis) Montage automatique dialogué (timeline Take 60)',
+                      badges: const [_SectionComplexity.advanced],
+                      benefit:
+                          'Organise l’alternance entre vidéo IA et jeu utilisateur.',
                       children: [
                         const Text(
                           'Définis les marqueurs de la timeline guidée: alternance de plans IA et de plans utilisateur. Pour chaque plan, choisis le type, la durée, la réplique imposée et le cadrage caméra. La durée totale ne doit pas dépasser 60 secondes.',
                           style:
                               TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
-                        _GuidedTimelineEditor(controller: markersJsonCtrl),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Le champ timeline doit contenir uniquement un tableau JSON : [ ... ].',
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _timelineStatusLabel(),
+                                style: const TextStyle(
+                                  color: Color(0xFF111827),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Le modèle automatique propose ${_buildDefaultTimelineTemplate().length} plans pour une minute structurée.',
+                                style: const TextStyle(
+                                  color: Color(0xFF4B5563),
+                                  height: 1.35,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  FilledButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        markersJsonCtrl.text =
+                                            const JsonEncoder.withIndent('  ')
+                                                .convert(
+                                          _defaultGuidedTimelineTemplate60s(),
+                                        );
+                                      });
+                                    },
+                                    icon: const Icon(Icons.auto_fix_high_rounded),
+                                    label: const Text(
+                                      'Créer une timeline 60 s automatiquement',
+                                    ),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _isTimelineAdvancedVisible =
+                                            !_isTimelineAdvancedVisible;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _isTimelineAdvancedVisible
+                                          ? Icons.expand_less_rounded
+                                          : Icons.tune_rounded,
+                                    ),
+                                    label: Text(
+                                      _isTimelineAdvancedVisible
+                                          ? 'Masquer le mode avancé'
+                                          : 'Afficher le mode avancé',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
+                        if (_isTimelineAdvancedVisible) ...[
+                          _GuidedTimelineEditor(controller: markersJsonCtrl),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Le JSON reste validé en arrière-plan et ne doit contenir qu’un tableau : [ ... ].',
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    _section(
+                    ],
+                    if (_currentStepIndex == 3) ...[
+                      _section(
                       '16) Prévisualisation de la page détail de scène',
                       sectionKey: _step16SectionKey,
+                      badges: const [_SectionComplexity.requiredField],
                       children: [
                         const Text(
                           'L’admin voit ici exactement comment la scène apparaîtra avant publication. La vidéo IA reste toujours une introduction émotionnelle, distincte de la prestation de l’acteur.',
@@ -4497,19 +4973,18 @@ class _AddScenePageState extends State<AddScenePage> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: () {
-                                _scrollController.animateTo(
-                                  0,
-                                  duration: const Duration(milliseconds: 450),
-                                  curve: Curves.easeOutCubic,
-                                );
+                                _setCurrentStep(0);
                               },
                               icon: const Icon(Icons.tune_rounded),
-                              label: const Text('Modifier les informations'),
+                              label: const Text('Revenir à la fiche scène'),
                             ),
                             OutlinedButton.icon(
-                              onPressed: () async {
+                              onPressed: () {
                                 _correctVeoPrompt();
-                                await _scrollToSection(_step15SectionKey);
+                                _setCurrentStep(
+                                  2,
+                                  sectionKey: _step15SectionKey,
+                                );
                               },
                               icon: const Icon(Icons.edit_note_rounded),
                               label: const Text('Modifier le prompt VEO3'),
@@ -4523,13 +4998,21 @@ class _AddScenePageState extends State<AddScenePage> {
                             ),
                           ],
                         ),
+                        const Text(
+                          'Choisis le statut de sortie. Le bouton principal en bas de page s’adapte automatiquement.',
+                          style: TextStyle(
+                            color: Color(0xFF4B5563),
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
+                          ),
+                        ),
                         Wrap(
                           spacing: 10,
                           runSpacing: 10,
                           children: SceneStatus.values
                               .map(
                                 (status) => ChoiceChip(
-                                  label: Text(status.label),
+                                  label: Text(_publicationTargetLabel(status)),
                                   selected:
                                       _selectedPublicationTarget == status,
                                   onSelected: (_) {
@@ -4541,42 +5024,9 @@ class _AddScenePageState extends State<AddScenePage> {
                               )
                               .toList(),
                         ),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: _saveDraft,
-                              icon: const Icon(Icons.save_outlined),
-                              label: const Text('Enregistrer en brouillon'),
-                            ),
-                            FilledButton.tonalIcon(
-                              onPressed: () {
-                                setState(() {
-                                  _selectedPublicationTarget =
-                                      SceneStatus.pendingPublication;
-                                });
-                                _generateScene();
-                              },
-                              icon: const Icon(Icons.schedule_send_rounded),
-                              label: const Text(
-                                  'Envoyer en attente de publication'),
-                            ),
-                            FilledButton.tonalIcon(
-                              onPressed: () {
-                                setState(() {
-                                  _selectedPublicationTarget =
-                                      SceneStatus.published;
-                                });
-                                _generateScene();
-                              },
-                              icon: const Icon(Icons.publish_rounded),
-                              label: const Text('Publier'),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
+                    ],
                   ],
                 ),
               ),
@@ -4598,7 +5048,7 @@ class _AddScenePageState extends State<AddScenePage> {
                 child: OutlinedButton.icon(
                   onPressed: _saveDraft,
                   icon: const Icon(Icons.edit_note_rounded),
-                  label: const Text('Brouillon'),
+                  label: const Text('Enregistrer le brouillon'),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(54),
                     shape: RoundedRectangleBorder(
@@ -4610,9 +5060,9 @@ class _AddScenePageState extends State<AddScenePage> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: _generateScene,
+                  onPressed: _handlePrimaryAction,
                   icon: const Icon(Icons.auto_awesome_rounded),
-                  label: const Text('Générer la scène'),
+                  label: Text(_primaryActionLabel()),
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(54),
                     shape: RoundedRectangleBorder(
@@ -4628,9 +5078,224 @@ class _AddScenePageState extends State<AddScenePage> {
     );
   }
 
+  String _stepTitle(int index) {
+    return switch (index) {
+      0 => 'Base de la scène',
+      1 => 'Jeu et texte',
+      2 => 'Enrichissements avancés',
+      3 => 'Vérification et sortie',
+      _ => 'Ajout scène',
+    };
+  }
+
+  String _stepDescription(int index) {
+    return switch (index) {
+      0 => 'Importe ou renseigne les informations indispensables pour créer une fiche scène exploitable.',
+      1 => 'Définis l’objectif, l’émotion, le style et le texte à jouer.',
+      2 => 'Ajoute les consignes de tournage, la vidéo IA et la timeline Take60 si nécessaire.',
+      3 => 'Vérifie le rendu final, choisis le statut de sortie puis confirme avec l’action principale.',
+      _ => '',
+    };
+  }
+
+  Widget _stepHeader() {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Étape ${_currentStepIndex + 1} sur 4',
+              style: const TextStyle(
+                color: Color(0xFF4F46E5),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _stepTitle(_currentStepIndex),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _stepDescription(_currentStepIndex),
+              style: const TextStyle(
+                color: Color(0xFF4B5563),
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(4, (index) {
+                final isSelected = _currentStepIndex == index;
+                final isCompleted = index < _currentStepIndex;
+                return ChoiceChip(
+                  selected: isSelected,
+                  label: Text('${index + 1}. ${_stepTitle(index)}'),
+                  avatar: isCompleted
+                      ? const Icon(Icons.check_circle_rounded, size: 18)
+                      : null,
+                  onSelected: (_) => _setCurrentStep(index),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _desktopStepSummary() {
+    final missing = _missingRequiredPublicationFields();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Parcours',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 14),
+        for (var index = 0; index < 4; index++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _setCurrentStep(index),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _currentStepIndex == index
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _currentStepIndex == index
+                        ? const Color(0xFFCBD5E1)
+                        : Colors.transparent,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: index < _currentStepIndex
+                          ? const Color(0xFF0F766E)
+                          : const Color(0xFFE2E8F0),
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: index < _currentStepIndex
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _stepTitle(index),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 18),
+        _sideSummaryCard(
+          title: 'Champs requis',
+          icon: Icons.rule_rounded,
+          text: missing.isEmpty ? 'Tout est prêt.' : missing.join('\n'),
+          color: missing.isEmpty ? const Color(0xFF0F766E) : const Color(0xFFB91C1C),
+        ),
+        const SizedBox(height: 10),
+        _sideSummaryCard(
+          title: 'Statut VEO',
+          icon: Icons.movie_filter_rounded,
+          text: _veoWorkflowStatusLabel(),
+          color: const Color(0xFF4F46E5),
+        ),
+        const SizedBox(height: 10),
+        _sideSummaryCard(
+          title: 'Timeline',
+          icon: Icons.timeline_rounded,
+          text: _timelineStatusLabel(),
+          color: const Color(0xFF0369A1),
+        ),
+        const Spacer(),
+        OutlinedButton.icon(
+          onPressed: () => _setCurrentStep(3, sectionKey: _step16SectionKey),
+          icon: const Icon(Icons.preview_rounded),
+          label: const Text('Voir la preview'),
+        ),
+      ],
+    );
+  }
+
+  Widget _sideSummaryCard({
+    required String title,
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF4B5563),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _section(
     String title, {
     Key? sectionKey,
+    List<_SectionComplexity> badges = const [],
+    String? benefit,
     required List<Widget> children,
   }) {
     return Card(
@@ -4641,13 +5306,33 @@ class _AddScenePageState extends State<AddScenePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                ...badges.map(_ComplexityBadge.new),
+              ],
             ),
+            if (benefit != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                benefit,
+                style: const TextStyle(
+                  color: Color(0xFF4B5563),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             ...children.map(
               (e) => Padding(
@@ -4789,6 +5474,7 @@ class _AddScenePageState extends State<AddScenePage> {
   Future<void> _generatePreviewVideo() async {
     final timeline = _tryDecodeGuidedTimelineJson(showError: true);
     if (timeline == null) {
+      _setCurrentStep(2, sectionKey: _timelineSectionKey);
       return;
     }
 
@@ -4964,7 +5650,7 @@ class _AddScenePageState extends State<AddScenePage> {
           'Vidéo IA validée. Tu peux finaliser la prévisualisation détaillée.';
     });
 
-    await _scrollToSection(_step16SectionKey);
+    _setCurrentStep(3, sectionKey: _step16SectionKey);
   }
 
   Future<void> _startDialogueListening() async {
@@ -5245,27 +5931,6 @@ class _AddScenePageState extends State<AddScenePage> {
         style: const TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 15.5,
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuHintItem extends StatelessWidget {
-  final String title;
-
-  const _MenuHintItem(this.title);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade800,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );
