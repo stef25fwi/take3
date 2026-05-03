@@ -130,23 +130,41 @@ class VeoSceneGenerationService {
   }
 
   static String _messageForCode(String code, String? fallback) {
+    final safeFallback = _sanitizeBackendMessage(fallback);
     switch (code) {
       case 'unauthenticated':
-        return fallback ??
+        return safeFallback ??
             'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
       case 'permission-denied':
         return 'Accès refusé: le rôle admin est requis pour VEO.';
       case 'unavailable':
-        return 'Le backend VEO est temporairement indisponible.';
+        return safeFallback ??
+            'VEO indisponible : modèle ou endpoint Vertex inaccessible. Vérifie la configuration serveur.';
       case 'internal':
-        return 'Le backend VEO a rencontré une erreur interne.';
+        return safeFallback ??
+            'VEO indisponible : modèle ou endpoint Vertex inaccessible. Vérifie la configuration serveur.';
       case 'deadline-exceeded':
       case 'timeout':
         return 'Le backend VEO a dépassé le délai attendu.';
       case 'unknown':
-        return fallback ?? 'Erreur inconnue pendant la génération VEO.';
+        return safeFallback ??
+            'VEO indisponible : modèle ou endpoint Vertex inaccessible. Vérifie la configuration serveur.';
       default:
-        return fallback ?? 'Erreur VEO: $code';
+        return safeFallback ?? 'Erreur VEO: $code';
     }
+  }
+
+  static String? _sanitizeBackendMessage(String? fallback) {
+    final message = fallback?.trim();
+    if (message == null || message.isEmpty) {
+      return null;
+    }
+    final lower = message.toLowerCase();
+    if (lower.contains('<!doctype') ||
+        lower.contains('<html') ||
+        lower.contains('responsepreview')) {
+      return 'VEO indisponible : modèle ou endpoint Vertex inaccessible. Vérifie la configuration serveur.';
+    }
+    return message;
   }
 }

@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import {
@@ -16,6 +17,7 @@ import {
 import {
   checkVertexSceneOperation,
   copyVertexAssetToFirebaseStorage,
+  VertexResponseError,
 } from "./vertexClient";
 
 export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
@@ -200,10 +202,25 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
       updatedAt: new Date().toISOString(),
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error
+    const errorMessage = error instanceof VertexResponseError
+      ? "Génération VEO impossible : Vertex AI a retourné une réponse non JSON / endpoint ou modèle inaccessible."
+      : error instanceof Error
         ? error.message
         : "Erreur inconnue pendant la verification Vertex AI.";
+
+    if (error instanceof VertexResponseError) {
+      logger.error("veoCheckFailed", {
+        modelId: error.details.modelId,
+        location: error.details.location,
+        httpStatus: error.details.httpStatus,
+        statusText: error.details.statusText,
+        endpoint: error.details.endpoint,
+        responseContentType: error.details.responseContentType,
+        responsePreview: error.details.responsePreview,
+        errorKind: error.details.errorKind,
+      });
+    }
+
     await sceneRef.set(
       {
         veoStatus: "failed",

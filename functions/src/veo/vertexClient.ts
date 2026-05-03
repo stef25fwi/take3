@@ -31,6 +31,24 @@ interface GcsUriParts {
   objectPath: string;
 }
 
+export interface VertexResponseErrorDetails {
+  httpStatus: number;
+  statusText: string;
+  modelId: string;
+  location: string;
+  endpoint: string;
+  responseContentType: string;
+  responsePreview: string;
+  errorKind: "http_error" | "non_json_response" | "invalid_json_response";
+}
+
+export class VertexResponseError extends Error {
+  constructor(message: string, readonly details: VertexResponseErrorDetails) {
+    super(message);
+    this.name = "VertexResponseError";
+  }
+}
+
 export async function startVertexSceneGeneration(
   input: VertexStartInput,
   apiKey: string
@@ -84,7 +102,7 @@ export async function checkVertexSceneOperation(
   const config = getVertexVeoConfig();
   if (config.useMock) {
     throw new Error(
-      "Vertex AI n'est pas configure dans cet environnement. Definis GOOGLE_CLOUD_PROJECT, VERTEX_LOCATION, VEO_MODEL_ID et VEO_USE_MOCK=false."
+      "Vertex AI n'est pas configure dans cet environnement. Definis GOOGLE_CLOUD_PROJECT, VERTEX_LOCATION, VEO_MODEL ou VEO_MODEL_ID, et VEO_USE_MOCK=false."
     );
   }
 
@@ -165,6 +183,7 @@ async function callVertexJson(
   init: { method: string; body?: string },
   apiKey: string
 ): Promise<Record<string, any>> {
+  const config = getVertexVeoConfig();
   // Vertex AI refuses requests that combine an API key with a Bearer token.
   // Use the API key alone when provided; fall back to ADC Bearer token otherwise.
   const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -180,17 +199,95 @@ async function callVertexJson(
     body: init.body,
   });
 
+  const responseContentType = response.headers.get("content-type") || "";
   const rawText = await response.text();
-  const payload = rawText ? (JSON.parse(rawText) as Record<string, any>) : {};
+  const responsePreview = rawText.slice(0, 600);
+  const isJsonResponse = responseContentType.toLowerCase().includes("application/json");
+  let payload: Record<string, any> = {};
+
+  if (isJsonResponse && rawText.trim()) {
+    try {
+      payload = JSON.parse(rawText) as Record<string, any>;
+    } catch (_) {
+      throw new VertexResponseError(
+        "Vertex AI a retourné un JSON invalide.",
+        {
+          httpStatus: response.status,
+          statusText: response.statusText,
+          modelId: config.modelId,
+          location: config.location,
+          endpoint: url,
+          responseContentType,
+          responsePreview,
+          errorKind: "invalid_json_response",
+        }
+      );
+    }
+  }
+
   if (!response.ok) {
+    if (!isJsonResponse) {
+      throw new VertexResponseError(
+        messageForNonJsonVertexResponse(responsePreview),
+        {
+          httpStatus: response.status,
+          statusText: response.statusText,
+          modelId: config.modelId,
+          location: config.location,
+          endpoint: url,
+          responseContentType,
+          responsePreview,
+          errorKind: "non_json_response",
+        }
+      );
+    }
+
     const message =
       payload.error?.message ??
       payload.message ??
       `Vertex AI a repondu ${response.status}.`;
-    throw new Error(message);
+    throw new VertexResponseError(message, {
+      httpStatus: response.status,
+      statusText: response.statusText,
+      modelId: config.modelId,
+      location: config.location,
+      endpoint: url,
+      responseContentType,
+      responsePreview,
+      errorKind: "http_error",
+    });
+  }
+
+  if (!isJsonResponse) {
+    throw new VertexResponseError(
+      messageForNonJsonVertexResponse(responsePreview),
+      {
+        httpStatus: response.status,
+        statusText: response.statusText,
+        modelId: config.modelId,
+        location: config.location,
+        endpoint: url,
+        responseContentType,
+        responsePreview,
+        errorKind: "non_json_response",
+      }
+    );
   }
   return payload;
 }
+
+function messageForNonJsonVertexResponse(responsePreview: string): string {
+  const normalized = responsePreview.trim().toLowerCase();
+  if (normalized.startsWith("<!doctype") || normalized.includes("error 404")) {
+    return "Vertex AI a retourné une page HTML au lieu d’un JSON. Vérifie l’endpoint, le modèle VEO, la région et les droits du projet.";
+  }
+  return "Vertex AI a retourné une réponse non JSON. Vérifie l’endpoint, le modèle VEO, la région et les droits du projet.";
+}
+
+export const __vertexClientTestUtils = {
+  callVertexJson,
+  messageForNonJsonVertexResponse,
+};
 
 async function getAccessToken(): Promise<string> {
   if (process.env.GOOGLE_ACCESS_TOKEN) {
@@ -207,7 +304,14 @@ async function getAccessToken(): Promise<string> {
       "Impossible d'obtenir un access token ADC depuis le metadata server."
     );
   }
-  const payload = (await response.json()) as { access_token?: string };
+  let payload: { access_token?: string } = {};
+  try {
+    payload = JSON.parse(await response.text()) as { access_token?: string };
+  } catch (_) {
+    throw new Error(
+      "Le metadata server a retourné une réponse non JSON pour l'access token ADC."
+    );
+  }
   if (!payload.access_token) {
     throw new Error("Le metadata server n'a pas retourne d'access_token.");
   }

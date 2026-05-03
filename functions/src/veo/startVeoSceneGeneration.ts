@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 import {
@@ -11,7 +12,7 @@ import {
   parseSceneId,
   VEO_API_KEY,
 } from "./shared";
-import { startVertexSceneGeneration } from "./vertexClient";
+import { startVertexSceneGeneration, VertexResponseError } from "./vertexClient";
 
 export const startVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
   const uid = req.auth?.uid;
@@ -34,12 +35,43 @@ export const startVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
       "Le secret VEO_API_KEY est requis quand VEO_USE_MOCK=false."
     );
   }
-  const startResult = await startVertexSceneGeneration({
-    sceneId,
-    prompt,
-    durationSeconds,
-    aspectRatio,
-  }, apiKey);
+  let startResult;
+  try {
+    startResult = await startVertexSceneGeneration({
+      sceneId,
+      prompt,
+      durationSeconds,
+      aspectRatio,
+    }, apiKey);
+  } catch (error) {
+    if (error instanceof VertexResponseError) {
+      logger.error("veoStartFailed", {
+        modelId: error.details.modelId,
+        location: error.details.location,
+        httpStatus: error.details.httpStatus,
+        statusText: error.details.statusText,
+        endpoint: error.details.endpoint,
+        responseContentType: error.details.responseContentType,
+        responsePreview: error.details.responsePreview,
+        errorKind: error.details.errorKind,
+      });
+      throw new HttpsError(
+        "unavailable",
+        "Génération VEO impossible : Vertex AI a retourné une réponse non JSON / endpoint ou modèle inaccessible.",
+        error.details
+      );
+    }
+
+    logger.error("veoStartFailed", {
+      modelId: config.modelId,
+      location: config.location,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new HttpsError(
+      "unavailable",
+      "Génération VEO impossible : Vertex AI est inaccessible ou mal configuré."
+    );
+  }
 
   await db().doc(`scenes/${sceneId}`).set(
     {

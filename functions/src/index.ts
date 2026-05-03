@@ -450,24 +450,48 @@ export const veoStatus = onRequest(
             { headers: { "Metadata-Flavor": "Google" } }
           );
           if (tokenRes.ok) {
-            const t = (await tokenRes.json()) as { access_token?: string };
+            const tokenText = await tokenRes.text();
+            const t = JSON.parse(tokenText) as { access_token?: string };
             if (t.access_token) headers["Authorization"] = `Bearer ${t.access_token}`;
           }
         } catch { /* no ADC */ }
       }
       try {
         const probeRes = await fetch(modelUrl, { method: "GET", headers });
+        const responseContentType = probeRes.headers.get("content-type") || "";
         const rawText = await probeRes.text();
+        const responsePreview = rawText.slice(0, 600);
         let body: unknown;
-        try { body = JSON.parse(rawText); } catch { body = rawText; }
+        let errorKind: string | undefined;
+        if (responseContentType.toLowerCase().includes("application/json")) {
+          try { body = JSON.parse(rawText); } catch {
+            body = null;
+            errorKind = "non_json_or_model_not_found";
+          }
+        } else {
+          body = null;
+          errorKind = "non_json_or_model_not_found";
+        }
         modelProbe = {
           httpStatus: probeRes.status,
-          ok: probeRes.ok,
+          ok: probeRes.ok && !errorKind,
           url: modelUrl,
-          body,
+          responseContentType,
+          responsePreview,
+          ...(body ? { body } : {}),
+          ...(errorKind ? { errorKind } : {}),
+          ...(!probeRes.ok || errorKind ? {
+            recommendation: "Vérifier accès Vertex AI/VEO, région, endpoint et modèle.",
+          } : {}),
         };
       } catch (err: unknown) {
-        modelProbe = { error: String(err), url: modelUrl };
+        modelProbe = {
+          ok: false,
+          errorKind: "non_json_or_model_not_found",
+          error: String(err),
+          url: modelUrl,
+          recommendation: "Vérifier accès Vertex AI/VEO, région, endpoint et modèle.",
+        };
       }
     }
 
@@ -482,7 +506,7 @@ export const veoStatus = onRequest(
       missingVars: [
         !config.projectId && "GOOGLE_CLOUD_PROJECT",
         !config.location && "VERTEX_LOCATION",
-        !config.modelId && "VEO_MODEL_ID",
+        !config.modelId && "VEO_MODEL ou VEO_MODEL_ID",
         !apiKeyPresent && "VEO_API_KEY (secret)",
       ].filter(Boolean),
       modelProbe,

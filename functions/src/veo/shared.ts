@@ -40,7 +40,7 @@ export function getVertexVeoConfig(): VertexVeoConfig {
   const projectId =
     process.env.GOOGLE_CLOUD_PROJECT ?? process.env.GCLOUD_PROJECT ?? "";
   const location = process.env.VERTEX_LOCATION ?? "";
-  const modelId = process.env.VEO_MODEL_ID ?? "";
+  const modelId = process.env.VEO_MODEL ?? process.env.VEO_MODEL_ID ?? "";
   const outputBucket =
     process.env.VEO_OUTPUT_BUCKET ??
     process.env.FIREBASE_STORAGE_BUCKET ??
