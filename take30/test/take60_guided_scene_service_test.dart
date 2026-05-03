@@ -55,9 +55,12 @@ void main() {
   Take60UserRecordingDraft buildRecording({String? uploadedVideoUrl}) {
     return Take60UserRecordingDraft(
       recordingId: 'rec_1',
+      projectId: 'project_1',
       sceneId: 'scene_1',
       userId: 'user_1',
       markerId: 'user_1',
+      startSecond: 10,
+      endSecond: 20,
       localTempPath: '/tmp/local.mp4',
       uploadedVideoUrl: uploadedVideoUrl,
       durationSeconds: 10,
@@ -149,6 +152,54 @@ void main() {
           ],
         ),
         returnsNormally,
+      );
+    });
+
+    test('builds storage path under take60_user_recordings project folder', () {
+      final path = Take60GuidedSceneService.buildSegmentStoragePath(
+        userId: 'user_1',
+        projectId: 'project_1',
+        markerId: 'marker_a',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1710000000000),
+      );
+
+      expect(
+        path,
+        'take60_user_recordings/user_1/project_1/marker_a_1710000000000.mp4',
+      );
+    });
+
+    test('builds render project id from user and scene ids', () {
+      expect(
+        Take60GuidedSceneService.buildProjectId(
+          userId: 'user_1',
+          sceneId: 'scene_1',
+        ),
+        'user_1_scene_1',
+      );
+    });
+
+    test('builds render payload with projectId and sceneId', () {
+      final scene = buildScene(aiVideoUrl: 'https://example.com/ai.mp4');
+      final payload = Take60GuidedSceneService.buildRenderPayload(
+        projectId: 'project_1',
+        userId: 'user_1',
+        scene: scene,
+        markers: scene.markers,
+        recordings: [
+          buildRecording(uploadedVideoUrl: 'https://example.com/user.mp4'),
+        ],
+      );
+
+      expect(payload['projectId'], 'project_1');
+      expect(payload['sceneId'], 'scene_1');
+      expect(payload['userId'], 'user_1');
+
+      final userSegments = payload['userSegments'] as List<dynamic>;
+      expect(userSegments, hasLength(1));
+      expect(
+        (userSegments.first as Map<String, dynamic>)['videoUrl'],
+        'https://example.com/user.mp4',
       );
     });
   });

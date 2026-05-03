@@ -210,6 +210,8 @@ class SceneModel {
     this.characterToPlay = '',
     this.context = '',
     this.emotionalObjective = '',
+    this.mainObstacle = '',
+    this.dominantEmotion = '',
     this.directorInstructions = '',
     this.likesCount = 0,
     this.commentsCount = 0,
@@ -246,6 +248,8 @@ class SceneModel {
   final String characterToPlay;
   final String context;
   final String emotionalObjective;
+  final String mainObstacle;
+  final String dominantEmotion;
   final String directorInstructions;
   final int likesCount;
   final int commentsCount;
@@ -296,6 +300,8 @@ class SceneModel {
       characterToPlay: characterToPlay,
       context: context,
       emotionalObjective: emotionalObjective,
+      mainObstacle: mainObstacle,
+      dominantEmotion: dominantEmotion,
       directorInstructions: directorInstructions,
       likesCount: likesCount ?? this.likesCount,
       commentsCount: commentsCount,
@@ -366,6 +372,12 @@ class SceneModel {
         d['mainObjective'] as String? ??
         actorSheet['characterIntention'] as String? ??
         '',
+      mainObstacle: d['mainObstacle'] as String? ??
+        actorSheet['sceneObjective'] as String? ??
+        '',
+      dominantEmotion: d['dominantEmotion'] as String? ??
+        actorSheet['mainEmotion'] as String? ??
+        '',
       directorInstructions: d['directorInstructions'] as String? ??
         d['director'] as String? ??
         actorSheet['stagingInstructions'] as String? ??
@@ -416,6 +428,8 @@ class SceneModel {
         'characterToPlay': characterToPlay,
         'context': context,
         'emotionalObjective': emotionalObjective,
+        'mainObstacle': mainObstacle,
+        'dominantEmotion': dominantEmotion,
         'directorInstructions': directorInstructions,
         'authorId': author.id,
         'authorDenorm': author.toStub().toMap(),

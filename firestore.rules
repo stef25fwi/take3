@@ -209,6 +209,37 @@ service cloud.firestore {
       );
 
       allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+
+      match /segments/{segmentId} {
+        allow create: if request.auth != null && take60IsOwnerByData(request.resource.data);
+
+        allow read: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+
+        allow update: if take60IsAdmin() || (
+          take60IsOwnerByData(resource.data) &&
+          take60IsOwnerByData(request.resource.data)
+        );
+
+        allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
+      }
+    }
+
+    match /takes/{takeId} {
+      allow create: if request.auth != null
+        && take60IsOwnerByData(request.resource.data)
+        && request.resource.data.videoUrl is string
+        && request.resource.data.videoUrl != '';
+
+      allow read: if true;
+
+      allow update: if take60IsAdmin() || (
+        take60IsOwnerByData(resource.data) &&
+        take60IsOwnerByData(request.resource.data) &&
+        request.resource.data.videoUrl is string &&
+        request.resource.data.videoUrl != ''
+      );
+
+      allow delete: if take60IsAdmin() || take60IsOwnerByData(resource.data);
     }
 
     // Rendus serveur créés par Cloud Functions Admin SDK.

@@ -102,6 +102,7 @@ function buildAudioChain(rules: AudioRules): string {
 }
 
 interface RenderRequest {
+  projectId?: string;
   sceneId?: string;
   userId?: string;
   maxDurationSeconds?: number;
@@ -364,6 +365,7 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     throw new HttpsError("unauthenticated", "Authentification requise.");
   }
   const data = req.data ?? {};
+  const projectId = (data.projectId ?? "").trim();
   const sceneId = (data.sceneId ?? "").trim();
   if (!sceneId) {
     throw new HttpsError("invalid-argument", "sceneId requis.");
@@ -385,6 +387,7 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
 
   // Persist the request immediately so clients can poll if rendering is async.
   await renderRef.set({
+    projectId,
     sceneId,
     userId: auth.uid,
     createdAt: FieldValue.serverTimestamp(),

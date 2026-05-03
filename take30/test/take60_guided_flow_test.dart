@@ -6,10 +6,14 @@ void main() {
     test('roundtrips through toMap/fromMap', () {
       final original = Take60UserRecordingDraft(
         recordingId: 'rec_1',
+        projectId: 'project_42',
         sceneId: 'scene_42',
         userId: 'user_abc',
         markerId: 'marker_user_1',
+        startSecond: 12,
+        endSecond: 19,
         localTempPath: '/tmp/a.mp4',
+        storagePath: 'take60_user_recordings/user_abc/project_42/marker_user_1_1.mp4',
         uploadedVideoUrl: 'https://example.com/a.mp4',
         durationSeconds: 7,
         status: UserPlanStatus.recorded,
@@ -23,9 +27,13 @@ void main() {
       );
 
       expect(restored.recordingId, original.recordingId);
+  expect(restored.projectId, original.projectId);
       expect(restored.sceneId, original.sceneId);
       expect(restored.markerId, original.markerId);
+  expect(restored.startSecond, original.startSecond);
+  expect(restored.endSecond, original.endSecond);
       expect(restored.localTempPath, original.localTempPath);
+  expect(restored.storagePath, original.storagePath);
       expect(restored.uploadedVideoUrl, original.uploadedVideoUrl);
       expect(restored.durationSeconds, original.durationSeconds);
       expect(restored.status, original.status);
@@ -34,9 +42,12 @@ void main() {
     test('copyWith updates uploadedVideoUrl while preserving identity', () {
       final draft = Take60UserRecordingDraft(
         recordingId: 'rec_1',
+        projectId: 'project_1',
         sceneId: 'scene_1',
         userId: 'u',
         markerId: 'm',
+        startSecond: 0,
+        endSecond: 5,
         localTempPath: '/tmp/a.mp4',
         durationSeconds: 5,
         status: UserPlanStatus.recorded,
@@ -45,12 +56,14 @@ void main() {
       );
 
       final updated = draft.copyWith(
+        storagePath: 'take60_user_recordings/u/project_1/m_1.mp4',
         uploadedVideoUrl: 'https://cdn/a.mp4',
         status: UserPlanStatus.recorded,
         updatedAt: DateTime(2026, 1, 2),
       );
 
       expect(updated.recordingId, 'rec_1');
+      expect(updated.storagePath, 'take60_user_recordings/u/project_1/m_1.mp4');
       expect(updated.uploadedVideoUrl, 'https://cdn/a.mp4');
       expect(updated.localTempPath, '/tmp/a.mp4');
       expect(updated.updatedAt, DateTime(2026, 1, 2));
@@ -68,9 +81,12 @@ void main() {
         recordings: [
           Take60UserRecordingDraft(
             recordingId: 'rec_1',
+            projectId: 'project_42',
             sceneId: 'scene_42',
             userId: 'user_abc',
             markerId: 'marker_user_1',
+            startSecond: 15,
+            endSecond: 21,
             localTempPath: '/tmp/a.mp4',
             durationSeconds: 6,
             status: UserPlanStatus.recorded,

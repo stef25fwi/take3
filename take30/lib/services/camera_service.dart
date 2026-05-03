@@ -18,11 +18,13 @@ enum CameraState {
 
 class RecordingResult {
   const RecordingResult({
+    required this.file,
     required this.filePath,
     required this.durationSeconds,
     required this.fileSizeBytes,
   });
 
+  final XFile file;
   final String filePath;
   final int durationSeconds;
   final int fileSizeBytes;
@@ -68,6 +70,7 @@ class CameraService extends ChangeNotifier {
   }
 
   Future<bool> initialize() async {
+    debugPrint('[RECORD] camera initializing');
     _setState(CameraState.initializing);
 
     try {
@@ -79,6 +82,7 @@ class CameraService extends ChangeNotifier {
 
       _currentCameraIndex = _cameras.length > 1 ? 1 : 0;
       await _initController(_cameras[_currentCameraIndex]);
+      debugPrint('[RECORD] camera ready');
       return true;
     } on CameraException catch (error) {
       _setError('Erreur caméra: ${error.description}');
@@ -110,6 +114,7 @@ class CameraService extends ChangeNotifier {
     }
 
     try {
+      debugPrint('[RECORD] start recording');
       _lastRecordingResult = null;
       _recordingLimitSeconds =
           (maxDurationSeconds == null || maxDurationSeconds <= 0)
@@ -142,16 +147,19 @@ class CameraService extends ChangeNotifier {
     _recordingTimer = null;
 
     try {
+      debugPrint('[RECORD] stop recording');
       final file = await _controller!.stopVideoRecording();
       _setState(CameraState.stopped);
       _recordingLimitSeconds = maxRecordingSeconds;
       final resultFile = File(file.path);
       final size = await resultFile.length();
       final result = RecordingResult(
+        file: file,
         filePath: file.path,
         durationSeconds: _elapsedSeconds,
         fileSizeBytes: size,
       );
+      debugPrint('[RECORD] recording result path=${file.path}');
       _lastRecordingResult = result;
       notifyListeners();
       return result;

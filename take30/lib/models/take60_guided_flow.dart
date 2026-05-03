@@ -305,30 +305,44 @@ class Take60SceneMarker {
 class Take60UserRecordingDraft {
   const Take60UserRecordingDraft({
     required this.recordingId,
+    required this.projectId,
     required this.sceneId,
     required this.userId,
     required this.markerId,
+    required this.startSecond,
+    required this.endSecond,
     required this.localTempPath,
     required this.durationSeconds,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.storagePath,
     this.uploadedVideoUrl,
   });
 
   final String recordingId;
+  final String projectId;
   final String sceneId;
   final String userId;
   final String markerId;
+  final int startSecond;
+  final int endSecond;
   final String localTempPath;
+  final String? storagePath;
   final String? uploadedVideoUrl;
   final int durationSeconds;
   final UserPlanStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  bool get isUploaded => (uploadedVideoUrl?.isNotEmpty ?? false);
+
   Take60UserRecordingDraft copyWith({
+    String? projectId,
+    int? startSecond,
+    int? endSecond,
     String? localTempPath,
+    String? storagePath,
     String? uploadedVideoUrl,
     int? durationSeconds,
     UserPlanStatus? status,
@@ -336,10 +350,14 @@ class Take60UserRecordingDraft {
   }) {
     return Take60UserRecordingDraft(
       recordingId: recordingId,
+      projectId: projectId ?? this.projectId,
       sceneId: sceneId,
       userId: userId,
       markerId: markerId,
+      startSecond: startSecond ?? this.startSecond,
+      endSecond: endSecond ?? this.endSecond,
       localTempPath: localTempPath ?? this.localTempPath,
+      storagePath: storagePath ?? this.storagePath,
       uploadedVideoUrl: uploadedVideoUrl ?? this.uploadedVideoUrl,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       status: status ?? this.status,
@@ -351,10 +369,18 @@ class Take60UserRecordingDraft {
   factory Take60UserRecordingDraft.fromMap(Map<String, dynamic> json) {
     return Take60UserRecordingDraft(
       recordingId: json['recordingId'] as String? ?? '',
+      projectId: json['projectId'] as String? ?? '',
       sceneId: json['sceneId'] as String? ?? '',
       userId: json['userId'] as String? ?? 'guest',
       markerId: json['markerId'] as String? ?? '',
+      startSecond: (json['startSecond'] as num?)?.toInt() ??
+        (json['start'] as num?)?.toInt() ??
+        0,
+      endSecond: (json['endSecond'] as num?)?.toInt() ??
+        (json['end'] as num?)?.toInt() ??
+        0,
       localTempPath: json['localTempPath'] as String? ?? '',
+      storagePath: json['storagePath'] as String?,
       uploadedVideoUrl: json['uploadedVideoUrl'] as String?,
       durationSeconds: (json['duration'] as num?)?.toInt() ??
           (json['durationSeconds'] as num?)?.toInt() ??
@@ -368,12 +394,17 @@ class Take60UserRecordingDraft {
   Map<String, dynamic> toMap() {
     return {
       'recordingId': recordingId,
+      'projectId': projectId,
       'sceneId': sceneId,
       'userId': userId,
       'markerId': markerId,
+      'startSecond': startSecond,
+      'endSecond': endSecond,
       'localTempPath': localTempPath,
+      'storagePath': storagePath,
       'uploadedVideoUrl': uploadedVideoUrl,
       'duration': durationSeconds,
+      'durationSeconds': durationSeconds,
       'status': status.value,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),

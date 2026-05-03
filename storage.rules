@@ -38,20 +38,19 @@ service firebase.storage {
       allow read, write: if false;
     }
 
-    // ======================================================
-    // TAKE60 PROD EXACT STORAGE RULES
-    // Paths réels détectés :
-    // - scenes/{uid}/{sceneId}_{markerId}.mp4
-    // - take60_renders/{uid}/{renderId}.mp4
-    // - take60_renders/{uid}/{renderId}.jpg
-    // ======================================================
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.superAdmin == true
+      );
+    }
 
     // Segments vidéo utilisateur Take60.
-    // Le fichier est stocké dans le même dossier que les scènes classiques.
-    match /scenes/{userId}/{fileName} {
+    match /take60_user_recordings/{userId}/{projectId}/{fileName} {
       allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == userId
+      allow write: if isSelf(userId)
+        && fileName.matches('.*\\.mp4$')
         && request.resource.size < 300 * 1024 * 1024
         && request.resource.contentType.matches('video/.*');
     }
@@ -60,7 +59,7 @@ service firebase.storage {
     // L'écriture se fait via Admin SDK, donc pas besoin d'autoriser le client.
     match /take60_renders/{userId}/{fileName} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
 

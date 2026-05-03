@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io' show File;
 
+import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
@@ -131,6 +132,83 @@ class Take60GuidedSceneService {
   static const _uuid = Uuid();
 
   String get currentUserId => _auth.currentUser?.uid ?? 'guest';
+
+  @visibleForTesting
+  static String buildProjectId({
+    required String userId,
+    required String sceneId,
+  }) {
+    return '${userId}_$sceneId';
+  }
+
+  @visibleForTesting
+  static String buildSegmentStoragePath({
+    required String userId,
+    required String projectId,
+    required String markerId,
+    DateTime? timestamp,
+  }) {
+    return StorageService.buildGuidedSegmentPath(
+      uid: userId,
+      projectId: projectId,
+      markerId: markerId,
+      timestampMillis:
+          (timestamp ?? DateTime.now()).millisecondsSinceEpoch,
+    );
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic> buildRenderPayload({
+    required String projectId,
+    required String userId,
+    required SceneModel scene,
+    required List<Take60SceneMarker> markers,
+    required List<Take60UserRecordingDraft> recordings,
+  }) {
+    return {
+      'projectId': projectId,
+      'sceneId': scene.id,
+      'userId': userId,
+      'aiSegments': markers
+          .where((marker) => !marker.requiresUserRecording)
+          .map(
+            (marker) => {
+              'markerId': marker.id,
+              'type': marker.type.value,
+              'videoUrl': (marker.videoUrl?.isNotEmpty ?? false)
+                  ? marker.videoUrl
+                  : scene.videoUrl,
+              'durationSeconds': marker.durationSeconds,
+              'order': marker.order,
+            },
+          )
+          .toList(),
+      'userSegments': recordings
+          .map(
+            (recording) => {
+              'markerId': recording.markerId,
+              'type': GuidedMarkerType.userPlan.value,
+              'videoUrl': recording.uploadedVideoUrl,
+              'durationSeconds': recording.durationSeconds,
+            },
+          )
+          .toList(),
+      'markers': markers
+          .map(
+            (marker) => {
+              'markerId': marker.id,
+              'type': marker.type.value,
+              'order': marker.order,
+              'durationSeconds': marker.durationSeconds,
+            },
+          )
+          .toList(),
+      'audioRules': scene.audioRules.toMap(),
+      'maxDurationSeconds': scene.durationSeconds > 0
+          ? scene.durationSeconds
+          : 60,
+    };
+  }
 
   Future<List<SceneModel>> loadGuidedScenes({
     required UserModel fallbackAuthor,
@@ -266,9 +344,15 @@ class Take60GuidedSceneService {
     await prefs.remove(_draftKey(sceneId));
   }
 
+  String projectIdForScene(SceneModel scene) {
+    return buildProjectId(userId: currentUserId, sceneId: scene.id);
+  }
+
   Future<Take60UserRecordingDraft> persistRecording({
+    required String projectId,
     required SceneModel scene,
     required Take60SceneMarker marker,
+    required XFile recordedFile,
     required String localTempPath,
     required int durationSeconds,
     required UserPlanStatus status,
@@ -276,37 +360,53 @@ class Take60GuidedSceneService {
   }) async {
     final now = DateTime.now();
     String? finalUploadedUrl = uploadedVideoUrl;
+    String? finalStoragePath;
 
-    // Try to upload the captured segment to Storage so that the backend
-    // renderer can reach it. On web (no dart:io File) or if upload fails
-    // we silently fall back to the local path — the UI still works in
-    // demo / offline mode.
     if (finalUploadedUrl == null &&
         currentUserId != 'guest' &&
-        !kIsWeb &&
         localTempPath.isNotEmpty &&
         !localTempPath.startsWith('http')) {
       try {
-        final file = File(localTempPath);
-        if (await file.exists()) {
-          finalUploadedUrl = await _storage.uploadGuidedSegment(
-            uid: currentUserId,
-            sceneId: scene.id,
-            markerId: marker.id,
-            file: file,
+        final storagePath = buildSegmentStoragePath(
+          userId: currentUserId,
+          projectId: projectId,
+          markerId: marker.id,
+          timestamp: now,
+        );
+        if (kIsWeb) {
+          final upload = await _storage.uploadGuidedSegmentBytes(
+            storagePath: storagePath,
+            bytes: await recordedFile.readAsBytes(),
           );
+          finalStoragePath = upload.storagePath;
+          finalUploadedUrl = upload.downloadUrl;
+        } else {
+          final file = File(localTempPath);
+          if (await file.exists()) {
+            final upload = await _storage.uploadGuidedSegment(
+              storagePath: storagePath,
+              file: file,
+            );
+            finalStoragePath = upload.storagePath;
+            finalUploadedUrl = upload.downloadUrl;
+          }
         }
       } catch (_) {
-        // Upload failure is non-fatal — keep local path.
+        // Upload failure is non-fatal during capture; render validation will
+        // still block until a remote URL exists.
       }
     }
 
     final recording = Take60UserRecordingDraft(
       recordingId: _uuid.v4(),
+      projectId: projectId,
       sceneId: scene.id,
       userId: currentUserId,
       markerId: marker.id,
+      startSecond: marker.startSeconds,
+      endSecond: marker.endSeconds,
       localTempPath: localTempPath,
+      storagePath: finalStoragePath,
       uploadedVideoUrl: finalUploadedUrl,
       durationSeconds: durationSeconds,
       status: status,
@@ -315,17 +415,42 @@ class Take60GuidedSceneService {
     );
 
     if (currentUserId != 'guest') {
-      await _firestore
+      final batch = _firestore.batch();
+      final projectRef = _firestore
+          .collection('take60_guided_projects')
+          .doc(projectId);
+      final segmentRef = projectRef.collection('segments').doc(marker.id);
+      final legacyRef = _firestore
           .collection('take60_user_recordings')
-          .doc(recording.recordingId)
-          .set(recording.toMap(), SetOptions(merge: true))
-          .catchError((_) {});
+          .doc(recording.recordingId);
+      batch.set(
+        projectRef,
+        _projectPayload(
+          projectId: projectId,
+          scene: scene,
+          status: finalUploadedUrl?.isNotEmpty == true ? 'ready_for_render' : 'recording',
+          updatedAt: now,
+        ),
+        SetOptions(merge: true),
+      );
+      batch.set(
+        segmentRef,
+        _segmentPayload(recording),
+        SetOptions(merge: true),
+      );
+      batch.set(
+        legacyRef,
+        recording.toMap(),
+        SetOptions(merge: true),
+      );
+      await batch.commit().catchError((_) {});
     }
 
     return recording;
   }
 
   Future<Take60RenderResult> renderTake60GuidedScene({
+    required String projectId,
     required SceneModel scene,
     required List<Take60UserRecordingDraft> recordings,
   }) async {
@@ -335,57 +460,48 @@ class Take60GuidedSceneService {
       markers: markers,
       recordings: recordings,
     );
-    final payload = {
-      'sceneId': scene.id,
-      'userId': currentUserId,
-      'aiSegments': markers
-          .where((marker) => !marker.requiresUserRecording)
-          .map(
-            (marker) => {
-              'markerId': marker.id,
-              'type': marker.type.value,
-              'videoUrl': (marker.videoUrl ?? scene.videoUrl)?.trim(),
-              'durationSeconds': marker.durationSeconds,
-              'order': marker.order,
-            },
-          )
-          .toList(),
-      'userSegments': recordings
-          .map(
-            (recording) => {
-              'markerId': recording.markerId,
-              'type': 'user_plan',
-              'videoUrl': recording.uploadedVideoUrl,
-              'durationSeconds': recording.durationSeconds,
-            },
-          )
-          .toList(),
-      'markers': markers
-          .map(
-            (marker) => {
-              'markerId': marker.id,
-              'type': marker.type.value,
-              'order': marker.order,
-              'durationSeconds': marker.durationSeconds,
-            },
-          )
-          .toList(),
-      'audioRules': scene.audioRules.toMap(),
-      'maxDurationSeconds': scene.durationSeconds,
-    };
+    final payload = buildRenderPayload(
+      projectId: projectId,
+      userId: currentUserId,
+      scene: scene,
+      markers: markers,
+      recordings: recordings,
+    );
 
     try {
+      await _updateProjectStatus(
+        projectId: projectId,
+        scene: scene,
+        status: 'rendering',
+      );
       final callable = _functions.httpsCallable('renderTake60GuidedScene');
       final result = await callable.call(payload);
-      return Take60RenderResult.fromMap(
+      final renderResult = Take60RenderResult.fromMap(
         Map<String, dynamic>.from(result.data as Map),
       );
+      await _updateProjectStatus(
+        projectId: projectId,
+        scene: scene,
+        status: 'completed',
+        finalVideoUrl: renderResult.finalVideoUrl,
+      );
+      return renderResult;
     } on FirebaseFunctionsException catch (error) {
+      await _updateProjectStatus(
+        projectId: projectId,
+        scene: scene,
+        status: 'failed',
+      );
       throw Take60GuidedSceneException(
         code: error.code,
         message: error.message ?? 'Le rendu final Take60 a échoué côté backend.',
       );
     } catch (_) {
+      await _updateProjectStatus(
+        projectId: projectId,
+        scene: scene,
+        status: 'failed',
+      );
       throw const Take60GuidedSceneException(
         code: 'unknown',
         message: 'Le rendu final Take60 a échoué pour une raison inconnue.',
@@ -394,20 +510,21 @@ class Take60GuidedSceneService {
   }
 
   Future<void> saveRenderedProject({
+    required String projectId,
     required SceneModel scene,
     required List<Take60UserRecordingDraft> recordings,
     required Take60RenderResult renderResult,
     required String status,
   }) async {
     final now = DateTime.now();
-    final projectId = '${currentUserId}_${scene.id}';
     final payload = <String, dynamic>{
-      'projectId': projectId,
-      'sceneId': scene.id,
-      'sceneTitle': scene.title,
-      'category': scene.category,
-      'sceneType': scene.sceneType,
-      'userId': currentUserId,
+      ..._projectPayload(
+        projectId: projectId,
+        scene: scene,
+        status: status == 'published' ? 'completed' : 'draft',
+        updatedAt: now,
+        finalVideoUrl: renderResult.finalVideoUrl,
+      ),
       'status': status,
       'renderResult': renderResult.toMap(),
       'recordings': recordings.map((recording) => recording.toMap()).toList(),
@@ -428,6 +545,89 @@ class Take60GuidedSceneService {
         .collection('take60_guided_projects')
         .doc(projectId)
         .set(payload, SetOptions(merge: true));
+
+    if (status == 'published' && renderResult.finalVideoUrl.isNotEmpty) {
+      await _firestore.collection('takes').doc(projectId).set({
+        'projectId': projectId,
+        'sceneId': scene.id,
+        'sceneTitle': scene.title,
+        'category': scene.category,
+        'sceneType': scene.sceneType,
+        'userId': currentUserId,
+        'videoUrl': renderResult.finalVideoUrl,
+        'thumbnailUrl': renderResult.thumbnailUrl,
+        'durationSeconds': renderResult.durationSeconds,
+        'status': 'published',
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  Map<String, dynamic> _projectPayload({
+    required String projectId,
+    required SceneModel scene,
+    required String status,
+    required DateTime updatedAt,
+    String? finalVideoUrl,
+  }) {
+    return <String, dynamic>{
+      'id': projectId,
+      'projectId': projectId,
+      'userId': currentUserId,
+      'sceneId': scene.id,
+      'sceneTitle': scene.title,
+      'category': scene.category,
+      'sceneType': scene.sceneType,
+      'status': status,
+      'createdAt': updatedAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      if (finalVideoUrl != null) 'finalVideoUrl': finalVideoUrl,
+    };
+  }
+
+  Map<String, dynamic> _segmentPayload(Take60UserRecordingDraft recording) {
+    return <String, dynamic>{
+      'id': recording.markerId,
+      'projectId': recording.projectId,
+      'sceneId': recording.sceneId,
+      'userId': recording.userId,
+      'markerId': recording.markerId,
+      'startSecond': recording.startSecond,
+      'endSecond': recording.endSecond,
+      'durationSeconds': recording.durationSeconds,
+      'localPath': recording.localTempPath,
+      'storagePath': recording.storagePath,
+      'uploadedVideoUrl': recording.uploadedVideoUrl,
+      'status': recording.isUploaded ? 'uploaded' : recording.status.value,
+      'createdAt': recording.createdAt.toIso8601String(),
+      'updatedAt': recording.updatedAt.toIso8601String(),
+    };
+  }
+
+  Future<void> _updateProjectStatus({
+    required String projectId,
+    required SceneModel scene,
+    required String status,
+    String? finalVideoUrl,
+  }) async {
+    if (currentUserId == 'guest') {
+      return;
+    }
+    await _firestore
+        .collection('take60_guided_projects')
+        .doc(projectId)
+        .set(
+          _projectPayload(
+            projectId: projectId,
+            scene: scene,
+            status: status,
+            updatedAt: DateTime.now(),
+            finalVideoUrl: finalVideoUrl,
+          ),
+          SetOptions(merge: true),
+        )
+        .catchError((_) {});
   }
 
   List<SceneModel> fallbackScenes({required UserModel author}) {

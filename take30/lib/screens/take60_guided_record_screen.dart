@@ -29,9 +29,16 @@ import '../utils/video_player_controller_factory.dart';
 ///  5) revoit / rejoue / valide chaque plan
 ///  6) déclenche le rendu final + publication / brouillon
 class Take60GuidedRecordScreen extends ConsumerStatefulWidget {
-  const Take60GuidedRecordScreen({super.key, this.initialScene});
+  const Take60GuidedRecordScreen({
+    super.key,
+    this.initialScene,
+    this.onInitCameraOverride,
+  });
 
   final SceneModel? initialScene;
+  @visibleForTesting
+  final Future<CameraInitResult> Function(BuildContext context)?
+      onInitCameraOverride;
 
   @override
   ConsumerState<Take60GuidedRecordScreen> createState() =>
@@ -87,9 +94,18 @@ class _Take60GuidedRecordScreenState
   VideoPlayerController? _finalController;
   Future<void>? _finalInit;
   String _publicationStatus = '';
-  bool _videoValidated = false;
   String? _renderErrorMessage;
   String? _statusMessage;
+  CameraInitResult? _cameraInitResult;
+  String? _cameraPermissionMessage;
+
+  String? get _projectId {
+    final scene = _scene;
+    if (scene == null) {
+      return null;
+    }
+    return _service.projectIdForScene(scene);
+  }
 
   @override
   void initState() {
@@ -97,7 +113,12 @@ class _Take60GuidedRecordScreenState
     if (widget.initialScene != null) {
       _scene = widget.initialScene;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadLibrary());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialScene != null) {
+        _enterDirectorSheet(widget.initialScene!);
+      }
+      _loadLibrary();
+    });
   }
 
   @override
@@ -125,7 +146,7 @@ class _Take60GuidedRecordScreenState
       setState(() {
         _scenes = scenes;
         _loadingLibrary = false;
-        if (_scene != null) {
+        if (_scene != null && _stage == _Stage.library) {
           // Si l'écran est ouvert avec une scène pré-sélectionnée, on saute
           // directement à la fiche réalisateur.
           _enterDirectorSheet(_scene!);
@@ -330,38 +351,14 @@ class _Take60GuidedRecordScreenState
     setState(() {
       _stage = _Stage.prepCamera;
       _cameraInitializing = true;
+      _cameraInitResult = null;
+      _cameraPermissionMessage = null;
       _waitingForRecordingResult = false;
     });
-    final result =
-        await ref.read(recordingProvider.notifier).initCamera(context);
+    final result = await (widget.onInitCameraOverride?.call(context) ??
+        ref.read(recordingProvider.notifier).initCamera(context));
     if (!mounted) return;
-    setState(() => _cameraInitializing = false);
-    if (!result.isReady) {
-      if (result.needsSettings) {
-        await _showPermissionsSettingsDialog(result.missingPermissions);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Caméra ou micro non disponibles — vérifie les permissions',
-              style: GoogleFonts.dmSans(color: Colors.white),
-            ),
-            backgroundColor: _danger,
-            action: SnackBarAction(
-              label: 'Réglages',
-              textColor: Colors.white,
-              onPressed: PermissionService().openSettings,
-            ),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _showPermissionsSettingsDialog(
-    List<AppPermission> missingPermissions,
-  ) async {
-    final labels = missingPermissions
+    final labels = result.missingPermissions
         .map(
           (permission) => switch (permission) {
             AppPermission.camera => 'caméra',
@@ -369,29 +366,41 @@ class _Take60GuidedRecordScreenState
             _ => 'autorisation',
           },
         )
-        .join(' et ');
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Autorisation requise'),
-        content: Text(
-          'L\'accès au $labels a été refusé. Ouvre les réglages pour autoriser Take60.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Plus tard'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              PermissionService().openSettings();
-            },
-            child: const Text('Ouvrir les réglages'),
-          ),
-        ],
-      ),
+        .toList();
+    final joined = labels.isEmpty ? 'caméra et micro' : labels.join(' et ');
+    setState(() {
+      _cameraInitializing = false;
+      _cameraInitResult = result;
+      if (!result.isReady) {
+        _cameraPermissionMessage = result.needsSettings
+            ? 'L’accès au $joined a été refusé de façon permanente. Ouvre les réglages puis réessaie.'
+            : 'L’accès au $joined a été refusé. Autorise-le pour enregistrer ton Take60.';
+      }
+    });
+  }
+
+  void _openAiIntro() {
+    final firstAiIndex = _timeline.indexWhere(
+      (marker) => !marker.requiresUserRecording,
     );
+    if (firstAiIndex < 0) {
+      _startAtFirstUserMarker();
+      return;
+    }
+    setState(() => _currentIndex = firstAiIndex);
+    _enterAiPlayback(_timeline[firstAiIndex]);
+  }
+
+  void _startAtFirstUserMarker() {
+    final firstUserIndex = _timeline.indexWhere(
+      (marker) => marker.requiresUserRecording,
+    );
+    if (firstUserIndex < 0) {
+      _startScene();
+      return;
+    }
+    setState(() => _currentIndex = firstUserIndex);
+    _enterPrepCamera();
   }
 
   void _startCountdown() {
@@ -425,12 +434,16 @@ class _Take60GuidedRecordScreenState
 
   void _handleRecordingResult(RecordingResult result) {
     final marker = _currentMarker;
-    if (marker == null || _scene == null) return;
+    final scene = _scene;
+    final projectId = _projectId;
+    if (marker == null || scene == null || projectId == null) return;
     _waitingForRecordingResult = false;
     _service
         .persistRecording(
-      scene: _scene!,
+      projectId: projectId,
+      scene: scene,
       marker: marker,
+      recordedFile: result.file,
       localTempPath: result.filePath,
       durationSeconds: result.durationSeconds,
       status: UserPlanStatus.recorded,
@@ -492,32 +505,66 @@ class _Take60GuidedRecordScreenState
       updatedAt: DateTime.now(),
     );
     _recordings[marker.id] = validated;
+    setState(() {
+      _previewRecording = validated;
+      _publicationStatus = 'Prise validée. Tu peux passer au segment suivant.';
+    });
+    _persistDraft();
+  }
+
+  bool get _allRequiredUserSegmentsUploaded {
+    final requiredMarkers = _timeline.where((marker) => marker.requiresUserRecording);
+    for (final marker in requiredMarkers) {
+      final recording = _recordings[marker.id] ??
+          (_previewRecording?.markerId == marker.id ? _previewRecording : null);
+      if (recording == null || !recording.isUploaded) {
+        return false;
+      }
+    }
+    return requiredMarkers.isNotEmpty;
+  }
+
+  bool get _isPreviewValidated {
+    return _previewRecording?.status == UserPlanStatus.validated;
+  }
+
+  bool get _isLastTimelineMarker {
+    return _currentIndex + 1 >= _timeline.length;
+  }
+
+  void _goToNextSegment() {
+    if (!_isPreviewValidated) {
+      _validateCurrentPlan();
+    }
+    if (_isLastTimelineMarker) {
+      return;
+    }
+    final nextIndex = _currentIndex + 1;
     _disposePreviewController();
     setState(() {
       _previewRecording = null;
+      _publicationStatus = '';
+      _currentIndex = nextIndex;
     });
-    final next = _currentIndex + 1;
-    if (next >= _timeline.length) {
-      _renderFinalVideo();
-      return;
-    }
-    setState(() => _currentIndex = next);
     _persistDraft();
-    _enterMarker(_timeline[next]);
+    _enterMarker(_timeline[nextIndex]);
   }
 
   // ── Final render ────────────────────────────────────────────────────────
   Future<void> _renderFinalVideo() async {
-    if (_scene == null) return;
+    final scene = _scene;
+    final projectId = _projectId;
+    if (scene == null || projectId == null) return;
     setState(() {
       _stage = _Stage.rendering;
       _renderResult = null;
       _renderErrorMessage = null;
       _statusMessage = 'Montage en cours…';
     });
-    final scene = _scene!;
+    debugPrint('[RECORD] render start');
     try {
       final result = await _service.renderTake60GuidedScene(
+        projectId: projectId,
         scene: scene,
         recordings: _recordings.values.toList(),
       );
@@ -554,43 +601,48 @@ class _Take60GuidedRecordScreenState
   }
 
   Future<void> _saveAsDraft() async {
-    if (_scene == null || _renderResult == null) return;
+    final scene = _scene;
+    final renderResult = _renderResult;
+    final projectId = _projectId;
+    if (scene == null || renderResult == null || projectId == null) return;
+    if (renderResult.finalVideoUrl.isEmpty) {
+      setState(() => _publicationStatus =
+          'Le rendu final doit être disponible avant de garder ce Take en brouillon.');
+      return;
+    }
     setState(() => _publicationStatus = 'Brouillon en cours d\'enregistrement…');
     await _service.saveRenderedProject(
-      scene: _scene!,
+      projectId: projectId,
+      scene: scene,
       recordings: _recordings.values.toList(),
-      renderResult: _renderResult!,
+      renderResult: renderResult,
       status: 'draft',
     );
     if (!mounted) return;
     setState(() => _publicationStatus = 'Brouillon enregistré.');
   }
 
-  void _validateVideo() {
-    if (_renderResult == null) return;
-    setState(() {
-      _videoValidated = true;
-      _publicationStatus = 'Vidéo validée. Tu peux maintenant publier.';
-    });
-  }
-
   Future<void> _publish() async {
-    if (_scene == null || _renderResult == null) return;
-    if (!_videoValidated) {
+    final scene = _scene;
+    final renderResult = _renderResult;
+    final projectId = _projectId;
+    if (scene == null || renderResult == null || projectId == null) return;
+    if (renderResult.finalVideoUrl.isEmpty) {
       setState(() => _publicationStatus =
-          'Valide d\'abord ta vidéo avant publication.');
+          'Le rendu final doit être disponible avant publication.');
       return;
     }
     setState(() => _publicationStatus = 'Publication en cours…');
     await _service.saveRenderedProject(
-      scene: _scene!,
+      projectId: projectId,
+      scene: scene,
       recordings: _recordings.values.toList(),
-      renderResult: _renderResult!,
+      renderResult: renderResult,
       status: 'published',
     );
     if (!mounted) return;
     setState(() => _publicationStatus = 'Vidéo publiée.');
-    await _service.clearDraft(_scene!.id);
+    await _service.clearDraft(scene.id);
   }
 
   Future<void> _persistDraft() async {
@@ -857,6 +909,11 @@ class _Take60GuidedRecordScreenState
   Widget _buildDirectorSheet() {
     final scene = _scene!;
     final userPlanCount = _timeline.where((m) => m.requiresUserRecording).length;
+    final metadata = <String>[
+      scene.category,
+      if (scene.sceneType.trim().isNotEmpty) scene.sceneType,
+      if (scene.difficulty.trim().isNotEmpty) scene.difficulty,
+    ].join(' · ');
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -884,17 +941,20 @@ class _Take60GuidedRecordScreenState
           const SizedBox(height: 20),
           _DirectorBlock(
             title: scene.title,
-            subtitle: '${scene.category} · ${scene.sceneType}',
+            subtitle: metadata,
           ),
-          _DirectorRow(label: 'Ambiance', value: scene.ambiance),
+          _DirectorRow(
+            label: 'Catégorie / genre / difficulté',
+            value: metadata,
+          ),
           _DirectorRow(label: 'Personnage à jouer', value: scene.characterToPlay),
+          _DirectorRow(label: 'Objectif', value: scene.emotionalObjective),
+          _DirectorRow(label: 'Obstacle', value: scene.mainObstacle),
+          _DirectorRow(label: 'État émotionnel', value: scene.dominantEmotion),
           _DirectorRow(label: 'Contexte', value: scene.context),
+          _DirectorRow(label: 'Ambiance', value: scene.ambiance),
           _DirectorRow(
-            label: 'Objectif émotionnel',
-            value: scene.emotionalObjective,
-          ),
-          _DirectorRow(
-            label: 'Texte imposé',
+            label: 'Texte / dialogue',
             value: scene.dialogueText.isEmpty
                 ? 'Voir les répliques par plan ci-dessous.'
                 : scene.dialogueText,
@@ -961,17 +1021,34 @@ class _Take60GuidedRecordScreenState
               Expanded(
                 flex: 2,
                 child: FilledButton(
-                  onPressed: _startScene,
+                  onPressed: _startAtFirstUserMarker,
                   style: FilledButton.styleFrom(
                     backgroundColor: _accent,
                     foregroundColor: Colors.black,
                     minimumSize: const Size.fromHeight(50),
                   ),
-                  child: const Text('Démarrer la scène'),
+                  child: const Text('Démarrer l’enregistrement'),
                 ),
               ),
             ],
           ),
+          if ((scene.videoUrl?.isNotEmpty ?? false) ||
+              _timeline.any((marker) => (marker.videoUrl?.isNotEmpty ?? false))) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _openAiIntro,
+                icon: const Icon(Icons.play_circle_outline),
+                label: const Text('Voir l’intro IA'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _primaryText(context),
+                  side: BorderSide(color: _softBorder(context)),
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1075,14 +1152,32 @@ class _Take60GuidedRecordScreenState
   Widget _buildPrepCamera(CameraService cameraService) {
     final marker = _currentMarker;
     if (marker == null) return const SizedBox.shrink();
+    final cameraDenied = _cameraInitResult != null && !_cameraInitResult!.isReady;
     return Stack(
       children: [
         Positioned.fill(
-          child: _cameraInitializing
-              ? const _CenteredLoader(label: 'Préparation caméra…')
-              : (cameraService.controller?.value.isInitialized == true
-                  ? CameraPreview(cameraService.controller!)
-                  : const _CenteredLoader(label: 'Caméra non disponible')),
+        child: cameraDenied
+          ? _PermissionStateView(
+            title: 'Caméra et micro requis',
+            message: _cameraPermissionMessage ??
+              'Autorise la caméra et le micro pour continuer.',
+            needsSettings: _cameraInitResult!.needsSettings,
+            onRetry: _enterPrepCamera,
+            onOpenSettings: _cameraInitResult!.needsSettings
+              ? PermissionService().openSettings
+              : null,
+          )
+          : _cameraInitializing
+            ? const _CenteredLoader(label: 'Préparation caméra…')
+            : (cameraService.controller?.value.isInitialized == true
+              ? CameraPreview(cameraService.controller!)
+              : _PermissionStateView(
+                title: 'Caméra non disponible',
+                message:
+                  'La caméra n’a pas pu être initialisée. Réessaie ou vérifie tes autorisations.',
+                needsSettings: false,
+                onRetry: _enterPrepCamera,
+              )),
         ),
         Positioned(
           top: 16,
@@ -1096,7 +1191,7 @@ class _Take60GuidedRecordScreenState
               ),
               const Spacer(),
               IconButton(
-                onPressed: cameraService.isReady
+                onPressed: cameraService.isReady && !cameraDenied
                     ? () => cameraService.toggleFlash()
                     : null,
                 icon: Icon(
@@ -1107,7 +1202,7 @@ class _Take60GuidedRecordScreenState
                 ),
               ),
               IconButton(
-                onPressed: cameraService.isReady
+                onPressed: cameraService.isReady && !cameraDenied
                     ? () => cameraService.flipCamera()
                     : null,
                 icon: const Icon(
@@ -1137,13 +1232,14 @@ class _Take60GuidedRecordScreenState
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: cameraService.isReady ? _startCountdown : null,
+                  onPressed:
+                      cameraService.isReady && !cameraDenied ? _startCountdown : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: _accent,
                     foregroundColor: Colors.black,
                     minimumSize: const Size.fromHeight(54),
                   ),
-                  child: const Text('Enregistrer'),
+                  child: const Text('Démarrer l’enregistrement'),
                 ),
               ],
             ),
@@ -1344,21 +1440,40 @@ class _Take60GuidedRecordScreenState
           ),
           const SizedBox(height: 16),
           if (draft != null)
-            Text(
-              'Durée enregistrée: ${draft.durationSeconds}s',
-              style: GoogleFonts.dmSans(
-                color: _secondaryText(context),
-                fontSize: 13,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Durée enregistrée: ${draft.durationSeconds}s',
+                  style: GoogleFonts.dmSans(
+                    color: _secondaryText(context),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  draft.isUploaded
+                      ? 'Upload Storage prêt pour le montage.'
+                      : 'Upload Storage en attente. Le montage final restera bloqué tant que ce segment n’est pas distant.',
+                  style: GoogleFonts.dmSans(
+                    color: draft.isUploaded ? Colors.green.shade600 : _danger,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           const SizedBox(height: 20),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              Expanded(
+              SizedBox(
+                width: 220,
                 child: OutlinedButton.icon(
                   onPressed: _retakeCurrentPlan,
                   icon: const Icon(Icons.replay),
-                  label: const Text('Rejouer la scène'),
+                  label: const Text('Reprendre'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _primaryText(context),
                     side: BorderSide(color: _softBorder(context)),
@@ -1366,14 +1481,39 @@ class _Take60GuidedRecordScreenState
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              SizedBox(
+                width: 220,
                 child: FilledButton.icon(
                   onPressed: _validateCurrentPlan,
-                  icon: const Icon(Icons.check),
-                  label: const Text('Valider ce plan'),
+                  icon: Icon(
+                    _isPreviewValidated ? Icons.check_circle : Icons.check,
+                  ),
+                  label: Text(
+                    _isPreviewValidated ? 'Prise validée' : 'Valider la prise',
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: _accent,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 260,
+                child: FilledButton.icon(
+                  onPressed: _isLastTimelineMarker
+                      ? (_allRequiredUserSegmentsUploaded ? _renderFinalVideo : null)
+                      : _goToNextSegment,
+                  icon: Icon(
+                    _isLastTimelineMarker ? Icons.auto_fix_high : Icons.skip_next,
+                  ),
+                  label: Text(
+                    _isLastTimelineMarker
+                        ? 'Générer le montage final'
+                        : 'Segment suivant',
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
                     minimumSize: const Size.fromHeight(50),
                   ),
@@ -1556,32 +1696,17 @@ class _Take60GuidedRecordScreenState
               OutlinedButton.icon(
                 onPressed: _saveAsDraft,
                 icon: const Icon(Icons.save_outlined),
-                label: const Text('Enregistrer en brouillon'),
+                label: const Text('Garder en brouillon'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _primaryText(context),
                   side: BorderSide(color: _softBorder(context)),
                 ),
               ),
               FilledButton.icon(
-                onPressed: _videoValidated ? null : _validateVideo,
-                icon: Icon(
-                  _videoValidated ? Icons.check_circle : Icons.check,
-                ),
-                label: Text(
-                  _videoValidated ? 'Vidéo validée' : 'Valider ma vidéo',
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _videoValidated
-                      ? Colors.green.shade600
-                      : Colors.white,
-                  foregroundColor:
-                      _videoValidated ? Colors.white : Colors.black,
-                ),
-              ),
-              FilledButton.icon(
-                onPressed: _videoValidated ? _publish : null,
+                onPressed:
+                    (result?.finalVideoUrl.isNotEmpty ?? false) ? _publish : null,
                 icon: const Icon(Icons.publish),
-                label: const Text('Publier'),
+                label: const Text('Publier mon Take'),
                 style: FilledButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.black,
@@ -1838,6 +1963,93 @@ class _DirectorRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PermissionStateView extends StatelessWidget {
+  const _PermissionStateView({
+    required this.title,
+    required this.message,
+    required this.needsSettings,
+    required this.onRetry,
+    this.onOpenSettings,
+  });
+
+  final String title;
+  final String message;
+  final bool needsSettings;
+  final Future<void> Function() onRetry;
+  final Future<void> Function()? onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = AppThemeTokens.chromeSurface(context);
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              key: const Key('take60_permission_denied_state'),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.dmSans(
+                      color: primaryText,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    style: GoogleFonts.dmSans(
+                      color: secondaryText,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    key: const Key('take60_permission_retry_button'),
+                    onPressed: onRetry,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      backgroundColor: const Color(0xFFFFB800),
+                      foregroundColor: Colors.black,
+                    ),
+                    child: const Text('Réessayer'),
+                  ),
+                  if (needsSettings && onOpenSettings != null) ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      key: const Key('take60_permission_settings_button'),
+                      onPressed: onOpenSettings,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        foregroundColor: primaryText,
+                      ),
+                      child: const Text('Ouvrir les réglages'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
