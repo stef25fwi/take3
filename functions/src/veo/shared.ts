@@ -32,6 +32,8 @@ export interface VertexVeoConfig {
   useMock: boolean;
 }
 
+export type VertexAuthMode = "service_account" | "api_key";
+
 export function db() {
   return getFirestore();
 }
@@ -60,6 +62,10 @@ export function getVertexVeoConfig(): VertexVeoConfig {
     outputBucket,
     useMock,
   };
+}
+
+export function getVertexAuthMode(): VertexAuthMode {
+  return process.env.VEO_AUTH_MODE === "api_key" ? "api_key" : "service_account";
 }
 
 export function buildFirebaseDownloadUrl(bucket: string, objectPath: string): string {
@@ -107,12 +113,12 @@ export function parsePrompt(raw: unknown): string {
   return prompt;
 }
 
-export function parseDurationSeconds(raw: unknown): 15 | 30 {
-  const value = Number(raw ?? 15);
-  if (value !== 15 && value !== 30) {
-    throw new HttpsError("invalid-argument", "durationSeconds doit valoir 15 ou 30.");
+export function parseDurationSeconds(raw: unknown): 4 | 6 | 8 {
+  const value = Number(raw ?? 8);
+  if (value !== 4 && value !== 6 && value !== 8) {
+    throw new HttpsError("invalid-argument", "durationSeconds doit valoir 4, 6 ou 8.");
   }
-  return value as 15 | 30;
+  return value as 4 | 6 | 8;
 }
 
 export function parseAspectRatio(raw: unknown): string {

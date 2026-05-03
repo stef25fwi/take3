@@ -29,10 +29,10 @@ export const startVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
   const aspectRatio = parseAspectRatio(req.data?.aspectRatio);
   const config = getVertexVeoConfig();
   const apiKey = config.useMock ? "" : VEO_API_KEY.value();
-  if (!config.useMock && !apiKey) {
+  if (!config.useMock && process.env.VEO_AUTH_MODE === "api_key" && !apiKey) {
     throw new HttpsError(
       "failed-precondition",
-      "Le secret VEO_API_KEY est requis quand VEO_USE_MOCK=false."
+      "Le secret VEO_API_KEY est requis quand VEO_AUTH_MODE=api_key."
     );
   }
   let startResult;

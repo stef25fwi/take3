@@ -56,7 +56,7 @@ class VeoSceneGenerationService {
   Future<VeoGenerationJob> requestVeoScenePreview({
     required String sceneId,
     required String prompt,
-    int durationSeconds = 15,
+    int durationSeconds = 8,
     String aspectRatio = '16:9',
   }) async {
     try {

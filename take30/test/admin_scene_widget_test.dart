@@ -11,7 +11,7 @@ class _FakeVeoVideoGenerationService implements VeoVideoGenerationService {
   Future<AiGeneratedVideo> generateSceneIntroVideo({
     required String sceneDraftId,
     required String prompt,
-    int durationSeconds = 15,
+    int durationSeconds = 8,
     String aspectRatio = '16:9',
   }) async {
     callCount += 1;
@@ -37,7 +37,7 @@ AiGeneratedVideo _validatedTestVideo({String prompt = 'Prompt VEO validé'}) {
     prompt: prompt,
     videoUrl: 'https://example.com/validated.mp4',
     thumbnailUrl: 'https://example.com/validated.jpg',
-    durationSeconds: 15,
+    durationSeconds: 8,
     aspectRatio: '16:9',
     status: AiIntroVideoStatus.validated,
     generatedAt: now,

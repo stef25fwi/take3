@@ -1,0 +1,1353 @@
+===== AUDIT COMPLET — AJOUT SCENE / TESTER VIDEO IA / VEO =====
+Sun May  3 18:49:32 UTC 2026
+
+===== 1. BRANCHE / STATUS =====
+chore/brand-visible-take30-20260502_030022
+?? audit_veo_tester_video_ia_20260503_184932.txt
+dc1a9a7 chore: sync main
+3d405db chore: sync main
+0f6f67d chore: sync main
+f7eb37f chore: sync main
+1b8962e chore: sync main
+678f54d chore: sync main
+6f3b57e feat: refine entry flow and take60 home ui
+2cc8992 feat: refine entry flow and take60 home ui
+
+===== 2. BOUTON FLUTTER — _generatePreviewVideo =====
+      ],
+    );
+  }
+
+  Future<void> _generatePreviewVideo() async {
+    final timeline = _tryDecodeGuidedTimelineJson(showError: true);
+    if (timeline == null) {
+      _setCurrentStep(2, sectionKey: _timelineSectionKey);
+      return;
+    }
+
+    final prompt = veoPromptCtrl.text.trim();
+
+    if (_useCallableVeoFlow) {
+      final firebaseUser = fa.FirebaseAuth.instance.currentUser;
+
+      if (firebaseUser == null) {
+        const message =
+            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
+        setState(() {
+          _veoGenerationError = message;
+          _veoGenerationStatus = null;
+          _veoStatusValue = 'failed';
+          _isGeneratingPreview = false;
+        });
+        _showAdminMessage(message, backgroundColor: Colors.red.shade700);
+        return;
+      }
+
+      if (firebaseUser.isAnonymous) {
+        const message =
+            'Compte invité non autorisé pour lancer une génération VEO.';
+        setState(() {
+          _veoGenerationError = message;
+          _veoGenerationStatus = null;
+          _veoStatusValue = 'failed';
+          _isGeneratingPreview = false;
+        });
+        _showAdminMessage(message, backgroundColor: Colors.red.shade700);
+        return;
+      }
+
+      await firebaseUser.getIdToken(true);
+    }
+
+    if (prompt.isEmpty) {
+      setState(() {
+        _veoGenerationError = 'Le prompt VEO3 est obligatoire.';
+        _veoGenerationStatus = null;
+        _veoStatusValue = 'failed';
+      });
+      return;
+    }
+
+    setState(() {
+      _veoGenerationError = null;
+      _veoGenerationStatus = 'Statut VEO: queued';
+      _isGeneratingPreview = true;
+      _isVeoPromptLocked = true;
+      _veoStatusValue = 'queued';
+      _veoOperationId = null;
+      if (!_testedPrompts.contains(prompt)) {
+        _testedPrompts = [..._testedPrompts, prompt];
+      }
+    });
+
+    try {
+      if (_useCallableVeoFlow) {
+        final job = await _veoSceneGenerationService.requestVeoScenePreview(
+          sceneId: _sceneDraftId,
+          prompt: prompt,
+          durationSeconds: 15,
+          aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+              ? '16:9'
+              : requestedVideoFormatCtrl.text.trim(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _veoStatusValue = job.status.value;
+          _veoOperationId = job.operationId;
+          _veoGenerationStatus = _statusMessageFor(job.status);
+        });
+
+        if (job.isCompleted && (job.videoUrl?.isNotEmpty ?? false)) {
+          setState(() {
+            _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+            _validatedPreviewVideo = null;
+            _isGeneratingPreview = false;
+            _veoStatusValue = job.status.value;
+            _veoGenerationStatus =
+                'Preview générée. Vérifie le raccord final puis valide la vidéo.';
+          });
+          return;
+        }
+
+        await _pollCallablePreviewGeneration(prompt);
+        return;
+      }
+
+      final generated =
+          await _veoVideoGenerationService.generateSceneIntroVideo(
+        sceneDraftId: _sceneDraftId,
+        prompt: prompt,
+        durationSeconds: 15,
+        aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+            ? '16:9'
+            : requestedVideoFormatCtrl.text.trim(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _generatedPreviewVideo = generated;
+        _validatedPreviewVideo = null;
+        _isGeneratingPreview = false;
+        _veoStatusValue = 'completed';
+        _veoOperationId = null;
+        _veoGenerationStatus =
+            'Preview générée. Vérifie le raccord final puis valide la vidéo.';
+      });
+    } on VeoSceneGenerationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isGeneratingPreview = false;
+        _isVeoPromptLocked = false;
+        _veoStatusValue = 'failed';
+        _veoGenerationStatus = null;
+        _veoGenerationError = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isGeneratingPreview = false;
+        _isVeoPromptLocked = false;
+        _veoStatusValue = 'failed';
+        _veoGenerationStatus = null;
+        _veoGenerationError =
+            'Impossible de générer la preview pour le moment. Réessaie.';
+      });
+    }
+  }
+
+  void _correctVeoPrompt() {
+    setState(() {
+      _isVeoPromptLocked = false;
+      _validatedPreviewVideo = null;
+      _veoGenerationError = null;
+      _veoStatusValue =
+          _generatedPreviewVideo == null ? 'none' : _veoStatusValue;
+      _veoGenerationStatus =
+          'Prompt réactivé. Corrige le texte puis relance une génération.';
+    });
+  }
+
+  Future<void> _validateGeneratedVideo() async {
+    final preview = _generatedPreviewVideo;
+
+===== 3. PRECONDITIONS QUI PEUVENT BLOQUER AVANT BACKEND =====
+1799:              'aspectRatio': aiIntroVideo!.aspectRatio,
+1935:              aspectRatio: aiIntroVideo['aspectRatio'] as String? ?? '16:9',
+3319:  List<dynamic>? _tryDecodeGuidedTimelineJson({required bool showError}) {
+3958:      prompt: job.prompt.isEmpty ? prompt : job.prompt,
+3962:      aspectRatio: job.aspectRatio,
+4224:    final timeline = _tryDecodeGuidedTimelineJson(showError: true);
+5475:    final timeline = _tryDecodeGuidedTimelineJson(showError: true);
+5486:      if (firebaseUser == null) {
+5499:      if (firebaseUser.isAnonymous) {
+5515:    if (prompt.isEmpty) {
+5538:        final job = await _veoSceneGenerationService.requestVeoScenePreview(
+5541:          durationSeconds: 15,
+5542:          aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+5577:        durationSeconds: 15,
+5578:        aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+
+===== 4. SERVICE FLUTTER CALLABLE REGION / FUNCTION =====
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fa;
+
+import '../models/veo_generation_job.dart';
+
+class VeoSceneGenerationException implements Exception {
+  const VeoSceneGenerationException({
+    required this.code,
+    required this.message,
+  });
+
+  final String code;
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class VeoSceneGenerationService {
+  VeoSceneGenerationService({
+    FirebaseFunctions? functions,
+    fa.FirebaseAuth? auth,
+  })  : _functions = functions,
+        _auth = auth;
+
+  final FirebaseFunctions? _functions;
+  final fa.FirebaseAuth? _auth;
+
+  FirebaseFunctions get _resolvedFunctions =>
+      _functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+
+  fa.FirebaseAuth get _resolvedAuth => _auth ?? fa.FirebaseAuth.instance;
+
+  Future<fa.User> _requireFirebaseUserForVeo() async {
+    final user = _resolvedAuth.currentUser;
+
+    if (user == null) {
+      throw const VeoSceneGenerationException(
+        code: 'unauthenticated',
+        message:
+            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.',
+      );
+    }
+
+    if (user.isAnonymous) {
+      throw const VeoSceneGenerationException(
+        code: 'unauthenticated',
+        message: 'Compte invité non autorisé pour lancer une génération VEO.',
+      );
+    }
+
+    await user.getIdToken(true);
+    return user;
+  }
+
+  Future<VeoGenerationJob> requestVeoScenePreview({
+    required String sceneId,
+    required String prompt,
+    int durationSeconds = 15,
+    String aspectRatio = '16:9',
+  }) async {
+    try {
+      await _requireFirebaseUserForVeo();
+
+      final callable =
+          _resolvedFunctions.httpsCallable('startVeoSceneGeneration');
+      final result = await callable.call(<String, dynamic>{
+        'sceneId': sceneId,
+        'prompt': prompt,
+        'durationSeconds': durationSeconds,
+        'aspectRatio': aspectRatio,
+      });
+      return VeoGenerationJob.fromJson(
+        _asMap(result.data),
+        fallbackSceneId: sceneId,
+        fallbackPrompt: prompt,
+        fallbackDurationSeconds: durationSeconds,
+        fallbackAspectRatio: aspectRatio,
+      );
+    } on VeoSceneGenerationException {
+      rethrow;
+    } on FirebaseFunctionsException catch (error) {
+      throw VeoSceneGenerationException(
+        code: error.code,
+        message: _messageForCode(error.code, error.message),
+      );
+    } catch (_) {
+      throw const VeoSceneGenerationException(
+        code: 'unknown',
+        message: 'La génération VEO a échoué pour une raison inconnue.',
+      );
+    }
+  }
+
+  Future<VeoGenerationJob> checkVeoSceneGeneration({
+    required String sceneId,
+  }) async {
+    try {
+      await _requireFirebaseUserForVeo();
+
+      final callable =
+          _resolvedFunctions.httpsCallable('checkVeoSceneGeneration');
+      final result = await callable.call(<String, dynamic>{'sceneId': sceneId});
+      return VeoGenerationJob.fromJson(
+        _asMap(result.data),
+        fallbackSceneId: sceneId,
+      );
+    } on VeoSceneGenerationException {
+      rethrow;
+    } on FirebaseFunctionsException catch (error) {
+      throw VeoSceneGenerationException(
+        code: error.code,
+        message: _messageForCode(error.code, error.message),
+      );
+    } catch (_) {
+      throw const VeoSceneGenerationException(
+        code: 'unknown',
+        message: 'Impossible de vérifier l’état de la génération VEO.',
+      );
+    }
+  }
+
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<dynamic, dynamic>) {
+      return value.map(
+        (key, entry) => MapEntry(key.toString(), entry),
+      );
+    }
+    return const <String, dynamic>{};
+  }
+
+  static String _messageForCode(String code, String? fallback) {
+    final safeFallback = _sanitizeBackendMessage(fallback);
+    switch (code) {
+      case 'unauthenticated':
+        return safeFallback ??
+            'Connexion Firebase requise : connecte-toi avec ton compte admin avant de lancer VEO.';
+      case 'permission-denied':
+        return 'Accès refusé: le rôle admin est requis pour VEO.';
+      case 'unavailable':
+        return safeFallback ??
+            'VEO indisponible : modèle ou endpoint Vertex inaccessible. Vérifie la configuration serveur.';
+      case 'internal':
+        return safeFallback ??
+            'VEO indisponible : modèle ou endpoint Vertex inaccessible. Vérifie la configuration serveur.';
+      case 'deadline-exceeded':
+      case 'timeout':
+        return 'Le backend VEO a dépassé le délai attendu.';
+      case 'unknown':
+        return safeFallback ??
+
+===== 5. SERVICE ADMIN VIDEO GENERATION =====
+import 'dart:async';
+
+import '../models/ai_generated_video.dart';
+import '../../models/veo_generation_job.dart';
+import '../../services/veo_scene_generation_service.dart';
+
+abstract class VeoVideoGenerationService {
+  Future<AiGeneratedVideo> generateSceneIntroVideo({
+    required String sceneDraftId,
+    required String prompt,
+    int durationSeconds = 15,
+    String aspectRatio = '16:9',
+  });
+}
+
+class VeoVideoGenerationServiceFactory {
+  static VeoVideoGenerationService createDefault() {
+    return CloudFunctionsVeoVideoGenerationService();
+  }
+}
+
+class VeoServiceException implements Exception {
+  VeoServiceException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+class CloudFunctionsVeoVideoGenerationService implements VeoVideoGenerationService {
+  CloudFunctionsVeoVideoGenerationService({
+    VeoSceneGenerationService? service,
+    this.pollAttempts = 12,
+    this.pollDelay = const Duration(seconds: 2),
+  }) : _service = service ?? VeoSceneGenerationService();
+
+  final VeoSceneGenerationService _service;
+  final int pollAttempts;
+  final Duration pollDelay;
+
+  @override
+  Future<AiGeneratedVideo> generateSceneIntroVideo({
+    required String sceneDraftId,
+    required String prompt,
+    int durationSeconds = 15,
+    String aspectRatio = '16:9',
+  }) async {
+    try {
+      var job = await _service.requestVeoScenePreview(
+        sceneId: sceneDraftId,
+        prompt: prompt,
+        durationSeconds: durationSeconds,
+        aspectRatio: aspectRatio,
+      );
+
+      for (var attempt = 0; attempt < pollAttempts; attempt++) {
+        if (job.isCompleted) {
+          return _toAiGeneratedVideo(job, prompt, durationSeconds, aspectRatio);
+        }
+        if (job.isFailed) {
+          throw VeoServiceException(
+            job.errorMessage ?? 'Le backend VEO a retourné un échec.',
+          );
+        }
+        await Future<void>.delayed(pollDelay);
+        job = await _service.checkVeoSceneGeneration(sceneId: sceneDraftId);
+      }
+
+      throw VeoServiceException(
+        'La génération VEO prend plus de temps que prévu.',
+      );
+    } on VeoSceneGenerationException catch (error) {
+      throw VeoServiceException(
+        error.message,
+      );
+    }
+  }
+
+  static AiGeneratedVideo _toAiGeneratedVideo(
+    VeoGenerationJob job,
+    String prompt,
+    int durationSeconds,
+    String aspectRatio,
+  ) {
+    final generatedAt = job.updatedAt ?? DateTime.now();
+    return AiGeneratedVideo(
+      provider: 'veo3',
+      prompt: job.prompt.isEmpty ? prompt : job.prompt,
+      videoUrl: job.videoUrl ?? '',
+      thumbnailUrl: job.thumbnailUrl,
+      durationSeconds: job.durationSeconds,
+      aspectRatio: job.aspectRatio.isEmpty ? aspectRatio : job.aspectRatio,
+      status: aiIntroVideoStatusFromString(job.status.value),
+      generatedAt: generatedAt,
+      updatedAt: generatedAt,
+    );
+  }
+}
+
+class MockVeoVideoGenerationService implements VeoVideoGenerationService {
+  const MockVeoVideoGenerationService();
+
+  static const String _mockVideoUrl =
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+  static const String _mockThumbnailUrl =
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80';
+
+  @override
+  Future<AiGeneratedVideo> generateSceneIntroVideo({
+    required String sceneDraftId,
+    required String prompt,
+    int durationSeconds = 15,
+    String aspectRatio = '16:9',
+  }) async {
+    await Future<void>.delayed(const Duration(seconds: 2));
+
+    final now = DateTime.now();
+
+    return AiGeneratedVideo(
+      provider: 'veo3',
+      prompt: prompt,
+      videoUrl: _mockVideoUrl,
+      thumbnailUrl: _mockThumbnailUrl,
+      durationSeconds: durationSeconds,
+      aspectRatio: aspectRatio,
+      status: AiIntroVideoStatus.generated,
+      generatedAt: now,
+      updatedAt: now,
+    );
+
+===== 6. BACKEND VERTEX CLIENT ENDPOINT / JSON PARSE =====
+import * as admin from "firebase-admin";
+
+import { buildFirebaseDownloadUrl, getVertexVeoConfig } from "./shared";
+
+const METADATA_TOKEN_URL =
+  "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token";
+
+interface VertexStartInput {
+  sceneId: string;
+  prompt: string;
+  durationSeconds: 15 | 30;
+  aspectRatio: string;
+}
+
+interface VertexStartResult {
+  operationId: string;
+  status: "queued";
+  provider: "vertex" | "mock";
+}
+
+interface VertexOperationResult {
+  done: boolean;
+  status: "generating" | "completed" | "failed";
+  errorMessage?: string;
+  sourceVideoUri?: string;
+  sourceThumbnailUri?: string;
+}
+
+interface GcsUriParts {
+  bucket: string;
+  objectPath: string;
+}
+
+export interface VertexResponseErrorDetails {
+  httpStatus: number;
+  statusText: string;
+  modelId: string;
+  location: string;
+  endpoint: string;
+  responseContentType: string;
+  responsePreview: string;
+  errorKind: "http_error" | "non_json_response" | "invalid_json_response";
+}
+
+export class VertexResponseError extends Error {
+  constructor(message: string, readonly details: VertexResponseErrorDetails) {
+    super(message);
+    this.name = "VertexResponseError";
+  }
+}
+
+export async function startVertexSceneGeneration(
+  input: VertexStartInput,
+  apiKey: string
+): Promise<VertexStartResult> {
+  const config = getVertexVeoConfig();
+  if (config.useMock) {
+    return {
+      operationId: `mock_${Date.now()}_${input.sceneId}`,
+      status: "queued",
+      provider: "mock",
+    };
+  }
+
+  const endpoint =
+    process.env.VEO_START_ENDPOINT_URL ??
+    `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:predictLongRunning`;
+
+  const response = await callVertexJson(endpoint, {
+    method: "POST",
+    body: JSON.stringify({
+      instances: [
+        {
+          prompt: input.prompt,
+        },
+      ],
+      parameters: {
+        durationSeconds: input.durationSeconds,
+        aspectRatio: input.aspectRatio,
+      },
+    }),
+  }, apiKey);
+
+  const operationId = typeof response.name === "string" ? response.name : "";
+  if (!operationId) {
+    throw new Error(
+      "Vertex AI n'a pas retourne de nom d'operation. Verifie le contrat du modele VEO configure."
+    );
+  }
+
+  return {
+    operationId,
+    status: "queued",
+    provider: "vertex",
+  };
+}
+
+export async function checkVertexSceneOperation(
+  operationId: string,
+  apiKey: string
+): Promise<VertexOperationResult> {
+  const config = getVertexVeoConfig();
+  if (config.useMock) {
+    throw new Error(
+      "Vertex AI n'est pas configure dans cet environnement. Definis GOOGLE_CLOUD_PROJECT, VERTEX_LOCATION, VEO_MODEL ou VEO_MODEL_ID, et VEO_USE_MOCK=false."
+    );
+  }
+
+  const operationPath = operationId.startsWith("projects/")
+    ? operationId
+    : operationId.replace(/^https?:\/\/[^/]+\/v1\//, "");
+  const endpoint = `https://${config.location}-aiplatform.googleapis.com/v1/${operationPath}`;
+  const payload = await callVertexJson(endpoint, { method: "GET" }, apiKey);
+
+  if (payload.error) {
+    return {
+      done: true,
+      status: "failed",
+      errorMessage:
+        payload.error.message ?? "L'operation Vertex AI a retourne une erreur.",
+    };
+  }
+
+  if (!payload.done) {
+    return {
+      done: false,
+      status: "generating",
+    };
+  }
+
+  const sourceVideoUri = findBestUri(payload, [".mp4"], ["video", "uri", "url", "output"]);
+  const sourceThumbnailUri = findBestUri(
+    payload,
+    [".jpg", ".jpeg", ".png", ".webp"],
+    ["thumbnail", "poster", "image", "preview"]
+  );
+
+  if (!sourceVideoUri) {
+    return {
+      done: true,
+
+  }
+
+  await admin
+    .storage()
+    .bucket(source.bucket)
+    .file(source.objectPath)
+    .copy(destinationBucket.file(destinationPath));
+
+  return buildFirebaseDownloadUrl(config.outputBucket, destinationPath);
+}
+
+async function callVertexJson(
+  url: string,
+  init: { method: string; body?: string },
+  apiKey: string
+): Promise<Record<string, any>> {
+  const config = getVertexVeoConfig();
+  // Vertex AI refuses requests that combine an API key with a Bearer token.
+  // Use the API key alone when provided; fall back to ADC Bearer token otherwise.
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (apiKey) {
+    headers["x-goog-api-key"] = apiKey;
+  } else {
+    headers["Authorization"] = `Bearer ${await getAccessToken()}`;
+  }
+
+  const response = await fetch(url, {
+    method: init.method,
+    headers,
+    body: init.body,
+  });
+
+  const responseContentType = response.headers.get("content-type") || "";
+  const rawText = await response.text();
+  const responsePreview = rawText.slice(0, 600);
+  const isJsonResponse = responseContentType.toLowerCase().includes("application/json");
+  let payload: Record<string, any> = {};
+
+  if (isJsonResponse && rawText.trim()) {
+    try {
+      payload = JSON.parse(rawText) as Record<string, any>;
+    } catch (_) {
+      throw new VertexResponseError(
+        "Vertex AI a retourné un JSON invalide.",
+        {
+          httpStatus: response.status,
+          statusText: response.statusText,
+          modelId: config.modelId,
+          location: config.location,
+          endpoint: url,
+          responseContentType,
+          responsePreview,
+          errorKind: "invalid_json_response",
+        }
+      );
+    }
+  }
+
+  if (!response.ok) {
+    if (!isJsonResponse) {
+      throw new VertexResponseError(
+        messageForNonJsonVertexResponse(responsePreview),
+        {
+          httpStatus: response.status,
+          statusText: response.statusText,
+          modelId: config.modelId,
+
+
+  if (!isJsonResponse) {
+    throw new VertexResponseError(
+      messageForNonJsonVertexResponse(responsePreview),
+      {
+        httpStatus: response.status,
+        statusText: response.statusText,
+        modelId: config.modelId,
+        location: config.location,
+        endpoint: url,
+        responseContentType,
+        responsePreview,
+        errorKind: "non_json_response",
+      }
+    );
+  }
+  return payload;
+}
+
+function messageForNonJsonVertexResponse(responsePreview: string): string {
+  const normalized = responsePreview.trim().toLowerCase();
+  if (normalized.startsWith("<!doctype") || normalized.includes("error 404")) {
+    return "Vertex AI a retourné une page HTML au lieu d’un JSON. Vérifie l’endpoint, le modèle VEO, la région et les droits du projet.";
+  }
+  return "Vertex AI a retourné une réponse non JSON. Vérifie l’endpoint, le modèle VEO, la région et les droits du projet.";
+}
+
+export const __vertexClientTestUtils = {
+  callVertexJson,
+  messageForNonJsonVertexResponse,
+};
+
+async function getAccessToken(): Promise<string> {
+  if (process.env.GOOGLE_ACCESS_TOKEN) {
+    return process.env.GOOGLE_ACCESS_TOKEN;
+  }
+
+===== 7. BACKEND START / CHECK FUNCTIONS =====
+import { FieldValue } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
+
+import {
+  db,
+  getVertexVeoConfig,
+  isAdminUid,
+  parseAspectRatio,
+  parseDurationSeconds,
+  parsePrompt,
+  parseSceneId,
+  VEO_API_KEY,
+} from "./shared";
+import { startVertexSceneGeneration, VertexResponseError } from "./vertexClient";
+
+export const startVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
+  const uid = req.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion requise.");
+  }
+  if (!(await isAdminUid(uid))) {
+    throw new HttpsError("permission-denied", "Le rôle admin est requis.");
+  }
+
+  const sceneId = parseSceneId(req.data?.sceneId);
+  const prompt = parsePrompt(req.data?.prompt);
+  const durationSeconds = parseDurationSeconds(req.data?.durationSeconds);
+  const aspectRatio = parseAspectRatio(req.data?.aspectRatio);
+  const config = getVertexVeoConfig();
+  const apiKey = config.useMock ? "" : VEO_API_KEY.value();
+  if (!config.useMock && !apiKey) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Le secret VEO_API_KEY est requis quand VEO_USE_MOCK=false."
+    );
+  }
+  let startResult;
+  try {
+    startResult = await startVertexSceneGeneration({
+      sceneId,
+      prompt,
+      durationSeconds,
+      aspectRatio,
+    }, apiKey);
+  } catch (error) {
+    if (error instanceof VertexResponseError) {
+      logger.error("veoStartFailed", {
+        modelId: error.details.modelId,
+        location: error.details.location,
+        httpStatus: error.details.httpStatus,
+        statusText: error.details.statusText,
+        endpoint: error.details.endpoint,
+        responseContentType: error.details.responseContentType,
+        responsePreview: error.details.responsePreview,
+        errorKind: error.details.errorKind,
+      });
+      throw new HttpsError(
+        "unavailable",
+        "Génération VEO impossible : Vertex AI a retourné une réponse non JSON / endpoint ou modèle inaccessible.",
+        error.details
+      );
+    }
+
+    logger.error("veoStartFailed", {
+      modelId: config.modelId,
+      location: config.location,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new HttpsError(
+      "unavailable",
+      "Génération VEO impossible : Vertex AI est inaccessible ou mal configuré."
+    );
+  }
+
+  await db().doc(`scenes/${sceneId}`).set(
+    {
+      id: sceneId,
+      createdBy: uid,
+      veoPrompt: prompt,
+      veoStatus: "queued",
+      veoOperationId: startResult.operationId,
+      veoError: FieldValue.delete(),
+      durationSeconds,
+      aspectRatio,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  return {
+    ok: true,
+    sceneId,
+    operationId: startResult.operationId,
+    status: startResult.status,
+    prompt,
+    durationSeconds,
+    aspectRatio,
+    vertexLocation: config.location || "TODO_VERTEX_LOCATION",
+    modelId: config.modelId || "TODO_VEO_MODEL_ID",
+    provider: startResult.provider,
+  };
+});
+import { FieldValue } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
+
+import {
+  buildFirebaseDownloadUrl,
+  db,
+  getVertexVeoConfig,
+  isAdminUid,
+  isMockOperationId,
+  MOCK_VEO_THUMBNAIL_URL,
+  MOCK_VEO_VIDEO_URL,
+  parseSceneId,
+  VeoSceneState,
+  VEO_API_KEY,
+} from "./shared";
+import {
+  checkVertexSceneOperation,
+  copyVertexAssetToFirebaseStorage,
+  VertexResponseError,
+} from "./vertexClient";
+
+export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
+  const uid = req.auth?.uid;
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Connexion requise.");
+  }
+  if (!(await isAdminUid(uid))) {
+    throw new HttpsError("permission-denied", "Le rôle admin est requis.");
+  }
+
+  const sceneId = parseSceneId(req.data?.sceneId);
+  const sceneRef = db().doc(`scenes/${sceneId}`);
+  const snap = await sceneRef.get();
+  if (!snap.exists) {
+    throw new HttpsError("not-found", "La scène demandée est introuvable.");
+  }
+
+  const scene = (snap.data() ?? {}) as VeoSceneState;
+  const operationId = scene.veoOperationId ?? null;
+  const currentStatus = scene.veoStatus ?? "none";
+  if (currentStatus === "completed" || currentStatus === "failed") {
+    return {
+      ok: true,
+      sceneId,
+      status: currentStatus,
+      operationId,
+      prompt: scene.veoPrompt ?? "",
+      videoUrl: scene.videoUrl ?? null,
+      thumbnailUrl: scene.thumbnailUrl ?? null,
+      errorMessage: scene.veoError ?? null,
+      durationSeconds: scene.durationSeconds ?? 15,
+      aspectRatio: scene.aspectRatio ?? "16:9",
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  if (!operationId) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Aucune operation VEO n'est associee a cette scene."
+    );
+  }
+
+  const config = getVertexVeoConfig();
+  if (isMockOperationId(operationId) || config.useMock) {
+    const checks = (scene.veoMockChecks ?? 0) + 1;
+    if (checks < 2) {
+      await sceneRef.set(
+        {
+          veoStatus: "generating",
+          veoMockChecks: checks,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return {
+        ok: true,
+        sceneId,
+        status: "generating",
+        operationId,
+        prompt: scene.veoPrompt ?? "",
+        durationSeconds: scene.durationSeconds ?? 15,
+        aspectRatio: scene.aspectRatio ?? "16:9",
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    await sceneRef.set(
+      {
+        veoStatus: "completed",
+        veoMockChecks: checks,
+        videoUrl: scene.videoUrl ?? MOCK_VEO_VIDEO_URL,
+        thumbnailUrl: scene.thumbnailUrl ?? MOCK_VEO_THUMBNAIL_URL,
+        veoError: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    return {
+      ok: true,
+      sceneId,
+      status: "completed",
+      operationId,
+      prompt: scene.veoPrompt ?? "",
+      videoUrl: scene.videoUrl ?? MOCK_VEO_VIDEO_URL,
+      thumbnailUrl: scene.thumbnailUrl ?? MOCK_VEO_THUMBNAIL_URL,
+      durationSeconds: scene.durationSeconds ?? 15,
+      aspectRatio: scene.aspectRatio ?? "16:9",
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  try {
+    const apiKey = VEO_API_KEY.value();
+    if (!apiKey) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Le secret VEO_API_KEY est requis quand VEO_USE_MOCK=false."
+      );
+    }
+
+    const vertexResult = await checkVertexSceneOperation(operationId, apiKey);
+    if (!vertexResult.done) {
+      await sceneRef.set(
+        {
+          veoStatus: "generating",
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return {
+        ok: true,
+        sceneId,
+        status: "generating",
+        operationId,
+        prompt: scene.veoPrompt ?? "",
+        durationSeconds: scene.durationSeconds ?? 15,
+        aspectRatio: scene.aspectRatio ?? "16:9",
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    if (vertexResult.status === "failed") {
+      await sceneRef.set(
+        {
+          veoStatus: "failed",
+          veoError: vertexResult.errorMessage ?? "Erreur Vertex AI inconnue.",
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return {
+        ok: true,
+        sceneId,
+        status: "failed",
+        operationId,
+        prompt: scene.veoPrompt ?? "",
+        errorMessage: vertexResult.errorMessage ?? "Erreur Vertex AI inconnue.",
+        durationSeconds: scene.durationSeconds ?? 15,
+        aspectRatio: scene.aspectRatio ?? "16:9",
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    const ownerId = scene.createdBy ?? uid;
+    const videoPath = `scenes/${ownerId}/${sceneId}.mp4`;
+    const thumbnailPath = `thumbnails/${ownerId}/${sceneId}.jpg`;
+    const videoUrl = await copyVertexAssetToFirebaseStorage(
+      vertexResult.sourceVideoUri!,
+      videoPath
+    );
+    const thumbnailUrl = vertexResult.sourceThumbnailUri
+      ? await copyVertexAssetToFirebaseStorage(
+          vertexResult.sourceThumbnailUri,
+          thumbnailPath
+        )
+      : scene.thumbnailUrl ?? buildFirebaseDownloadUrl(config.outputBucket, thumbnailPath);
+
+    await sceneRef.set(
+      {
+        veoStatus: "completed",
+        videoUrl,
+        thumbnailUrl,
+        veoError: FieldValue.delete(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    return {
+      ok: true,
+      sceneId,
+      status: "completed",
+      operationId,
+      prompt: scene.veoPrompt ?? "",
+      videoUrl,
+      thumbnailUrl,
+      durationSeconds: scene.durationSeconds ?? 15,
+      aspectRatio: scene.aspectRatio ?? "16:9",
+      updatedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    const errorMessage = error instanceof VertexResponseError
+      ? "Génération VEO impossible : Vertex AI a retourné une réponse non JSON / endpoint ou modèle inaccessible."
+      : error instanceof Error
+        ? error.message
+        : "Erreur inconnue pendant la verification Vertex AI.";
+
+    if (error instanceof VertexResponseError) {
+      logger.error("veoCheckFailed", {
+        modelId: error.details.modelId,
+        location: error.details.location,
+        httpStatus: error.details.httpStatus,
+        statusText: error.details.statusText,
+        endpoint: error.details.endpoint,
+        responseContentType: error.details.responseContentType,
+        responsePreview: error.details.responsePreview,
+        errorKind: error.details.errorKind,
+
+===== 8. CONFIG FUNCTIONS DEPLOYEES =====
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "EVENTARC_CLOUD_EVENT_SOURCE": "projects/take30/locations/europe-west1/services/startVeoSceneGeneration",
+      "FIREBASE_CONFIG": "{\"projectId\":\"take30\",\"storageBucket\":\"take30.firebasestorage.app\"}",
+      "FUNCTION_TARGET": "startVeoSceneGeneration",
+      "GCLOUD_PROJECT": "take30",
+      "GOOGLE_GENAI_USE_VERTEXAI": "true",
+      "LOG_EXECUTION_ID": "true",
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_MODEL_ID": "veo-3.1-fast-generate-001",
+      "VEO_OUTPUT_BUCKET": "take30.firebasestorage.app",
+      "VEO_USE_MOCK": "false",
+      "VERTEX_AI_LOCATION": "us-central1",
+      "VERTEX_LOCATION": "us-central1"
+    },
+    "revision": "startveoscenegeneration-00012-riy",
+    "secretEnvironmentVariables": [
+      {
+        "key": "VEO_API_KEY",
+        "projectId": "take30",
+        "secret": "VEO_API_KEY",
+        "version": "1"
+      }
+    ],
+    "serviceAccountEmail": "803573468710-compute@developer.gserviceaccount.com"
+  },
+  "updateTime": "2026-05-03T18:35:59.784782010Z"
+}
+
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "EVENTARC_CLOUD_EVENT_SOURCE": "projects/take30/locations/europe-west1/services/checkVeoSceneGeneration",
+      "FIREBASE_CONFIG": "{\"projectId\":\"take30\",\"storageBucket\":\"take30.firebasestorage.app\"}",
+      "FUNCTION_SIGNATURE_TYPE": "http",
+      "FUNCTION_TARGET": "checkVeoSceneGeneration",
+      "GCLOUD_PROJECT": "take30",
+      "GOOGLE_GENAI_USE_VERTEXAI": "true",
+      "LOG_EXECUTION_ID": "true",
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_MODEL_ID": "veo-3.1-fast-generate-001",
+      "VEO_OUTPUT_BUCKET": "take30.firebasestorage.app",
+      "VEO_USE_MOCK": "false",
+      "VERTEX_AI_LOCATION": "us-central1",
+      "VERTEX_LOCATION": "us-central1"
+    },
+    "revision": "checkveoscenegeneration-00011-cow",
+    "secretEnvironmentVariables": [
+      {
+        "key": "VEO_API_KEY",
+        "projectId": "take30",
+        "secret": "VEO_API_KEY",
+        "version": "1"
+      }
+    ],
+    "serviceAccountEmail": "803573468710-compute@developer.gserviceaccount.com"
+  },
+  "updateTime": "2026-05-03T18:36:00.410911851Z"
+}
+
+{
+  "serviceConfig": {
+    "environmentVariables": {
+      "EVENTARC_CLOUD_EVENT_SOURCE": "projects/take30/locations/europe-west1/services/veoStatus",
+      "FIREBASE_CONFIG": "{\"projectId\":\"take30\",\"storageBucket\":\"take30.firebasestorage.app\"}",
+      "FUNCTION_SIGNATURE_TYPE": "http",
+      "FUNCTION_TARGET": "veoStatus",
+      "GCLOUD_PROJECT": "take30",
+      "GOOGLE_GENAI_USE_VERTEXAI": "true",
+      "LOG_EXECUTION_ID": "true",
+      "VEO_MODEL": "veo-3.1-fast-generate-001",
+      "VEO_MODEL_ID": "veo-3.1-fast-generate-001",
+      "VEO_OUTPUT_BUCKET": "take30.firebasestorage.app",
+      "VEO_USE_MOCK": "false",
+      "VERTEX_AI_LOCATION": "us-central1",
+      "VERTEX_LOCATION": "us-central1"
+    },
+    "revision": "veostatus-00007-tes",
+    "secretEnvironmentVariables": [
+      {
+        "key": "VEO_API_KEY",
+        "projectId": "take30",
+        "secret": "VEO_API_KEY",
+        "version": "1"
+      }
+    ],
+    "serviceAccountEmail": "803573468710-compute@developer.gserviceaccount.com"
+  },
+  "updateTime": "2026-05-03T18:36:00.263442463Z"
+}
+
+===== 9. APIS ACTIVEES =====
+aiplatform.googleapis.com                    Agent Platform API
+bigquerystorage.googleapis.com               BigQuery Storage API
+cloudbuild.googleapis.com                    Cloud Build API
+cloudfunctions.googleapis.com                Cloud Functions API
+firebasestorage.googleapis.com               Cloud Storage for Firebase API
+run.googleapis.com                           Cloud Run Admin API
+secretmanager.googleapis.com                 Secret Manager API
+storage.googleapis.com                       Cloud Storage API
+
+===== 10. IAM SERVICE ACCOUNT FUNCTION =====
+SERVICE_ACCOUNT=803573468710-compute@developer.gserviceaccount.com
+ROLE                          MEMBERS
+roles/editor                  serviceAccount:803573468710-compute@developer.gserviceaccount.com
+roles/eventarc.eventReceiver  serviceAccount:803573468710-compute@developer.gserviceaccount.com
+roles/run.invoker             serviceAccount:803573468710-compute@developer.gserviceaccount.com
+
+===== 11. VEO STATUS HTTP =====
+{
+    "ok": true,
+    "projectId": "take30",
+    "location": "us-central1",
+    "modelId": "veo-3.1-fast-generate-001",
+    "outputBucket": "take30.firebasestorage.app",
+    "useMock": false,
+    "veoApiKeyPresent": true,
+    "missingVars": [],
+    "modelProbe": {
+        "httpStatus": 404,
+        "ok": false,
+        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/take30/locations/us-central1/publishers/google/models/veo-3.1-fast-generate-001",
+        "responseContentType": "text/html; charset=UTF-8",
+        "responsePreview": "<!DOCTYPE html>\n<html lang=en>\n  <meta charset=utf-8>\n  <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n  <title>Error 404 (Not Found)!!1</title>\n  <style>\n    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width",
+        "errorKind": "non_json_or_model_not_found",
+        "recommendation": "V\u00e9rifier acc\u00e8s Vertex AI/VEO, r\u00e9gion, endpoint et mod\u00e8le."
+    }
+}
+
+===== 12. LOGS START VEO — 60 MIN =====
+TIMESTAMP                    SEVERITY  TEXT_PAYLOAD                                                                                                                                                                                   MESSAGE                               HTTP_STATUS  ERROR_KIND  MODEL_ID  LOCATION  RESPONSE_CONTENT_TYPE
+2026-05-03T18:45:06.254746Z  INFO                                                                                                                                                                                                     isAdminUid
+2026-05-03T18:45:04.648898Z  DEBUG                                                                                                                                                                                                    Callable request verification passed
+2026-05-03T18:45:04.520708Z  INFO
+2026-05-03T18:45:04.317390Z  INFO
+2026-05-03T18:35:59.602507Z  INFO
+2026-05-03T18:35:58.248263Z  INFO
+2026-05-03T18:35:58.166267Z  INFO      Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-03T18:35:56.309831Z  INFO      Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-05-03T18:35:46.399804Z  NOTICE
+2026-05-03T18:34:51.716828Z  NOTICE
+2026-05-03T18:29:03.338252Z  INFO                                                                                                                                                                                                     isAdminUid
+2026-05-03T18:29:02.565019Z  DEBUG                                                                                                                                                                                                    Callable request verification passed
+2026-05-03T18:29:02.556457Z  INFO
+2026-05-03T18:29:02.370806Z  INFO
+2026-05-03T18:21:24.245030Z  INFO                                                                                                                                                                                                     isAdminUid
+2026-05-03T18:21:22.877312Z  DEBUG                                                                                                                                                                                                    Callable request verification passed
+2026-05-03T18:21:22.771685Z  INFO
+2026-05-03T18:21:22.523579Z  INFO      Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-03T18:21:21.351559Z  INFO      Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-05-03T18:21:21.302204Z  INFO
+
+===== 13. LOGS CHECK VEO — 60 MIN =====
+TIMESTAMP                    SEVERITY  TEXT_PAYLOAD                                                                                                                                                                                   MESSAGE                                                                                       HTTP_STATUS  ERROR_KIND         MODEL_ID                   LOCATION     RESPONSE_CONTENT_TYPE
+2026-05-03T18:45:12.746763Z  ERROR                                                                                                                                                                                                    Error: veoCheckFailed                                                                         404          non_json_response  veo-3.1-fast-generate-001  us-central1  text/html; charset=UTF-8
+                                                                                                                                                                                                                                          at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)
+                                                                                                                                                                                                                                          at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)
+                                                                                                                                                                                                                                          at /workspace/lib/veo/checkVeoSceneGeneration.js:159:25
+                                                                                                                                                                                                                                          at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+                                                                                                                                                                                                                                          at async /workspace/node_modules/firebase-functions/lib/common/providers/https.js:467:26
+2026-05-03T18:45:11.860264Z  INFO                                                                                                                                                                                                     isAdminUid
+2026-05-03T18:45:10.299815Z  DEBUG                                                                                                                                                                                                    Callable request verification passed
+2026-05-03T18:45:10.135958Z  INFO
+2026-05-03T18:45:09.935372Z  INFO
+2026-05-03T18:36:00.255718Z  INFO
+2026-05-03T18:35:56.651217Z  INFO
+2026-05-03T18:35:56.558914Z  INFO      Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-03T18:35:54.829827Z  INFO      Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+2026-05-03T18:35:50.531523Z  NOTICE
+2026-05-03T18:35:49.305441Z  NOTICE
+2026-05-03T18:29:08.325509Z  INFO                                                                                                                                                                                                     isAdminUid
+2026-05-03T18:29:07.616974Z  DEBUG                                                                                                                                                                                                    Callable request verification passed
+2026-05-03T18:29:07.609949Z  INFO
+2026-05-03T18:29:07.435091Z  INFO
+2026-05-03T18:21:30.466269Z  INFO                                                                                                                                                                                                     isAdminUid
+2026-05-03T18:21:29.359533Z  DEBUG                                                                                                                                                                                                    Callable request verification passed
+2026-05-03T18:21:29.265093Z  INFO
+2026-05-03T18:21:29.062137Z  INFO      Default STARTUP TCP probe succeeded after 1 attempt for container "worker" on port 8080.
+2026-05-03T18:21:28.084964Z  INFO      Starting new instance. Reason: AUTOSCALING - Instance started due to configured scaling factors (e.g. CPU utilization, request throughput, etc.) or no existing capacity for current traffic.
+2026-05-03T18:21:28.053920Z  INFO
+
+===== 14. TEST ENDPOINT MODEL AVEC TOKEN GCLOUD — NON GENERATIF =====
+--- HEADERS ---
+HTTP/2 404 
+date: Sun, 03 May 2026 18:49:50 GMT
+content-type: text/html; charset=UTF-8
+server: ESF
+content-length: 1652
+x-xss-protection: 0
+x-frame-options: SAMEORIGIN
+x-content-type-options: nosniff
+alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+
+--- BODY PREVIEW ---
+<!DOCTYPE html>
+<html lang=en>
+  <meta charset=utf-8>
+  <meta name=viewport content="initial-scale=1, minimum-scale=1, width=device-width">
+  <title>Error 404 (Not Found)!!1</title>
+  <style>
+    *{margin:0;padding:0}html,code{font:15px/22px arial,sans-serif}html{background:#fff;color:#222;padding:15px}body{margin:7% auto 0;max-width:390px;min-height:180px;padding:30px 0 15px}* > body{background:url(//www.google.com/images/errors/robot.png) 100% 5px no-repeat;padding-right:205px}p{margin:11px 0 22px;overflow:hidden}ins{color:#777;text-decoration:none}a img{border:0}@media screen and (max-width:772px){body{background:none;margin-top:0;max-width:none;padding-right:0}}#logo{background:url(//www.google.com/images/branding/googlelogo/1x/googlelogo_color_150x54dp.png) no-repeat;margin-left:-5px}@media only screen and (min-resolution:192dpi){#logo{background:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) no-repeat 0% 0%/100% 100%;-moz-border-image:url(//www.google.com/images/branding/googlelogo/2x/googlelogo_color_150x54dp.png) 0}}@media only screen and (-webkit-min-device-pixel-ratio:2){#logo{background:url(//www.google.com/images/branding/googlelogo/2x
+
+===== 15. BUILD FUNCTIONS =====
+
+> take30-functions@1.0.0 build
+> tsc
+
+
+===== 16. FLUTTER ANALYZE =====
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.69 available)
+  app_links 6.4.1 (7.0.0 available)
+  camera 0.10.6 (0.12.0+1 available)
+  camera_avfoundation 0.9.23+2 (0.10.1 available)
+  camera_platform_interface 2.12.0 (2.13.0 available)
+  cloud_firestore 5.6.12 (6.3.0 available)
+  cloud_firestore_platform_interface 6.6.12 (7.2.0 available)
+  cloud_firestore_web 4.4.12 (5.3.0 available)
+  cloud_functions 5.6.2 (6.2.0 available)
+  cloud_functions_platform_interface 5.8.2 (5.8.12 available)
+  cloud_functions_web 4.11.5 (5.1.5 available)
+  connectivity_plus 6.1.5 (7.1.1 available)
+  device_info_plus 10.1.2 (13.1.0 available)
+  device_info_plus_platform_interface 7.0.3 (8.1.0 available)
+  firebase_app_check 0.3.2+10 (0.4.3 available)
+  firebase_app_check_platform_interface 0.1.1+10 (0.3.0 available)
+  firebase_app_check_web 0.2.0+14 (0.2.4 available)
+  firebase_auth 5.7.0 (6.4.0 available)
+  firebase_auth_platform_interface 7.7.3 (8.1.9 available)
+  firebase_auth_web 5.15.3 (6.1.5 available)
+  firebase_core 3.15.2 (4.7.0 available)
+  firebase_core_web 2.24.1 (3.6.0 available)
+  firebase_messaging 15.2.10 (16.2.0 available)
+  firebase_messaging_platform_interface 4.6.10 (4.7.9 available)
+  firebase_messaging_web 3.10.10 (4.1.5 available)
+  firebase_remote_config 5.5.0 (6.4.0 available)
+  firebase_remote_config_platform_interface 2.0.0 (2.1.2 available)
+  firebase_remote_config_web 1.8.9 (1.10.6 available)
+  firebase_storage 12.4.10 (13.3.0 available)
+  firebase_storage_platform_interface 5.2.10 (5.2.20 available)
+  firebase_storage_web 3.10.17 (3.11.5 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  flutter_local_notifications 17.2.4 (21.0.0 available)
+  flutter_local_notifications_linux 4.0.1 (8.0.0 available)
+  flutter_local_notifications_platform_interface 7.2.0 (11.0.0 available)
+  flutter_riverpod 2.6.1 (3.3.1 available)
+  geocoding 3.0.0 (4.0.0 available)
+  geocoding_android 3.3.1 (5.0.1 available)
+  geocoding_platform_interface 3.2.0 (5.0.0 available)
+  geolocator 13.0.4 (14.0.2 available)
+  geolocator_android 4.6.2 (5.0.2 available)
+  go_router 14.8.1 (17.2.3 available)
+  google_fonts 6.3.3 (8.1.0 available)
+  google_sign_in 6.3.0 (7.2.0 available)
+  google_sign_in_android 6.2.1 (7.2.10 available)
+  google_sign_in_ios 5.9.0 (6.3.0 available)
+  google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+  google_sign_in_web 0.12.4+4 (1.1.3 available)
+  hooks 1.0.2 (1.0.3 available)
+  image_picker 1.2.1 (1.2.2 available)
+  image_picker_android 0.8.13+16 (0.8.13+17 available)
+  intl 0.19.0 (0.20.2 available)
+  lints 4.0.0 (6.1.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.17.0 (1.18.2 available)
+  mime 1.0.6 (2.0.0 available)
+  native_toolchain_c 0.17.6 (0.18.0 available)
+  riverpod 2.6.1 (3.2.1 available)
+  share_plus 12.0.2 (13.1.0 available)
+  share_plus_platform_interface 6.1.0 (7.1.0 available)
+  sign_in_with_apple 6.1.4 (7.0.1 available)
+  sign_in_with_apple_platform_interface 1.1.0 (2.0.0 available)
+  sign_in_with_apple_web 2.1.1 (3.0.0 available)
+  test_api 0.7.10 (0.7.12 available)
+  timezone 0.9.4 (0.11.0 available)
+  vector_graphics 1.1.21 (1.2.0 available)
+  vector_math 2.2.0 (2.3.0 available)
+  vibration 2.1.0 (3.1.8 available)
+  vibration_platform_interface 0.0.3 (0.1.2 available)
+  video_player_platform_interface 6.6.0 (6.7.0 available)
+  vm_service 15.0.2 (15.2.0 available)
+  win32 5.15.0 (6.1.0 available)
+  win32_registry 1.1.5 (3.0.3 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+74 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing take30...                                             
+No issues found! (ran in 7.3s)
+
+===== 17. CONCLUSION AUTOMATIQUE =====
+- Si logs Cloud vides après clic : le front bloque avant callable ou la version web n’est pas celle déployée.
+- Si logs avec non_json_response / 404 : endpoint Vertex, modèle, région, IAM ou auth à corriger.
+- Si durationSeconds: 15 est présent : corriger en 8 pour Veo 3.1 Fast.
+- Si VEO_API_KEY force x-goog-api-key sur aiplatform : tester un mode OAuth/Bearer via service account.

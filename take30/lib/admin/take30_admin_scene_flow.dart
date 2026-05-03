@@ -30,7 +30,7 @@ const _kAdminPassword = String.fromEnvironment(
 );
 
 const _kDefaultVeoPrompt =
-    'Video cinematique realiste de 15 secondes, format 16:9, ambiance de court-metrage dramatique. '
+    'Video cinematique realiste de 8 secondes, format 16:9, ambiance de court-metrage dramatique. '
     'Plan large au debut sur une rue calme en fin d\'apres-midi, lumiere doree, atmosphere legerement tendue. '
     'La camera avance lentement en travelling vers l\'entree d\'un petit batiment, profondeur de champ cinematographique, '
     'rendu realiste, mouvement fluide, couleurs naturelles, style film independant. '
@@ -50,7 +50,7 @@ Drame / Thriller
 TEXTE / DIALOGUE ACTEUR
 Je n'ai rien vu, lieutenant. Vous voulez que je dise quoi exactement ?
 
-PROMPT VEO POUR LA VIDÉO IA D’INTRO 15 SECONDES
+PROMPT VEO POUR LA VIDÉO IA D’INTRO 8 SECONDES
 Plan large d'une salle d'interrogatoire sobre, néons froids, caméra lente qui glisse vers la table métallique, tension policière réaliste, fin sur une chaise vide prête à accueillir le suspect.
 
 TIMELINE TAKE60 GUIDÉE JSON
@@ -201,6 +201,10 @@ const _kPromptImportVeoPromptHeadings = <String>[
   'prompt veo pour la video ia d\'intro 15 secondes',
   'prompt veo pour la vidéo ia d intro 15 secondes',
   'prompt veo pour la vidéo ia d\'intro 15 secondes',
+  'prompt veo pour la video ia d intro 8 secondes',
+  'prompt veo pour la video ia d\'intro 8 secondes',
+  'prompt veo pour la vidéo ia d intro 8 secondes',
+  'prompt veo pour la vidéo ia d\'intro 8 secondes',
 ];
 const _kPromptImportVeoPromptFrenchHeadings = <String>[
   'prompt veo version francaise',
@@ -1575,7 +1579,7 @@ class SceneFormData {
 
   String get thumbnailUrl => aiIntroVideo?.thumbnailUrl ?? '';
 
-  int get aiDurationSeconds => aiIntroVideo?.durationSeconds ?? 15;
+  int get aiDurationSeconds => aiIntroVideo?.durationSeconds ?? 8;
 
   bool get hasValidatedAiVideo => aiIntroVideo?.isValidated ?? false;
 
@@ -1931,7 +1935,7 @@ class SceneFormData {
               videoUrl: aiIntroVideo['videoUrl'] as String? ?? '',
               thumbnailUrl: aiIntroVideo['thumbnailUrl'] as String?,
               durationSeconds:
-                  (aiIntroVideo['durationSeconds'] as num?)?.toInt() ?? 15,
+                  (aiIntroVideo['durationSeconds'] as num?)?.toInt() ?? 8,
               aspectRatio: aiIntroVideo['aspectRatio'] as String? ?? '16:9',
               status: aiIntroVideoStatusFromString(
                 aiIntroVideo['status'] as String?,
@@ -4604,7 +4608,7 @@ class _AddScenePageState extends State<AddScenePage> {
                           'Crée une introduction vidéo qui installe l’ambiance avant la prise utilisateur.',
                       children: [
                         const Text(
-                          'Rédigez ici le prompt qui servira à générer une vidéo cinématique d’environ 15 secondes. Cette vidéo doit préparer l’ambiance émotionnelle de la scène sans voler la place de l’acteur. Elle doit idéalement se terminer sur un cadrage permettant un raccord naturel avec la scène jouée.',
+                          'Rédigez ici le prompt qui servira à générer une vidéo cinématique d’environ 8 secondes. Cette vidéo doit préparer l’ambiance émotionnelle de la scène sans voler la place de l’acteur. Elle doit idéalement se terminer sur un cadrage permettant un raccord naturel avec la scène jouée.',
                           style:
                               TextStyle(height: 1.5, color: Color(0xFF4B5563)),
                         ),
@@ -4712,7 +4716,7 @@ class _AddScenePageState extends State<AddScenePage> {
                               if (_isVeoHelpExpanded) ...[
                                 const SizedBox(height: 10),
                                 const Text(
-                                    '• Durée recommandée : environ 15 secondes.'),
+                                    '• Durée recommandée : 8 secondes pour le test VEO 3.1 Fast.'),
                                 const Text('• Format recommandé : 16:9.'),
                                 const Text(
                                     '• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
@@ -5538,7 +5542,7 @@ class _AddScenePageState extends State<AddScenePage> {
         final job = await _veoSceneGenerationService.requestVeoScenePreview(
           sceneId: _sceneDraftId,
           prompt: prompt,
-          durationSeconds: 15,
+          durationSeconds: 8,
           aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
               ? '16:9'
               : requestedVideoFormatCtrl.text.trim(),
@@ -5574,7 +5578,7 @@ class _AddScenePageState extends State<AddScenePage> {
           await _veoVideoGenerationService.generateSceneIntroVideo(
         sceneDraftId: _sceneDraftId,
         prompt: prompt,
-        durationSeconds: 15,
+        durationSeconds: 8,
         aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
             ? '16:9'
             : requestedVideoFormatCtrl.text.trim(),

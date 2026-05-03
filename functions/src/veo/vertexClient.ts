@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/v2";
 
-import { buildFirebaseDownloadUrl, getVertexVeoConfig } from "./shared";
+import { buildFirebaseDownloadUrl, getVertexAuthMode, getVertexVeoConfig } from "./shared";
 
 const METADATA_TOKEN_URL =
   "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token";
@@ -8,7 +9,7 @@ const METADATA_TOKEN_URL =
 interface VertexStartInput {
   sceneId: string;
   prompt: string;
-  durationSeconds: 15 | 30;
+  durationSeconds: number;
   aspectRatio: string;
 }
 
@@ -66,6 +67,15 @@ export async function startVertexSceneGeneration(
     process.env.VEO_START_ENDPOINT_URL ??
     `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:predictLongRunning`;
 
+  logger.info("veoStartVertexRequest", {
+    endpoint,
+    authMode: getVertexAuthMode(),
+    durationSeconds: input.durationSeconds,
+    aspectRatio: input.aspectRatio,
+    modelId: config.modelId,
+    location: config.location,
+  });
+
   const response = await callVertexJson(endpoint, {
     method: "POST",
     body: JSON.stringify({
@@ -75,6 +85,8 @@ export async function startVertexSceneGeneration(
         },
       ],
       parameters: {
+        storageUri: `gs://${config.outputBucket}/veo/${input.sceneId}/`,
+        sampleCount: 1,
         durationSeconds: input.durationSeconds,
         aspectRatio: input.aspectRatio,
       },
@@ -106,11 +118,24 @@ export async function checkVertexSceneOperation(
     );
   }
 
-  const operationPath = operationId.startsWith("projects/")
+  const operationName = operationId.startsWith("projects/")
     ? operationId
     : operationId.replace(/^https?:\/\/[^/]+\/v1\//, "");
-  const endpoint = `https://${config.location}-aiplatform.googleapis.com/v1/${operationPath}`;
-  const payload = await callVertexJson(endpoint, { method: "GET" }, apiKey);
+  const endpoint =
+    `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}:fetchPredictOperation`;
+
+  logger.info("veoCheckVertexRequest", {
+    endpoint,
+    operationName,
+    authMode: getVertexAuthMode(),
+    modelId: config.modelId,
+    location: config.location,
+  });
+
+  const payload = await callVertexJson(endpoint, {
+    method: "POST",
+    body: JSON.stringify({ operationName }),
+  }, apiKey);
 
   if (payload.error) {
     return {
@@ -184,10 +209,11 @@ async function callVertexJson(
   apiKey: string
 ): Promise<Record<string, any>> {
   const config = getVertexVeoConfig();
+  const authMode = getVertexAuthMode();
   // Vertex AI refuses requests that combine an API key with a Bearer token.
-  // Use the API key alone when provided; fall back to ADC Bearer token otherwise.
+  // Default to service account OAuth for Vertex AI; only use API key explicitly.
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (apiKey) {
+  if (authMode === "api_key" && apiKey) {
     headers["x-goog-api-key"] = apiKey;
   } else {
     headers["Authorization"] = `Bearer ${await getAccessToken()}`;

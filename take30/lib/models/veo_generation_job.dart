@@ -68,7 +68,7 @@ class VeoGenerationJob {
     this.thumbnailUrl,
     this.errorMessage,
     this.updatedAt,
-    this.durationSeconds = 15,
+    this.durationSeconds = 8,
     this.aspectRatio = '16:9',
   });
 
@@ -90,7 +90,7 @@ class VeoGenerationJob {
     Map<String, dynamic> json, {
     String? fallbackSceneId,
     String? fallbackPrompt,
-    int fallbackDurationSeconds = 15,
+    int fallbackDurationSeconds = 8,
     String fallbackAspectRatio = '16:9',
   }) {
     return VeoGenerationJob(

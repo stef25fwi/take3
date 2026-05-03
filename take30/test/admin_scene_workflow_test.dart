@@ -41,7 +41,7 @@ void main() {
 
       expect(result.provider, 'veo3');
       expect(result.prompt, contains('Camera travelling'));
-      expect(result.durationSeconds, 15);
+      expect(result.durationSeconds, 8);
       expect(result.aspectRatio, '16:9');
       expect(result.status, AiIntroVideoStatus.generated);
       expect(result.videoUrl, isNotEmpty);

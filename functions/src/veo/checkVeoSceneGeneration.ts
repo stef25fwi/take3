@@ -49,7 +49,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
       videoUrl: scene.videoUrl ?? null,
       thumbnailUrl: scene.thumbnailUrl ?? null,
       errorMessage: scene.veoError ?? null,
-      durationSeconds: scene.durationSeconds ?? 15,
+      durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
       updatedAt: new Date().toISOString(),
     };
@@ -80,7 +80,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
         status: "generating",
         operationId,
         prompt: scene.veoPrompt ?? "",
-        durationSeconds: scene.durationSeconds ?? 15,
+        durationSeconds: scene.durationSeconds ?? 8,
         aspectRatio: scene.aspectRatio ?? "16:9",
         updatedAt: new Date().toISOString(),
       };
@@ -106,7 +106,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
       prompt: scene.veoPrompt ?? "",
       videoUrl: scene.videoUrl ?? MOCK_VEO_VIDEO_URL,
       thumbnailUrl: scene.thumbnailUrl ?? MOCK_VEO_THUMBNAIL_URL,
-      durationSeconds: scene.durationSeconds ?? 15,
+      durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
       updatedAt: new Date().toISOString(),
     };
@@ -114,10 +114,10 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
 
   try {
     const apiKey = VEO_API_KEY.value();
-    if (!apiKey) {
+    if (process.env.VEO_AUTH_MODE === "api_key" && !apiKey) {
       throw new HttpsError(
         "failed-precondition",
-        "Le secret VEO_API_KEY est requis quand VEO_USE_MOCK=false."
+        "Le secret VEO_API_KEY est requis quand VEO_AUTH_MODE=api_key."
       );
     }
 
@@ -136,7 +136,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
         status: "generating",
         operationId,
         prompt: scene.veoPrompt ?? "",
-        durationSeconds: scene.durationSeconds ?? 15,
+        durationSeconds: scene.durationSeconds ?? 8,
         aspectRatio: scene.aspectRatio ?? "16:9",
         updatedAt: new Date().toISOString(),
       };
@@ -158,7 +158,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
         operationId,
         prompt: scene.veoPrompt ?? "",
         errorMessage: vertexResult.errorMessage ?? "Erreur Vertex AI inconnue.",
-        durationSeconds: scene.durationSeconds ?? 15,
+        durationSeconds: scene.durationSeconds ?? 8,
         aspectRatio: scene.aspectRatio ?? "16:9",
         updatedAt: new Date().toISOString(),
       };
@@ -197,7 +197,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
       prompt: scene.veoPrompt ?? "",
       videoUrl,
       thumbnailUrl,
-      durationSeconds: scene.durationSeconds ?? 15,
+      durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
       updatedAt: new Date().toISOString(),
     };
@@ -236,7 +236,7 @@ export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: tr
       operationId,
       prompt: scene.veoPrompt ?? "",
       errorMessage,
-      durationSeconds: scene.durationSeconds ?? 15,
+      durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
       updatedAt: new Date().toISOString(),
     };

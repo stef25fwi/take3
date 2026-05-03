@@ -8,7 +8,7 @@ abstract class VeoVideoGenerationService {
   Future<AiGeneratedVideo> generateSceneIntroVideo({
     required String sceneDraftId,
     required String prompt,
-    int durationSeconds = 15,
+    int durationSeconds = 8,
     String aspectRatio = '16:9',
   });
 }
@@ -43,7 +43,7 @@ class CloudFunctionsVeoVideoGenerationService implements VeoVideoGenerationServi
   Future<AiGeneratedVideo> generateSceneIntroVideo({
     required String sceneDraftId,
     required String prompt,
-    int durationSeconds = 15,
+    int durationSeconds = 8,
     String aspectRatio = '16:9',
   }) async {
     try {
@@ -110,7 +110,7 @@ class MockVeoVideoGenerationService implements VeoVideoGenerationService {
   Future<AiGeneratedVideo> generateSceneIntroVideo({
     required String sceneDraftId,
     required String prompt,
-    int durationSeconds = 15,
+    int durationSeconds = 8,
     String aspectRatio = '16:9',
   }) async {
     await Future<void>.delayed(const Duration(seconds: 2));

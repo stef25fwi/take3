@@ -108,7 +108,7 @@ class AiGeneratedVideo {
       prompt: json['prompt'] as String? ?? '',
       videoUrl: json['videoUrl'] as String? ?? '',
       thumbnailUrl: json['thumbnailUrl'] as String?,
-      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 15,
+      durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 8,
       aspectRatio: json['aspectRatio'] as String? ?? '16:9',
       status: aiIntroVideoStatusFromString(json['status'] as String?),
       generatedAt: DateTime.tryParse(json['generatedAt'] as String? ?? '') ??

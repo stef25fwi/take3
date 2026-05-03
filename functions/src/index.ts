@@ -420,7 +420,7 @@ export { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
 // veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)
 //   GET /veoStatus?token=<DIAG_TOKEN>
 // ═══════════════════════════════════════════════════════════════════════════
-import { getVertexVeoConfig, VEO_API_KEY } from "./veo/shared";
+import { getVertexAuthMode, getVertexVeoConfig, VEO_API_KEY } from "./veo/shared";
 
 export const veoStatus = onRequest(
   { secrets: [VEO_API_KEY], cors: true, invoker: "public", region: "europe-west1" },
@@ -435,13 +435,19 @@ export const veoStatus = onRequest(
       try { return VEO_API_KEY.value() ?? ""; } catch { return ""; }
     })();
     const apiKeyPresent = Boolean(apiKey);
+    const authMode = getVertexAuthMode();
 
-    // Live probe: GET the model resource to verify project access
-    let modelProbe: Record<string, unknown> = { skipped: true };
+    // Non-blocking diagnostic probe. A GET on the model resource can return HTML 404
+    // even when predictLongRunning/fetchPredictOperation are the relevant VEO endpoints.
+    let modelProbe: Record<string, unknown> = {
+      skipped: true,
+      nonBlocking: true,
+      note: "Probe indicatif uniquement; ne prouve pas l’échec du flow predictLongRunning/fetchPredictOperation.",
+    };
     if (!config.useMock && config.projectId && config.location && config.modelId) {
       const modelUrl = `https://${config.location}-aiplatform.googleapis.com/v1/projects/${config.projectId}/locations/${config.location}/publishers/google/models/${config.modelId}`;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (apiKey) {
+      if (authMode === "api_key" && apiKey) {
         headers["x-goog-api-key"] = apiKey;
       } else {
         try {
@@ -475,22 +481,24 @@ export const veoStatus = onRequest(
         modelProbe = {
           httpStatus: probeRes.status,
           ok: probeRes.ok && !errorKind,
+          nonBlocking: true,
           url: modelUrl,
           responseContentType,
           responsePreview,
           ...(body ? { body } : {}),
           ...(errorKind ? { errorKind } : {}),
           ...(!probeRes.ok || errorKind ? {
-            recommendation: "Vérifier accès Vertex AI/VEO, région, endpoint et modèle.",
+            recommendation: "Probe non bloquant. Vérifier surtout predictLongRunning/fetchPredictOperation, région, modèle, IAM et auth service account.",
           } : {}),
         };
       } catch (err: unknown) {
         modelProbe = {
           ok: false,
+          nonBlocking: true,
           errorKind: "non_json_or_model_not_found",
           error: String(err),
           url: modelUrl,
-          recommendation: "Vérifier accès Vertex AI/VEO, région, endpoint et modèle.",
+          recommendation: "Probe non bloquant. Vérifier surtout predictLongRunning/fetchPredictOperation, région, modèle, IAM et auth service account.",
         };
       }
     }
@@ -501,13 +509,15 @@ export const veoStatus = onRequest(
       location: config.location || null,
       modelId: config.modelId || null,
       outputBucket: config.outputBucket,
+      authMode,
+      configOk: Boolean(config.projectId && config.location && config.modelId && config.outputBucket),
       useMock: config.useMock,
       veoApiKeyPresent: apiKeyPresent,
       missingVars: [
         !config.projectId && "GOOGLE_CLOUD_PROJECT",
         !config.location && "VERTEX_LOCATION",
         !config.modelId && "VEO_MODEL ou VEO_MODEL_ID",
-        !apiKeyPresent && "VEO_API_KEY (secret)",
+        authMode === "api_key" && !apiKeyPresent && "VEO_API_KEY (secret)",
       ].filter(Boolean),
       modelProbe,
     });
