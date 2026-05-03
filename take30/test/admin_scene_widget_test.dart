@@ -45,6 +45,15 @@ AiGeneratedVideo _validatedTestVideo({String prompt = 'Prompt VEO validé'}) {
   );
 }
 
+Future<void> _goToAdminStep(
+  WidgetTester tester,
+  int step,
+  String title,
+) async {
+  await tester.tap(find.text('$step. $title').first);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets(
     'step 15 generates then validates intro video and reveals detailed preview',
@@ -63,6 +72,8 @@ void main() {
         ),
       );
 
+      await _goToAdminStep(tester, 3, 'Enrichissements avancés');
+
       await tester.scrollUntilVisible(
         find.text('15) Vidéo IA d’introduction'),
         600,
@@ -71,15 +82,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Prompt VEO3'), findsWidgets);
-      expect(find.text('Valider et générer la preview'), findsOneWidget);
+      expect(find.text('Tester la vidéo IA'), findsOneWidget);
 
       await tester.scrollUntilVisible(
-        find.text('Valider et générer la preview'),
+        find.text('Tester la vidéo IA'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Valider et générer la preview'));
+      await tester.tap(find.text('Tester la vidéo IA'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 3));
 
@@ -88,16 +99,17 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Corriger le prompt'), findsOneWidget);
-      expect(find.text('Valider cette vidéo'), findsOneWidget);
+      expect(find.text('Utiliser cette vidéo pour la scène'), findsOneWidget);
 
       await tester.scrollUntilVisible(
-        find.text('Valider cette vidéo'),
+        find.text('Utiliser cette vidéo pour la scène'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump(const Duration(milliseconds: 200));
-      await tester.tap(find.text('Valider cette vidéo'));
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Utiliser cette vidéo pour la scène'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Vidéo validée'), findsOneWidget);
       expect(
@@ -137,6 +149,8 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+
+      await _goToAdminStep(tester, 4, 'Vérification et sortie');
 
       await tester.scrollUntilVisible(
         find.text('16) Prévisualisation de la page détail de scène'),
@@ -430,13 +444,15 @@ Ne doit jamais être copié dans markersJsonCtrl.
       state.setState(() {});
       await tester.pump();
 
+      await _goToAdminStep(tester, 3, 'Enrichissements avancés');
+
       await tester.scrollUntilVisible(
-        find.text('Valider et générer la preview'),
+        find.text('Tester la vidéo IA'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Valider et générer la preview'));
+      await tester.tap(find.text('Tester la vidéo IA'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
