@@ -29,10 +29,10 @@ const _kAdminPassword = String.fromEnvironment(
   'TAKE30_ADMIN_PASSWORD',
   defaultValue: 'Take60Admin2026!',
 );
-const _kDefaultVeoIntroDurationSeconds = 15;
+const _kDefaultVeoIntroDurationSeconds = 8;
 
 const _kDefaultVeoPrompt =
-    'Video cinematique realiste de 15 secondes, format 16:9, ambiance de court-metrage dramatique. '
+    'Video cinematique realiste de 8 secondes, format 16:9, ambiance de court-metrage dramatique. '
     'Plan large au debut sur une rue calme en fin d\'apres-midi, lumiere doree, atmosphere legerement tendue. '
     'La camera avance lentement en travelling vers l\'entree d\'un petit batiment, profondeur de champ cinematographique, '
     'rendu realiste, mouvement fluide, couleurs naturelles, style film independant. '
@@ -52,7 +52,7 @@ Drame / Thriller
 TEXTE / DIALOGUE ACTEUR
 Je n'ai rien vu, lieutenant. Vous voulez que je dise quoi exactement ?
 
-PROMPT VEO POUR LA VIDÉO IA D’INTRO 15 SECONDES
+PROMPT VEO POUR LA VIDÉO IA D’INTRO 8 SECONDES
 Plan large d'une salle d'interrogatoire sobre, néons froids, caméra lente qui glisse vers la table métallique, tension policière réaliste, fin sur une chaise vide prête à accueillir le suspect.
 
 TIMELINE TAKE60 GUIDÉE JSON
@@ -62,8 +62,8 @@ TIMELINE TAKE60 GUIDÉE JSON
     "type": "ai_intro",
     "role": "ai",
     "startSecond": 0,
-    "endSecond": 15,
-    "durationSeconds": 15,
+    "endSecond": 8,
+    "durationSeconds": 8,
     "camera": "travelling avant lent",
     "dialogue": "",
     "direction": "Installer une tension policière froide avant l'entrée du personnage."
@@ -72,9 +72,9 @@ TIMELINE TAKE60 GUIDÉE JSON
     "id": "actor_001",
     "type": "user_take",
     "role": "user",
-    "startSecond": 15,
+    "startSecond": 8,
     "endSecond": 60,
-    "durationSeconds": 45,
+    "durationSeconds": 52,
     "camera": "plan poitrine fixe",
     "dialogue": "Je n'ai rien vu, lieutenant. Vous voulez que je dise quoi exactement ?",
     "direction": "Démarrer méfiant, puis laisser apparaître une fissure dans la voix."

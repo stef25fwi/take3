@@ -120,12 +120,12 @@ export function parsePrompt(raw: unknown): string {
   return prompt;
 }
 
-export function parseDurationSeconds(raw: unknown): 4 | 6 | 8 | 15 {
-  const value = Number(raw ?? 15);
-  if (value !== 4 && value !== 6 && value !== 8 && value !== 15) {
-    throw new HttpsError("invalid-argument", "durationSeconds doit valoir 4, 6, 8 ou 15.");
+export function parseDurationSeconds(raw: unknown): 4 | 6 | 8 {
+  const value = Number(raw ?? 8);
+  if (value !== 4 && value !== 6 && value !== 8) {
+    throw new HttpsError("invalid-argument", "durationSeconds doit valoir 4, 6 ou 8.");
   }
-  return value as 4 | 6 | 8 | 15;
+  return value as 4 | 6 | 8;
 }
 
 export function readSceneDate(raw: unknown): Date | null {
