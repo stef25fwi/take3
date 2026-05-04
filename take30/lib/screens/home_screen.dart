@@ -6,9 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
+import '../providers/battle_providers.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
+import '../widgets/battle/battle_preparing_card.dart';
+import '../widgets/battle/battle_published_card.dart';
 import '../widgets/shared_widgets.dart';
 import '../widgets/take30_logo.dart';
 
@@ -103,6 +106,33 @@ class HomeScreen extends ConsumerWidget {
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
                     const SizedBox(height: 20),
+                    const _SectionTitle('Battle chaude du moment'),
+                    const SizedBox(height: 12),
+                    _HomeBattleStrip(
+                      battlesState: ref.watch(mostExpectedBattlesProvider),
+                      preferPublishedCard: true,
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionTitle('Battles en ligne'),
+                    const SizedBox(height: 12),
+                    _HomeBattleStrip(
+                      battlesState: ref.watch(homePublishedBattlesProvider),
+                      preferPublishedCard: true,
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionTitle('Battles en préparation'),
+                    const SizedBox(height: 12),
+                    _HomeBattleStrip(
+                      battlesState: ref.watch(homePreparingBattlesProvider),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionTitle('Mes candidats suivis'),
+                    const SizedBox(height: 12),
+                    _HomeBattleStrip(
+                      battlesState: ref.watch(followedCandidatesBattlesProvider),
+                      preferPublishedCard: true,
+                    ),
+                    const SizedBox(height: 20),
                     const _SectionTitle('À la une'),
                     const SizedBox(height: 12),
                     if (feedState.isLoading)
@@ -149,6 +179,63 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _HomeBattleStrip extends StatelessWidget {
+  const _HomeBattleStrip({
+    required this.battlesState,
+    this.preferPublishedCard = false,
+  });
+
+  final AsyncValue<List<BattleModel>> battlesState;
+  final bool preferPublishedCard;
+
+  @override
+  Widget build(BuildContext context) {
+    return battlesState.when(
+      loading: () => const _LoadingPanel(),
+      error: (_, __) => const _EmptyPanel(
+        title: 'Battles indisponibles',
+        subtitle: 'Les duels Take60 réapparaîtront automatiquement.',
+      ),
+      data: (battles) {
+        if (battles.isEmpty) {
+          return const _EmptyPanel(
+            title: 'Aucune Battle pour le moment',
+            subtitle: 'Défie ce candidat sur une scène Take60 de niveau équivalent.',
+          );
+        }
+        final visible = battles.take(4).toList();
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            children: [
+              for (var index = 0; index < visible.length; index++) ...[
+                SizedBox(
+                  width: 330,
+                  child: preferPublishedCard || visible[index].isPublished
+                      ? BattlePublishedCard(
+                          battle: visible[index],
+                          onTap: () => context.go(AppRouter.battlePath(visible[index].id)),
+                          onTapChallenger: () => context.go(AppRouter.profilePath(visible[index].challengerId)),
+                          onTapOpponent: () => context.go(AppRouter.profilePath(visible[index].opponentId)),
+                        )
+                      : BattlePreparingCard(
+                          battle: visible[index],
+                          onTap: () => context.go(AppRouter.battlePath(visible[index].id)),
+                          onTapChallenger: () => context.go(AppRouter.profilePath(visible[index].challengerId)),
+                          onTapOpponent: () => context.go(AppRouter.profilePath(visible[index].opponentId)),
+                        ),
+                ),
+                if (index != visible.length - 1) const SizedBox(width: 12),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

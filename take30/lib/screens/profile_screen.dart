@@ -9,6 +9,7 @@ import '../features/profile/models/take60_user_profile.dart';
 import '../features/profile/providers/take60_profile_providers.dart';
 import '../features/profile/widgets/take60_profile_components.dart';
 import '../models/models.dart';
+import '../providers/battle_providers.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
@@ -96,7 +97,6 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
   bool _isUpdatingCastingMode = false;
   bool _isUpdatingAutoInvites = false;
   bool _isUpdatingNotifications = false;
-
   @override
   void initState() {
     super.initState();
@@ -320,6 +320,10 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                                     .shareProfile();
                               },
                             ),
+                          if (!isOwnProfile) ...[
+                            const SizedBox(height: 12),
+                            _BattleProfilePanel(candidateId: widget.userId),
+                          ],
                           if (canShowAdminDashboardButton) ...[
                             const SizedBox(height: 14),
                             _AdminDashboardButton(
@@ -630,6 +634,96 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody>
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: 28)),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BattleProfilePanel extends ConsumerStatefulWidget {
+  const _BattleProfilePanel({required this.candidateId});
+
+  final String candidateId;
+
+  @override
+  ConsumerState<_BattleProfilePanel> createState() => _BattleProfilePanelState();
+}
+
+class _BattleProfilePanelState extends ConsumerState<_BattleProfilePanel> {
+  bool _loading = false;
+
+  Future<void> _challenge() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(battleServiceProvider).challengeUser(
+            opponentId: widget.candidateId,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nouveau défi reçu par le candidat.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eligible = ref.watch(battleChallengeEligibilityProvider(widget.candidateId));
+    final stats = ref.watch(userBattleStatsProvider(widget.candidateId)).valueOrNull;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Battle / Duel d’interprétation',
+              style: GoogleFonts.dmSans(
+                fontWeight: FontWeight.w900,
+                color: AppThemeTokens.primaryText(context),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Défie ce candidat sur une scène Take60 de niveau équivalent.',
+              style: GoogleFonts.dmSans(color: AppThemeTokens.secondaryText(context)),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(label: Text('Battles jouées ${stats?.battlesPlayed ?? 0}')),
+                Chip(label: Text('Victoires ${stats?.battlesWon ?? 0}')),
+                Chip(label: Text('Série ${stats?.winStreak ?? 0}')),
+                Chip(label: Text(stats?.battleRatingTier ?? 'Rookie')),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Tooltip(
+              message: eligible
+                  ? 'Un acteur de ton niveau veut t’affronter.'
+                  : 'Ce candidat n’est pas dans ton niveau Battle pour le moment.',
+              child: FilledButton.icon(
+                onPressed: eligible && !_loading ? _challenge : null,
+                icon: _loading
+                    ? const SizedBox.square(
+                        dimension: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sports_mma_rounded),
+                label: const Text('Provoquer en duel'),
               ),
             ),
           ],

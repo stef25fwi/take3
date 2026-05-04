@@ -2,7 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'take60_guided_flow.dart';
 
+export 'battle_model.dart';
+export 'battle_follower_model.dart';
+export 'battle_prediction_model.dart';
+export 'battle_rivalry_model.dart';
+export 'battle_vote_model.dart';
 export 'take60_guided_flow.dart';
+export 'user_battle_stats_model.dart';
 
 // ─── Converters helpers ──────────────────────────────────────────────────────
 DateTime _readDate(dynamic v) {

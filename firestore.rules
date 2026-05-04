@@ -102,6 +102,79 @@ service cloud.firestore {
       }
     }
 
+    // ─── battles Take60 : écritures sensibles via Cloud Functions ──────────
+    function isBattleParticipantFor(battleId) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/battles/$(battleId)).data.challengerId == request.auth.uid ||
+        get(/databases/$(database)/documents/battles/$(battleId)).data.opponentId == request.auth.uid
+      );
+    }
+
+    function isVisibleBattleStatus(status) {
+      return status in [
+        'in_preparation',
+        'waiting_challenger_submission',
+        'waiting_opponent_submission',
+        'ready_to_publish',
+        'published',
+        'voting_open',
+        'ended',
+        'forfeit'
+      ];
+    }
+
+    match /battles/{battleId} {
+      allow read: if isSignedIn() && (
+        isVisibleBattleStatus(resource.data.status) ||
+        resource.data.challengerId == request.auth.uid ||
+        resource.data.opponentId == request.auth.uid
+      );
+      allow create, update, delete: if false;
+
+      match /followers/{uid} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+      match /votes/{uid} {
+        allow read: if isBattleParticipantFor(battleId);
+        allow write: if false;
+      }
+      match /predictions/{uid} {
+        allow read: if isSelf(uid) || isBattleParticipantFor(battleId);
+        allow write: if false;
+      }
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.status in ['visible', 'reported'];
+        allow update, delete: if false;
+      }
+      match /reports/{reportId} {
+        allow create: if isSignedIn()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.reason is string;
+        allow read, update, delete: if false;
+      }
+      match /events/{eventId} {
+        allow read: if isBattleParticipantFor(battleId);
+        allow write: if false;
+      }
+    }
+
+    match /battleRivalries/{pairKey} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /userBattleStats/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
     // ─── daily challenges ───────────────────────────────────────────────────
     match /dailyChallenges/{dateKey} {
       allow read: if true;

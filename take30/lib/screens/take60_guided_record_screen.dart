@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/models.dart';
+import '../providers/battle_providers.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../services/camera_service.dart';
@@ -32,10 +33,12 @@ class Take60GuidedRecordScreen extends ConsumerStatefulWidget {
   const Take60GuidedRecordScreen({
     super.key,
     this.initialScene,
+    this.battleContext,
     this.onInitCameraOverride,
   });
 
   final SceneModel? initialScene;
+  final Take60BattleRecordingContext? battleContext;
   @visibleForTesting
   final Future<CameraInitResult> Function(BuildContext context)?
       onInitCameraOverride;
@@ -662,6 +665,7 @@ class _Take60GuidedRecordScreenState
         recordings: _recordings.values.toList(),
         renderResult: renderResult,
         status: 'draft',
+        battleContext: widget.battleContext,
       );
       if (!mounted) return;
       setState(() => _publicationStatus = 'Brouillon enregistré.');
@@ -701,9 +705,23 @@ class _Take60GuidedRecordScreenState
         recordings: _recordings.values.toList(),
         renderResult: renderResult,
         status: 'published',
+        battleContext: widget.battleContext,
       );
+      final battleContext = widget.battleContext;
+      if (battleContext != null && battleContext.battleId.isNotEmpty) {
+        await ref.read(battleServiceProvider).submitBattlePerformance(
+              battleId: battleContext.battleId,
+              recordingId: projectId,
+              videoUrl: renderResult.finalVideoUrl,
+              storagePath: renderResult.finalVideoUrl,
+            );
+      }
       if (!mounted) return;
-      setState(() => _publicationStatus = 'Vidéo publiée.');
+      setState(
+        () => _publicationStatus = widget.battleContext == null
+            ? 'Vidéo publiée.'
+            : 'Ta performance Battle est envoyée.',
+      );
       await _service.clearDraft(scene.id);
     } catch (_) {
       if (!mounted) return;

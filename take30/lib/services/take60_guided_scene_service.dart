@@ -515,6 +515,7 @@ class Take60GuidedSceneService {
     required List<Take60UserRecordingDraft> recordings,
     required Take60RenderResult renderResult,
     required String status,
+    Take60BattleRecordingContext? battleContext,
   }) async {
     final now = DateTime.now();
     final payload = <String, dynamic>{
@@ -530,6 +531,7 @@ class Take60GuidedSceneService {
       'recordings': recordings.map((recording) => recording.toMap()).toList(),
       'updatedAt': now.toIso8601String(),
       'publishedAt': status == 'published' ? now.toIso8601String() : null,
+      if (battleContext != null) ...battleContext.toMap(),
     };
 
     if (currentUserId == 'guest') {
@@ -558,6 +560,7 @@ class Take60GuidedSceneService {
         'thumbnailUrl': renderResult.thumbnailUrl,
         'durationSeconds': renderResult.durationSeconds,
         'status': 'published',
+        if (battleContext != null) ...battleContext.toMap(),
         'createdAt': now.toIso8601String(),
         'updatedAt': now.toIso8601String(),
       }, SetOptions(merge: true));

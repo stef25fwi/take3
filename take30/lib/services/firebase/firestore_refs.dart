@@ -62,6 +62,32 @@ class FirestoreRefs {
   CollectionReference<Map<String, dynamic>> duelVotes(String duelId) =>
       _db.collection('duels').doc(duelId).collection('votes');
 
+    // ─── battles ───────────────────────────────────────────────────────────────
+    CollectionReference<BattleModel> get battles =>
+      _db.collection('battles').withConverter(
+        fromFirestore: (snap, _) => BattleModel.fromFirestore(snap),
+        toFirestore: (battle, _) => battle.toFirestore(),
+        );
+    DocumentReference<BattleModel> battleDoc(String battleId) => battles.doc(battleId);
+    CollectionReference<Map<String, dynamic>> battleFollowers(String battleId) =>
+      _db.collection('battles').doc(battleId).collection('followers');
+    CollectionReference<Map<String, dynamic>> battleVotes(String battleId) =>
+      _db.collection('battles').doc(battleId).collection('votes');
+    CollectionReference<Map<String, dynamic>> battlePredictions(String battleId) =>
+      _db.collection('battles').doc(battleId).collection('predictions');
+
+    CollectionReference<BattleRivalryModel> get battleRivalries =>
+      _db.collection('battleRivalries').withConverter(
+        fromFirestore: (snap, _) => BattleRivalryModel.fromFirestore(snap),
+        toFirestore: (rivalry, _) => rivalry.toFirestore(),
+        );
+
+    CollectionReference<UserBattleStatsModel> get userBattleStats =>
+      _db.collection('userBattleStats').withConverter(
+        fromFirestore: (snap, _) => UserBattleStatsModel.fromFirestore(snap),
+        toFirestore: (stats, _) => stats.toFirestore(),
+        );
+
   // ─── daily challenges ──────────────────────────────────────────────────────
   CollectionReference<DailyChallengeModel> get dailyChallenges =>
       _db.collection('dailyChallenges').withConverter(

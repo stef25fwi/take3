@@ -6,7 +6,11 @@
     "seed": "node seed_firestore.js",
     "seed:force": "node seed_firestore.js --force",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node seed_firestore.js --force",
-    "verify:admin": "node verify_admin_access.js"
+    "battle:init:dry-run": "node init_battle_readiness.js",
+    "battle:init": "node init_battle_readiness.js --apply",
+    "battle:init:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node init_battle_readiness.js --apply",
+    "verify:admin": "node verify_admin_access.js",
+    "verify:battle-flow": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node verify_battle_flow.js"
   },
   "dependencies": {
     "firebase-admin": "^12.5.0"

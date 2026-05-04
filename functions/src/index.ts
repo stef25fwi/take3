@@ -316,6 +316,10 @@ export const sendPushOnNotificationCreate = onDocumentCreated(
       data: {
         type: (data.type as string) ?? "",
         sceneId: (data.sceneId as string) ?? "",
+        battleId: (data.battleId as string) ?? "",
+        challengerId: (data.challengerId as string) ?? "",
+        opponentId: (data.opponentId as string) ?? "",
+        route: (data.route as string) ?? "",
       },
     });
     // Nettoyage des tokens invalides
@@ -415,6 +419,20 @@ export const computeLeaderboard = onSchedule("every 60 minutes", async () => {
 
 export { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
 export { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
+export {
+  createBattleChallenge,
+  respondBattleChallenge,
+  followBattle,
+  unfollowBattle,
+  followCandidate,
+  unfollowCandidate,
+  submitBattlePerformance,
+  castBattleVote,
+  createBattlePrediction,
+  requestBattleRevenge,
+  reportBattle,
+} from "./battle";
+export { expireBattleDeadlines, endVotingBattles } from "./battleScheduler";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)

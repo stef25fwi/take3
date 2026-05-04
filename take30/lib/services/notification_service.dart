@@ -180,8 +180,20 @@ class NotificationService {
     }
     final data = message.data;
     final type = data['type'];
+    final route = data['route'];
+    final battleId = data['battleId'];
     final sceneId = data['sceneId'];
     final userId = data['userId'];
+
+    if (route is String && route.startsWith('/battle/')) {
+      GoRouter.of(context).go(route);
+      return;
+    }
+    if (type is String && type.startsWith('battle_') &&
+        battleId is String && battleId.isNotEmpty) {
+      GoRouter.of(context).go(AppRouter.battlePath(battleId));
+      return;
+    }
 
     if ((type == 'like' || type == 'comment') && sceneId is String && sceneId.isNotEmpty) {
       GoRouter.of(context).go(AppRouter.scenePath(sceneId));

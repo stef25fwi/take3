@@ -1,3 +1,5 @@
+import 'battle_model.dart';
+
 enum SceneRecordingStatus {
   notStarted,
   directorSheetViewed,
@@ -11,6 +13,37 @@ enum SceneRecordingStatus {
   finalPreviewReady,
   draftSaved,
   published,
+}
+
+class Take60BattleRecordingContext {
+  const Take60BattleRecordingContext({
+    required this.battleId,
+    required this.sceneId,
+    required this.participantRole,
+  });
+
+  final String battleId;
+  final String sceneId;
+  final String participantRole;
+
+  factory Take60BattleRecordingContext.fromBattle(BattleModel battle) {
+    return Take60BattleRecordingContext(
+      battleId: battle.id,
+      sceneId: battle.sceneId ?? '',
+      participantRole: battle.challengerSubmittedAt == null
+          ? 'challenger'
+          : 'opponent',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'battleId': battleId,
+      'battleSceneId': sceneId,
+      'battleRole': participantRole,
+      'isBattleSubmission': true,
+    };
+  }
 }
 
 SceneRecordingStatus sceneRecordingStatusFromString(String? value) {

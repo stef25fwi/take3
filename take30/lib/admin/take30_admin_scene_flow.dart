@@ -1368,6 +1368,10 @@ class SceneFormData {
   final String category;
   final String genre;
   final String recommendedLevel;
+  final bool battleEnabled;
+  final List<String> battleThemes;
+  final String battleDifficultyTier;
+  final String battleCategory;
 
   final String projectTitle;
   final String sceneName;
@@ -1482,6 +1486,10 @@ class SceneFormData {
     required this.category,
     required this.genre,
     required this.recommendedLevel,
+    this.battleEnabled = false,
+    this.battleThemes = const [],
+    this.battleDifficultyTier = '',
+    this.battleCategory = '',
     required this.projectTitle,
     required this.sceneName,
     required this.sceneNumber,
@@ -1601,6 +1609,10 @@ class SceneFormData {
       category: category,
       genre: genre,
       recommendedLevel: recommendedLevel,
+      battleEnabled: battleEnabled,
+      battleThemes: battleThemes,
+      battleDifficultyTier: battleDifficultyTier,
+      battleCategory: battleCategory,
       projectTitle: projectTitle,
       sceneName: sceneName,
       sceneNumber: sceneNumber,
@@ -1719,6 +1731,13 @@ class SceneFormData {
       'genre': genre,
       'level': recommendedLevel,
       'difficulty': recommendedLevel,
+        'battleEnabled': battleEnabled,
+        'battleThemes': battleThemes.isEmpty ? [category, genre] : battleThemes,
+        'battleDifficultyTier': battleDifficultyTier.isEmpty
+          ? recommendedLevel
+          : battleDifficultyTier,
+        'battleCategory': battleCategory.isEmpty ? category : battleCategory,
+        'isEligibleForRandomBattleDraw': battleEnabled && hasValidatedAiVideo,
       'status': status.value,
       'thumbnailUrl': thumbnailUrl,
       'videoUrl': aiIntroVideo?.videoUrl,
@@ -1845,6 +1864,12 @@ class SceneFormData {
       category: data['category'] as String? ?? '',
       genre: data['genre'] as String? ?? '',
       recommendedLevel: data['level'] as String? ?? 'intermediaire',
+        battleEnabled: data['battleEnabled'] as bool? ?? false,
+        battleThemes: (data['battleThemes'] as List<dynamic>? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+        battleDifficultyTier: data['battleDifficultyTier'] as String? ?? '',
+        battleCategory: data['battleCategory'] as String? ?? '',
       projectTitle: data['projectTitle'] as String? ?? '',
       sceneName: data['sceneName'] as String? ?? data['title'] as String? ?? '',
       sceneNumber: data['sceneNumber'] as String? ?? '',
