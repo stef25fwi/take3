@@ -7,6 +7,7 @@ export type BattleNotificationType =
   | "battle_challenge_accepted"
   | "battle_scene_assigned"
   | "battle_deadline_reminder"
+  | "battle_vote_reminder"
   | "battle_published"
   | "followed_candidate_battle_published"
   | "battle_result"

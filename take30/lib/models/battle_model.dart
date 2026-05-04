@@ -71,12 +71,20 @@ class BattleModel {
     this.votesChallenger = 0,
     this.votesOpponent = 0,
     this.totalVotes = 0,
+    this.watchersCount = 0,
     this.winnerId,
     this.loserId,
     this.resultReason,
     this.isRevengeAvailable = false,
     this.parentBattleId,
     this.rivalryPairKey = '',
+    this.isFeatured = false,
+    this.featuredUntil,
+    this.battleScore = 0,
+    this.trendingScore = 0,
+    this.visibilityScope = 'public',
+    this.regionCode,
+    this.countryCode,
     this.shareTitle = '',
     this.shareSubtitle = '',
     this.shareImageUrl,
@@ -131,12 +139,20 @@ class BattleModel {
   final int votesChallenger;
   final int votesOpponent;
   final int totalVotes;
+  final int watchersCount;
   final String? winnerId;
   final String? loserId;
   final BattleResultReason? resultReason;
   final bool isRevengeAvailable;
   final String? parentBattleId;
   final String rivalryPairKey;
+  final bool isFeatured;
+  final DateTime? featuredUntil;
+  final double battleScore;
+  final double trendingScore;
+  final String visibilityScope;
+  final String? regionCode;
+  final String? countryCode;
   final String shareTitle;
   final String shareSubtitle;
   final String? shareImageUrl;
@@ -204,6 +220,7 @@ class BattleModel {
       votesChallenger: _readInt(data['votesChallenger']),
       votesOpponent: _readInt(data['votesOpponent']),
       totalVotes: _readInt(data['totalVotes']),
+        watchersCount: _readInt(data['watchersCount']),
       winnerId: _readNullableString(data['winnerId']),
       loserId: _readNullableString(data['loserId']),
       resultReason:
@@ -211,6 +228,13 @@ class BattleModel {
       isRevengeAvailable: data['isRevengeAvailable'] as bool? ?? false,
       parentBattleId: _readNullableString(data['parentBattleId']),
       rivalryPairKey: data['rivalryPairKey'] as String? ?? '',
+        isFeatured: data['isFeatured'] as bool? ?? false,
+        featuredUntil: _readNullableDate(data['featuredUntil']),
+        battleScore: _readDouble(data['battleScore']),
+        trendingScore: _readDouble(data['trendingScore']),
+        visibilityScope: data['visibilityScope'] as String? ?? 'public',
+        regionCode: _readNullableString(data['regionCode']),
+        countryCode: _readNullableString(data['countryCode']),
       shareTitle: data['shareTitle'] as String? ?? '',
       shareSubtitle: data['shareSubtitle'] as String? ?? '',
       shareImageUrl: _readNullableString(data['shareImageUrl']),
@@ -278,12 +302,20 @@ class BattleModel {
       'votesChallenger': votesChallenger,
       'votesOpponent': votesOpponent,
       'totalVotes': totalVotes,
+      'watchersCount': watchersCount,
       if (_hasValue(winnerId)) 'winnerId': winnerId,
       if (_hasValue(loserId)) 'loserId': loserId,
       if (resultReason != null) 'resultReason': resultReason!.storageValue,
       'isRevengeAvailable': isRevengeAvailable,
       if (_hasValue(parentBattleId)) 'parentBattleId': parentBattleId,
       'rivalryPairKey': rivalryPairKey,
+      'isFeatured': isFeatured,
+      if (featuredUntil != null) 'featuredUntil': Timestamp.fromDate(featuredUntil!),
+      'battleScore': battleScore,
+      'trendingScore': trendingScore,
+      'visibilityScope': visibilityScope,
+      if (_hasValue(regionCode)) 'regionCode': regionCode,
+      if (_hasValue(countryCode)) 'countryCode': countryCode,
       'shareTitle': shareTitle,
       'shareSubtitle': shareSubtitle,
       if (_hasValue(shareImageUrl)) 'shareImageUrl': shareImageUrl,
@@ -340,12 +372,20 @@ class BattleModel {
     int? votesChallenger,
     int? votesOpponent,
     int? totalVotes,
+    int? watchersCount,
     String? winnerId,
     String? loserId,
     BattleResultReason? resultReason,
     bool? isRevengeAvailable,
     String? parentBattleId,
     String? rivalryPairKey,
+    bool? isFeatured,
+    DateTime? featuredUntil,
+    double? battleScore,
+    double? trendingScore,
+    String? visibilityScope,
+    String? regionCode,
+    String? countryCode,
     String? shareTitle,
     String? shareSubtitle,
     String? shareImageUrl,
@@ -405,12 +445,20 @@ class BattleModel {
       votesChallenger: votesChallenger ?? this.votesChallenger,
       votesOpponent: votesOpponent ?? this.votesOpponent,
       totalVotes: totalVotes ?? this.totalVotes,
+      watchersCount: watchersCount ?? this.watchersCount,
       winnerId: winnerId ?? this.winnerId,
       loserId: loserId ?? this.loserId,
       resultReason: resultReason ?? this.resultReason,
       isRevengeAvailable: isRevengeAvailable ?? this.isRevengeAvailable,
       parentBattleId: parentBattleId ?? this.parentBattleId,
       rivalryPairKey: rivalryPairKey ?? this.rivalryPairKey,
+      isFeatured: isFeatured ?? this.isFeatured,
+      featuredUntil: featuredUntil ?? this.featuredUntil,
+      battleScore: battleScore ?? this.battleScore,
+      trendingScore: trendingScore ?? this.trendingScore,
+      visibilityScope: visibilityScope ?? this.visibilityScope,
+      regionCode: regionCode ?? this.regionCode,
+      countryCode: countryCode ?? this.countryCode,
       shareTitle: shareTitle ?? this.shareTitle,
       shareSubtitle: shareSubtitle ?? this.shareSubtitle,
       shareImageUrl: shareImageUrl ?? this.shareImageUrl,

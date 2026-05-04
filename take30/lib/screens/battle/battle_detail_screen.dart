@@ -50,6 +50,18 @@ class _BattleDetailBodyState extends ConsumerState<_BattleDetailBody> {
   bool _watchedChallenger = false;
   bool _watchedOpponent = false;
 
+  String _formatFeaturedUntil(DateTime? value) {
+    if (value == null) {
+      return 'Mise en avant inactive.';
+    }
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final year = value.year;
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return 'À la une jusqu’au $day/$month/$year à $hour:$minute';
+  }
+
   Future<void> _run(Future<void> Function() action, String success) async {
     setState(() => _loading = true);
     try {
@@ -69,7 +81,9 @@ class _BattleDetailBodyState extends ConsumerState<_BattleDetailBody> {
   @override
   Widget build(BuildContext context) {
     final battle = widget.battle;
-    final uid = ref.watch(authProvider).user?.id ?? '';
+    final authUser = ref.watch(authProvider).user;
+    final uid = authUser?.id ?? '';
+    final isAdmin = authUser?.isAdmin ?? false;
     final isOpponent = uid == battle.opponentId;
     final isParticipant = battle.participantIds.contains(uid);
     final canVote = battle.canVote(uid) && _watchedChallenger && _watchedOpponent;
@@ -136,7 +150,11 @@ class _BattleDetailBodyState extends ConsumerState<_BattleDetailBody> {
                   children: [
                     if (battle.sceneCategory != null) Chip(label: Text(battle.sceneCategory!)),
                     if (battle.sceneDifficulty != null) Chip(label: Text(battle.sceneDifficulty!)),
+                    if (battle.isFeatured) const Chip(label: Text('À la une')),
+                    if (battle.watchersCount > 0) Chip(label: Text('${battle.watchersCount} en vue')),
                     Chip(label: Text('${battle.followersCount} suivent')),
+                    if (battle.battleScore > 0) Chip(label: Text('Score ${battle.battleScore.toStringAsFixed(0)}')),
+                    if (battle.trendingScore > 0) Chip(label: Text('Tendance ${battle.trendingScore.toStringAsFixed(0)}')),
                     Chip(label: Text('${battle.totalVotes} votes')),
                   ],
                 ),
@@ -144,6 +162,72 @@ class _BattleDetailBodyState extends ConsumerState<_BattleDetailBody> {
             ),
           ),
         ),
+        if (isAdmin) ...[
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Curation admin',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(_formatFeaturedUntil(battle.featuredUntil)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _loading
+                            ? null
+                            : () => _run(
+                                  () => ref
+                                      .read(battleServiceProvider)
+                                      .setBattleFeatured(
+                                        battleId: battle.id,
+                                        isFeatured: true,
+                                        featuredHours: 72,
+                                      ),
+                                  battle.isFeatured
+                                      ? 'Mise en avant prolongée pour 72h.'
+                                      : 'Battle mise à la une pour 72h.',
+                                ),
+                        icon: const Icon(Icons.workspace_premium_rounded),
+                        label: Text(
+                          battle.isFeatured
+                              ? 'Prolonger 72h'
+                              : 'Mettre à la une 72h',
+                        ),
+                      ),
+                      if (battle.isFeatured)
+                        OutlinedButton.icon(
+                          onPressed: _loading
+                              ? null
+                              : () => _run(
+                                    () => ref
+                                        .read(battleServiceProvider)
+                                        .setBattleFeatured(
+                                          battleId: battle.id,
+                                          isFeatured: false,
+                                        ),
+                                    'Mise en avant retirée.',
+                                  ),
+                          icon: const Icon(Icons.remove_circle_outline),
+                          label: const Text('Retirer de la une'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         if (battle.isPending)
           Card(

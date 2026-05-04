@@ -103,6 +103,60 @@ class BattleService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
+  Stream<List<BattleModel>> watchFeaturedBattles() {
+    return _battles
+        .where(
+          'status',
+          whereIn: const ['published', 'voting_open', 'ended'],
+        )
+        .where('isFeatured', isEqualTo: true)
+        .orderBy('featuredUntil', descending: true)
+        .limit(8)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  Stream<List<BattleModel>> watchTrendingBattles() {
+    return _battles
+        .where(
+          'status',
+          whereIn: const [
+            'challenge_sent',
+            'accepted',
+            'scene_assigned',
+            'in_preparation',
+            'ready_to_publish',
+            'published',
+            'voting_open',
+          ],
+        )
+        .orderBy('trendingScore', descending: true)
+        .limit(12)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  Stream<List<BattleModel>> watchSoonClosingBattles() {
+    return _battles
+        .where('status', isEqualTo: 'voting_open')
+        .orderBy('votingEndsAt')
+        .limit(8)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
+  Stream<List<BattleModel>> watchBattleLeaderboard() {
+    return _battles
+        .where(
+          'status',
+          whereIn: const ['published', 'voting_open', 'ended'],
+        )
+        .orderBy('battleScore', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
+
   Stream<List<BattleModel>> watchBattlesForFollowedCandidates(String uid) {
     if (uid.isEmpty) {
       return Stream.value(const <BattleModel>[]);
@@ -329,6 +383,18 @@ class BattleService {
       'battleId': battleId,
       'reason': reason,
       if (_hasValue(details)) 'details': details,
+    });
+  }
+
+  Future<void> setBattleFeatured({
+    required String battleId,
+    required bool isFeatured,
+    int featuredHours = 72,
+  }) async {
+    await _callVoid('setBattleFeatured', {
+      'battleId': battleId,
+      'isFeatured': isFeatured,
+      'featuredHours': featuredHours,
     });
   }
 

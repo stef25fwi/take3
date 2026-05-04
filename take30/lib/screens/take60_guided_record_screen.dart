@@ -709,11 +709,18 @@ class _Take60GuidedRecordScreenState
       );
       final battleContext = widget.battleContext;
       if (battleContext != null && battleContext.battleId.isNotEmpty) {
+        final mirroredBattleAsset = await _service.prepareBattleSubmissionAsset(
+          projectId: projectId,
+          finalVideoUrl: renderResult.finalVideoUrl,
+          battleContext: battleContext,
+        );
         await ref.read(battleServiceProvider).submitBattlePerformance(
               battleId: battleContext.battleId,
               recordingId: projectId,
-              videoUrl: renderResult.finalVideoUrl,
-              storagePath: renderResult.finalVideoUrl,
+              videoUrl:
+                  mirroredBattleAsset?.downloadUrl ?? renderResult.finalVideoUrl,
+              storagePath:
+                  mirroredBattleAsset?.storagePath ?? renderResult.finalVideoUrl,
             );
       }
       if (!mounted) return;

@@ -55,6 +55,16 @@ service firebase.storage {
         && request.resource.contentType.matches('video/.*');
     }
 
+    // Copies finales dédiées aux Battles.
+    // Nouveau chemin additif ; l'ancien flux take60_renders reste supporté.
+    match /battles/{battleId}/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isSelf(userId)
+        && fileName.matches('.*\\.mp4$')
+        && request.resource.size < 300 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*');
+    }
+
     // Rendus finaux générés côté Cloud Functions.
     // L'écriture se fait via Admin SDK, donc pas besoin d'autoriser le client.
     match /take60_renders/{userId}/{fileName} {

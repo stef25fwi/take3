@@ -13,6 +13,7 @@ import '../providers/providers.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
 import '../screens/battle/battle_detail_screen.dart';
+import '../screens/battle/battle_leaderboard_screen.dart';
 import '../screens/battle/battle_list_screen.dart';
 import '../screens/battle/battle_record_screen.dart';
 import '../screens/daily_challenge_screen.dart';
@@ -45,6 +46,7 @@ class AppRouter {
   static const challenge = '/challenge';
   static const battle = '/battle';
   static const battles = '/battles';
+  static const battleLeaderboard = '/battle/leaderboard';
   static const badges = '/badges';
   static const leaderboard = '/leaderboard';
   static const admin = '/admin';
@@ -164,6 +166,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRouter.battles,
             builder: (_, __) => const BattleListScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.battleLeaderboard,
+            builder: (_, __) => const BattleLeaderboardScreen(),
           ),
           GoRoute(
             path: '${AppRouter.battle}/:battleId',

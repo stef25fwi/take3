@@ -17,12 +17,14 @@ class StorageUploadResult {
 class StorageService {
   StorageService(this._storage);
 
+  static const int maxBattleRenderBytes = 350 * 1024 * 1024;
+
   final FirebaseStorage _storage;
 
   Reference _sceneRef(String uid, String sceneId) =>
       _storage.ref('scenes/$uid/$sceneId.mp4');
 
-    Reference _guidedSegmentRef(String storagePath) => _storage.ref(storagePath);
+  Reference _pathRef(String storagePath) => _storage.ref(storagePath);
 
   Reference _thumbRef(String uid, String sceneId) =>
       _storage.ref('thumbnails/$uid/$sceneId.jpg');
@@ -36,6 +38,15 @@ class StorageService {
     required int timestampMillis,
   }) {
     return 'take60_user_recordings/$uid/$projectId/${markerId}_$timestampMillis.mp4';
+  }
+
+  static String buildBattleRenderPath({
+    required String battleId,
+    required String uid,
+    required String participantRole,
+    required String projectId,
+  }) {
+    return 'battles/$battleId/$uid/${participantRole}_$projectId.mp4';
   }
 
   Future<String> uploadVideo({
@@ -66,7 +77,7 @@ class StorageService {
     required String storagePath,
     required File file,
   }) async {
-    final ref = _guidedSegmentRef(storagePath);
+    final ref = _pathRef(storagePath);
     final metadata = SettableMetadata(contentType: 'video/mp4');
     await ref.putFile(file, metadata);
     return StorageUploadResult(
@@ -79,7 +90,31 @@ class StorageService {
     required String storagePath,
     required Uint8List bytes,
   }) async {
-    final ref = _guidedSegmentRef(storagePath);
+    final ref = _pathRef(storagePath);
+    final metadata = SettableMetadata(contentType: 'video/mp4');
+    await ref.putData(bytes, metadata);
+    return StorageUploadResult(
+      storagePath: storagePath,
+      downloadUrl: await ref.getDownloadURL(),
+    );
+  }
+
+  Future<StorageUploadResult> mirrorRemoteVideo({
+    required String sourceUrl,
+    required String storagePath,
+    int maxBytes = maxBattleRenderBytes,
+  }) async {
+    final sourceRef = _storage.refFromURL(sourceUrl);
+    final bytes = await sourceRef.getData(maxBytes);
+    if (bytes == null || bytes.isEmpty) {
+      throw FirebaseException(
+        plugin: 'firebase_storage',
+        code: 'battle-render-empty',
+        message: 'Impossible de lire la vidéo source pour la Battle.',
+      );
+    }
+
+    final ref = _pathRef(storagePath);
     final metadata = SettableMetadata(contentType: 'video/mp4');
     await ref.putData(bytes, metadata);
     return StorageUploadResult(

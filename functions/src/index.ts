@@ -12,6 +12,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { onDocumentCreated, onDocumentDeleted, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions, logger } from "firebase-functions/v2";
+import { buildBattleScorePatch } from "./battleScoring";
 
 import { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
 import { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
@@ -184,6 +185,31 @@ export const onCommentCreate = onDocumentCreated(
       userId: actor.id,
       sceneId,
       commentId: event.params.commentId,
+    });
+  }
+);
+
+export const onBattleCommentCreate = onDocumentCreated(
+  "battles/{battleId}/comments/{commentId}",
+  async (event) => {
+    const comment = event.data?.data();
+    if (!comment) return;
+    const battleId = event.params.battleId;
+    const battleRef = db.doc(`battles/${battleId}`);
+
+    await db.runTransaction(async (tx) => {
+      const battleSnap = await tx.get(battleRef);
+      if (!battleSnap.exists) return;
+      const battle = battleSnap.data() ?? {};
+      const nextCommentsCount = Number(battle.commentsCount ?? 0) + 1;
+      tx.update(battleRef, {
+        commentsCount: FieldValue.increment(1),
+        ...buildBattleScorePatch({
+          ...battle,
+          commentsCount: nextCommentsCount,
+          updatedAt: new Date(),
+        }, new Date()),
+      });
     });
   }
 );
@@ -431,8 +457,9 @@ export {
   createBattlePrediction,
   requestBattleRevenge,
   reportBattle,
+  setBattleFeatured,
 } from "./battle";
-export { expireBattleDeadlines, endVotingBattles } from "./battleScheduler";
+export { expireBattleDeadlines, endVotingBattles, sendBattleReminders } from "./battleScheduler";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)

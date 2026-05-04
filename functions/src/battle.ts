@@ -10,11 +10,13 @@ import {
   ratingDeltaPercent,
   readBattleStats,
 } from "./battleStats";
+import { isAdminUid } from "./veo/shared";
 import {
   createBattleNotification,
   notifyBattleFollowers,
   notifyCandidateFollowers,
 } from "./battleNotifications";
+import { buildBattleScorePatch } from "./battleScoring";
 
 const activeStatuses = [
   "challenge_sent",
@@ -38,6 +40,14 @@ function requireString(value: unknown, name: string): string {
     throw new HttpsError("invalid-argument", `${name} requis.`);
   }
   return value.trim();
+}
+
+function readPositiveInt(value: unknown, fallback: number): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return Math.floor(parsed);
 }
 
 async function getUserLabel(uid: string): Promise<{ name: string; photoUrl: string }> {
@@ -111,8 +121,9 @@ export const createBattleChallenge = onCall<{ opponentId: string; sourceTakeId?:
   const battleRef = db.collection("battles").doc();
   const key = pairKey(challengerId, opponentId);
   const now = FieldValue.serverTimestamp();
+  const nowDate = new Date();
   await db.runTransaction(async (tx) => {
-    tx.set(battleRef, {
+    const battle = {
       id: battleRef.id,
       status: "challenge_sent",
       challengerId,
@@ -132,15 +143,27 @@ export const createBattleChallenge = onCall<{ opponentId: string; sourceTakeId?:
       votesChallenger: 0,
       votesOpponent: 0,
       totalVotes: 0,
+      watchersCount: 0,
       isRevengeAvailable: false,
       parentBattleId: req.data?.sourceTakeId ?? null,
       rivalryPairKey: key,
+      isFeatured: false,
+      featuredUntil: null,
+      battleScore: 0,
+      trendingScore: 0,
+      visibilityScope: "public",
+      regionCode: null,
+      countryCode: null,
       shareTitle: `${challenger.name} vs ${opponent.name}`,
       shareSubtitle: "Même scène. Même délai. Deux interprétations. Un seul gagnant.",
       deepLink: `take60://battle/${battleRef.id}`,
       createdBy: challengerId,
       updatedAt: now,
       version: 1,
+    };
+    tx.set(battleRef, {
+      ...battle,
+      ...buildBattleScorePatch({ ...battle, createdAt: nowDate, updatedAt: nowDate }, nowDate),
     });
     tx.set(battleRef.collection("events").doc(), {
       type: "challenge_sent",
@@ -178,7 +201,13 @@ export const respondBattleChallenge = onCall<{ battleId: string; accept: boolean
   if (battle.status !== "challenge_sent") throw new HttpsError("failed-precondition", "Ce duel n’est plus disponible.");
 
   if (!accept) {
-    await battleRef.update({ status: "declined", declinedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+    const nowDate = new Date();
+    await battleRef.update({
+      status: "declined",
+      declinedAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      ...buildBattleScorePatch({ ...battle, status: "declined", declinedAt: nowDate, updatedAt: nowDate }, nowDate),
+    });
     await createBattleNotification({
       uid: battle.challengerId as string,
       type: "battle_result",
@@ -193,6 +222,7 @@ export const respondBattleChallenge = onCall<{ battleId: string; accept: boolean
   const sceneDoc = await pickBattleScene();
   const scene = sceneDoc.data();
   const deadline = Timestamp.fromMillis(Date.now() + battleConstants.defaultSubmissionHours * 60 * 60 * 1000);
+  const nowDate = new Date();
   await battleRef.update({
     status: "in_preparation",
     acceptedAt: FieldValue.serverTimestamp(),
@@ -207,6 +237,21 @@ export const respondBattleChallenge = onCall<{ battleId: string; accept: boolean
     sceneDurationSec: Number(scene.durationSeconds ?? 60),
     sceneAdminWorkflow: Boolean(scene.adminWorkflow),
     updatedAt: FieldValue.serverTimestamp(),
+    ...buildBattleScorePatch({
+      ...battle,
+      status: "in_preparation",
+      acceptedAt: nowDate,
+      sceneAssignedAt: nowDate,
+      submissionDeadline: deadline.toDate(),
+      sceneId: sceneDoc.id,
+      sceneTitle: scene.title ?? "Scène Take60",
+      sceneCategory: scene.battleCategory ?? scene.category ?? "",
+      sceneGenre: scene.genre ?? scene.category ?? "",
+      sceneDifficulty: scene.battleDifficultyTier ?? scene.difficulty ?? "",
+      sceneDurationSec: Number(scene.durationSeconds ?? 60),
+      sceneAdminWorkflow: Boolean(scene.adminWorkflow),
+      updatedAt: nowDate,
+    }, nowDate),
   });
   await Promise.all([
     createBattleNotification({ uid: battle.challengerId as string, type: "battle_challenge_accepted", title: "Duel accepté", body: `La scène est tombée : ${scene.title ?? "Scène Take60"}.`, battleId, actorUid: uid }),
@@ -222,10 +267,18 @@ export const followBattle = onCall<{ battleId: string }>(async (req) => {
   const battleId = requireString(req.data?.battleId, "battleId");
   const db = getFirestore();
   await db.runTransaction(async (tx) => {
+    const battleRef = db.doc(`battles/${battleId}`);
     const ref = db.doc(`battles/${battleId}/followers/${uid}`);
+    const battle = (await tx.get(battleRef)).data() ?? {};
     if ((await tx.get(ref)).exists) return;
+    const nowDate = new Date();
+    const nextFollowersCount = Math.max(0, Number(battle.followersCount ?? 0) + 1);
     tx.set(ref, { uid, createdAt: FieldValue.serverTimestamp(), notifyOnPublish: true, notifyOnResult: true });
-    tx.update(db.doc(`battles/${battleId}`), { followersCount: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
+    tx.update(battleRef, {
+      followersCount: nextFollowersCount,
+      updatedAt: FieldValue.serverTimestamp(),
+      ...buildBattleScorePatch({ ...battle, followersCount: nextFollowersCount, updatedAt: nowDate }, nowDate),
+    });
   });
   return { following: true };
 });
@@ -235,10 +288,18 @@ export const unfollowBattle = onCall<{ battleId: string }>(async (req) => {
   const battleId = requireString(req.data?.battleId, "battleId");
   const db = getFirestore();
   await db.runTransaction(async (tx) => {
+    const battleRef = db.doc(`battles/${battleId}`);
     const ref = db.doc(`battles/${battleId}/followers/${uid}`);
+    const battle = (await tx.get(battleRef)).data() ?? {};
     if (!(await tx.get(ref)).exists) return;
+    const nowDate = new Date();
+    const nextFollowersCount = Math.max(0, Number(battle.followersCount ?? 0) - 1);
     tx.delete(ref);
-    tx.update(db.doc(`battles/${battleId}`), { followersCount: FieldValue.increment(-1), updatedAt: FieldValue.serverTimestamp() });
+    tx.update(battleRef, {
+      followersCount: nextFollowersCount,
+      updatedAt: FieldValue.serverTimestamp(),
+      ...buildBattleScorePatch({ ...battle, followersCount: nextFollowersCount, updatedAt: nowDate }, nowDate),
+    });
   });
   return { following: false };
 });
@@ -292,6 +353,7 @@ export const submitBattlePerformance = onCall<{ battleId: string; recordingId: s
       throw new HttpsError("failed-precondition", "Ce duel n’est plus disponible.");
     }
     const isChallenger = uid === battle.challengerId;
+    const nowDate = new Date();
     const patch: Record<string, unknown> = {
       updatedAt: FieldValue.serverTimestamp(),
       [isChallenger ? "challengerVideoUrl" : "opponentVideoUrl"]: videoUrl,
@@ -309,8 +371,19 @@ export const submitBattlePerformance = onCall<{ battleId: string; recordingId: s
     } else {
       patch.status = isChallenger ? "waiting_opponent_submission" : "waiting_challenger_submission";
     }
-    tx.update(battleRef, patch);
-    updatedBattle = { ...battle, ...patch, id: battleId };
+    const scoredBattle = {
+      ...battle,
+      ...patch,
+      updatedAt: nowDate,
+      publishedAt: patch.status === "voting_open" ? nowDate : battle.publishedAt,
+      votingStartsAt: patch.status === "voting_open" ? nowDate : battle.votingStartsAt,
+      votingEndsAt: patch.status === "voting_open" ? Timestamp.fromMillis(Date.now() + battleConstants.defaultVotingHours * 60 * 60 * 1000).toDate() : battle.votingEndsAt,
+    };
+    tx.update(battleRef, {
+      ...patch,
+      ...buildBattleScorePatch(scoredBattle, nowDate),
+    });
+    updatedBattle = { ...scoredBattle, id: battleId };
   });
   if (shouldNotifyPublished && updatedBattle) {
     await Promise.all([
@@ -343,11 +416,23 @@ export const castBattleVote = onCall<{ battleId: string; votedForUserId: string;
     const voteRef = db.doc(`battles/${battleId}/votes/${uid}`);
     if ((await tx.get(voteRef)).exists) throw new HttpsError("already-exists", "Tu as déjà voté.");
     const votedAgainstUserId = votedForUserId === battle.challengerId ? battle.opponentId : battle.challengerId;
+    const nowDate = new Date();
+    const nextVotesChallenger = Number(battle.votesChallenger ?? 0) + (votedForUserId === battle.challengerId ? 1 : 0);
+    const nextVotesOpponent = Number(battle.votesOpponent ?? 0) + (votedForUserId === battle.opponentId ? 1 : 0);
+    const nextTotalVotes = Number(battle.totalVotes ?? 0) + 1;
     tx.set(voteRef, { uid, votedForUserId, votedAgainstUserId, createdAt: FieldValue.serverTimestamp(), watchedChallenger: true, watchedOpponent: true, watchProgressChallenger, watchProgressOpponent });
     tx.update(battleRef, {
-      [votedForUserId === battle.challengerId ? "votesChallenger" : "votesOpponent"]: FieldValue.increment(1),
-      totalVotes: FieldValue.increment(1),
+      votesChallenger: nextVotesChallenger,
+      votesOpponent: nextVotesOpponent,
+      totalVotes: nextTotalVotes,
       updatedAt: FieldValue.serverTimestamp(),
+      ...buildBattleScorePatch({
+        ...battle,
+        votesChallenger: nextVotesChallenger,
+        votesOpponent: nextVotesOpponent,
+        totalVotes: nextTotalVotes,
+        updatedAt: nowDate,
+      }, nowDate),
     });
   });
   return { voted: true };
@@ -365,8 +450,14 @@ export const createBattlePrediction = onCall<{ battleId: string; predictedWinner
     if (predictedWinnerId !== battle.challengerId && predictedWinnerId !== battle.opponentId) throw new HttpsError("invalid-argument", "Pronostic invalide.");
     const ref = db.doc(`battles/${battleId}/predictions/${uid}`);
     if ((await tx.get(ref)).exists) throw new HttpsError("already-exists", "Pronostic déjà enregistré.");
+    const nowDate = new Date();
+    const nextPredictionsCount = Number(battle.predictionsCount ?? 0) + 1;
     tx.set(ref, { uid, predictedWinnerId, createdAt: FieldValue.serverTimestamp() });
-    tx.update(battleRef, { predictionsCount: FieldValue.increment(1), updatedAt: FieldValue.serverTimestamp() });
+    tx.update(battleRef, {
+      predictionsCount: nextPredictionsCount,
+      updatedAt: FieldValue.serverTimestamp(),
+      ...buildBattleScorePatch({ ...battle, predictionsCount: nextPredictionsCount, updatedAt: nowDate }, nowDate),
+    });
   });
   return { predicted: true };
 });
@@ -383,7 +474,8 @@ export const requestBattleRevenge = onCall<{ battleId: string }>(async (req) => 
   await assertNoActiveBattleBetween(uid, opponentId);
   const [challenger, opponent] = await Promise.all([getUserLabel(uid), getUserLabel(opponentId)]);
   const battleRef = db.collection("battles").doc();
-  await battleRef.set({
+  const nowDate = new Date();
+  const battlePayload = {
     id: battleRef.id,
     status: "challenge_sent",
     challengerId: uid,
@@ -404,7 +496,15 @@ export const requestBattleRevenge = onCall<{ battleId: string }>(async (req) => 
     votesChallenger: 0,
     votesOpponent: 0,
     totalVotes: 0,
+    watchersCount: 0,
     isRevengeAvailable: false,
+    isFeatured: false,
+    featuredUntil: null,
+    battleScore: 0,
+    trendingScore: 0,
+    visibilityScope: "public",
+    regionCode: null,
+    countryCode: null,
     shareTitle: `${challenger.name} vs ${opponent.name}`,
     shareSubtitle: "Même scène. Même délai. Deux interprétations. Un seul gagnant.",
     deepLink: `take60://battle/${battleRef.id}`,
@@ -412,6 +512,10 @@ export const requestBattleRevenge = onCall<{ battleId: string }>(async (req) => 
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
     version: 1,
+  };
+  await battleRef.set({
+    ...battlePayload,
+    ...buildBattleScorePatch({ ...battlePayload, createdAt: nowDate, updatedAt: nowDate }, nowDate),
   });
   await createBattleNotification({
     uid: opponentId,
@@ -436,4 +540,45 @@ export const reportBattle = onCall<{ battleId: string; reason: string; details?:
     status: "open",
   });
   return { reported: true };
+});
+
+export const setBattleFeatured = onCall<{ battleId: string; isFeatured: boolean; featuredHours?: number }>(async (req) => {
+  const uid = requireUid(req.auth?.uid);
+  if (!(await isAdminUid(uid))) {
+    throw new HttpsError("permission-denied", "Réservé aux admins.");
+  }
+
+  const battleId = requireString(req.data?.battleId, "battleId");
+  const isFeatured = req.data?.isFeatured === true;
+  const featuredHours = readPositiveInt(req.data?.featuredHours, 72);
+  const db = getFirestore();
+  const battleRef = db.doc(`battles/${battleId}`);
+  const battleSnap = await battleRef.get();
+  if (!battleSnap.exists) {
+    throw new HttpsError("not-found", "Cette battle est introuvable.");
+  }
+
+  const battle = battleSnap.data() ?? {};
+  const nowDate = new Date();
+  const featuredUntil = isFeatured
+    ? new Date(nowDate.getTime() + featuredHours * 60 * 60 * 1000)
+    : null;
+
+  await battleRef.update({
+    isFeatured,
+    featuredUntil: isFeatured ? Timestamp.fromDate(featuredUntil!) : null,
+    updatedAt: FieldValue.serverTimestamp(),
+    ...buildBattleScorePatch({
+      ...battle,
+      isFeatured,
+      featuredUntil,
+      updatedAt: nowDate,
+    }, nowDate),
+  });
+
+  return {
+    battleId,
+    isFeatured,
+    featuredUntil: featuredUntil?.toISOString() ?? null,
+  };
 });

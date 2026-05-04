@@ -344,6 +344,33 @@ class Take60GuidedSceneService {
     await prefs.remove(_draftKey(sceneId));
   }
 
+  Future<StorageUploadResult?> prepareBattleSubmissionAsset({
+    required String projectId,
+    required String finalVideoUrl,
+    required Take60BattleRecordingContext battleContext,
+  }) async {
+    if (currentUserId == 'guest' || finalVideoUrl.trim().isEmpty) {
+      return null;
+    }
+
+    final storagePath = StorageService.buildBattleRenderPath(
+      battleId: battleContext.battleId,
+      uid: currentUserId,
+      participantRole: battleContext.participantRole,
+      projectId: projectId,
+    );
+
+    try {
+      return await _storage.mirrorRemoteVideo(
+        sourceUrl: finalVideoUrl,
+        storagePath: storagePath,
+      );
+    } catch (_) {
+      // Keep the legacy take60_renders flow as a non-breaking fallback.
+      return null;
+    }
+  }
+
   String projectIdForScene(SceneModel scene) {
     return buildProjectId(userId: currentUserId, sceneId: scene.id);
   }

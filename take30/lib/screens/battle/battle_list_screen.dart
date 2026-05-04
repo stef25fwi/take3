@@ -13,6 +13,9 @@ class BattleListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final featured = ref.watch(featuredBattlesProvider);
+    final trending = ref.watch(trendingBattlesProvider);
+    final soonClosing = ref.watch(soonClosingBattlesProvider);
     final published = ref.watch(homePublishedBattlesProvider);
     final preparing = ref.watch(homePreparingBattlesProvider);
     final expected = ref.watch(mostExpectedBattlesProvider);
@@ -24,6 +27,46 @@ class BattleListScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
           const _BattleIntro(),
+          _BattleSection(
+            title: 'Battles à la une',
+            state: featured,
+            showWhenEmpty: false,
+            itemBuilder: (battle) => BattlePublishedCard(
+              battle: battle,
+              onTap: () => context.go(AppRouter.battlePath(battle.id)),
+              onTapChallenger: () => context.go(AppRouter.profilePath(battle.challengerId)),
+              onTapOpponent: () => context.go(AppRouter.profilePath(battle.opponentId)),
+            ),
+          ),
+          _BattleSection(
+            title: 'Battles tendance',
+            state: trending,
+            showWhenEmpty: false,
+            itemBuilder: (battle) => battle.isPublished
+                ? BattlePublishedCard(
+                    battle: battle,
+                    onTap: () => context.go(AppRouter.battlePath(battle.id)),
+                    onTapChallenger: () => context.go(AppRouter.profilePath(battle.challengerId)),
+                    onTapOpponent: () => context.go(AppRouter.profilePath(battle.opponentId)),
+                  )
+                : BattlePreparingCard(
+                    battle: battle,
+                    onTap: () => context.go(AppRouter.battlePath(battle.id)),
+                    onTapChallenger: () => context.go(AppRouter.profilePath(battle.challengerId)),
+                    onTapOpponent: () => context.go(AppRouter.profilePath(battle.opponentId)),
+                  ),
+          ),
+          _BattleSection(
+            title: 'Fin de vote imminente',
+            state: soonClosing,
+            showWhenEmpty: false,
+            itemBuilder: (battle) => BattlePublishedCard(
+              battle: battle,
+              onTap: () => context.go(AppRouter.battlePath(battle.id)),
+              onTapChallenger: () => context.go(AppRouter.profilePath(battle.challengerId)),
+              onTapOpponent: () => context.go(AppRouter.profilePath(battle.opponentId)),
+            ),
+          ),
           _BattleSection(
             title: 'Battles en ligne',
             state: published,
@@ -83,6 +126,12 @@ class _BattleIntro extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text('Même scène. Même délai. Deux interprétations. Un seul gagnant.'),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: () => context.go(AppRouter.battleLeaderboard),
+              icon: const Icon(Icons.emoji_events_outlined),
+              label: const Text('Voir le classement Battle'),
+            ),
           ],
         ),
       ),
@@ -95,11 +144,13 @@ class _BattleSection extends StatelessWidget {
     required this.title,
     required this.state,
     required this.itemBuilder,
+    this.showWhenEmpty = true,
   });
 
   final String title;
   final AsyncValue<List<BattleModel>> state;
   final Widget Function(BattleModel battle) itemBuilder;
+  final bool showWhenEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +166,9 @@ class _BattleSection extends StatelessWidget {
             error: (_, __) => const Text('Battles indisponibles pour le moment.'),
             data: (battles) {
               if (battles.isEmpty) {
+                if (!showWhenEmpty) {
+                  return const SizedBox.shrink();
+                }
                 return const Text('Aucune battle à afficher.');
               }
               return Column(

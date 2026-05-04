@@ -17,6 +17,26 @@ final homePreparingBattlesProvider =
   (ref) => ref.watch(battleServiceProvider).watchHomePreparingBattles(),
 );
 
+final featuredBattlesProvider =
+    StreamProvider.autoDispose<List<BattleModel>>(
+  (ref) => ref.watch(battleServiceProvider).watchFeaturedBattles(),
+);
+
+final trendingBattlesProvider =
+    StreamProvider.autoDispose<List<BattleModel>>(
+  (ref) => ref.watch(battleServiceProvider).watchTrendingBattles(),
+);
+
+final soonClosingBattlesProvider =
+    StreamProvider.autoDispose<List<BattleModel>>(
+  (ref) => ref.watch(battleServiceProvider).watchSoonClosingBattles(),
+);
+
+final battleLeaderboardProvider =
+    StreamProvider.autoDispose<List<BattleModel>>(
+  (ref) => ref.watch(battleServiceProvider).watchBattleLeaderboard(),
+);
+
 final mostExpectedBattlesProvider =
     StreamProvider.autoDispose<List<BattleModel>>(
   (ref) => ref.watch(battleServiceProvider).watchMostExpectedBattles(),
