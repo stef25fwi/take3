@@ -31,7 +31,7 @@ class MainShell extends ConsumerWidget {
       case 2:
         context.go(AppRouter.record);
       case 3:
-        context.go(AppRouter.battle);
+        context.go(AppRouter.battles);
       case 4:
         context.go(AppRouter.profilePath(currentUserId));
     }

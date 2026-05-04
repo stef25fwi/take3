@@ -15,7 +15,6 @@ import '../screens/badges_stats_screen.dart';
 import '../screens/battle/battle_detail_screen.dart';
 import '../screens/battle/battle_list_screen.dart';
 import '../screens/battle/battle_record_screen.dart';
-import '../screens/battle_screen.dart';
 import '../screens/daily_challenge_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/explorer_ranking_screen.dart';
@@ -160,7 +159,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRouter.battle,
-            builder: (_, __) => const BattleScreen(),
+            redirect: (_, __) => AppRouter.battles,
           ),
           GoRoute(
             path: AppRouter.battles,
