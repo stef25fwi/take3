@@ -248,7 +248,10 @@ class Take60AudioRules {
       'normalizeVolumes': normalizeVolumes,
       'applyAudioFades': applyAudioFades,
       // Mapping vers le contrat backend (renderTake60GuidedScene).
+      'keepAiAmbiance': keepAiAmbianceDuringUserPlans,
+      'duckUserAudioOverAi': keepAiAmbianceDuringUserPlans,
       'normaliseLoudness': normalizeVolumes,
+      'crossfadeMillis': applyAudioFades ? 120 : 0,
       'equalizer': true,
       'autoGain': true,
     };
@@ -508,7 +511,9 @@ class Take60RenderResult {
       durationSeconds: (json['duration'] as num?)?.toInt() ??
           (json['durationSeconds'] as num?)?.toInt() ??
           0,
-      renderStatus: json['renderStatus'] as String? ?? 'preview_ready',
+      renderStatus: json['renderStatus'] as String? ??
+          json['status'] as String? ??
+          'preview_ready',
       segments: rawSegments
           .whereType<Map>()
           .map(

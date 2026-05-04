@@ -130,4 +130,19 @@ void main() {
       );
     });
   });
+
+  group('Take60RenderResult', () {
+    test('reads failed status from backend status fallback', () {
+      final result = Take60RenderResult.fromMap(const {
+        'status': 'failed',
+        'finalVideoUrl': '',
+        'thumbnailUrl': '',
+        'durationSeconds': 0,
+        'segments': [],
+      });
+
+      expect(result.renderStatus, 'failed');
+      expect(result.finalVideoUrl, isEmpty);
+    });
+  });
 }

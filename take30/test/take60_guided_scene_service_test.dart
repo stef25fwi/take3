@@ -267,6 +267,37 @@ void main() {
         (userSegments.first as Map<String, dynamic>)['videoUrl'],
         'https://example.com/user.mp4',
       );
+
+      final markers = payload['markers'] as List<dynamic>;
+      final firstMarker = markers.first as Map<String, dynamic>;
+      expect(firstMarker['markerId'], 'ai_1');
+      expect(firstMarker['source'], 'ai_video');
+      expect(firstMarker['startSeconds'], 0);
+      expect(firstMarker['endSeconds'], 10);
+
+      final aiSegments = payload['aiSegments'] as List<dynamic>;
+      final firstAi = aiSegments.first as Map<String, dynamic>;
+      expect(firstAi['startSeconds'], 0);
+      expect(firstAi['endSeconds'], 10);
+
+      final firstUser = userSegments.first as Map<String, dynamic>;
+      expect(firstUser['source'], 'user_video');
+      expect(firstUser['startSeconds'], 10);
+      expect(firstUser['endSeconds'], 20);
+    });
+
+    test('maps audio rules to backend controls', () {
+      final rules = const Take60AudioRules(
+        hasGlobalAiAmbiance: true,
+        keepAiAmbianceDuringUserPlans: true,
+        normalizeVolumes: true,
+        applyAudioFades: true,
+      ).toMap();
+
+      expect(rules['keepAiAmbiance'], isTrue);
+      expect(rules['duckUserAudioOverAi'], isTrue);
+      expect(rules['normaliseLoudness'], isTrue);
+      expect(rules['crossfadeMillis'], greaterThan(0));
     });
   });
 }

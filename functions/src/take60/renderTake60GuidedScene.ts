@@ -51,17 +51,11 @@ try {
   ffmpegLib = null;
 }
 
-interface SegmentInput {
-  markerId?: string;
-  type?: string;
-  source?: string;
-  videoUrl?: string;
-  durationSeconds?: number;
-  order?: number;
-}
-
 interface AudioRules {
   keepAiAmbiance?: boolean;
+  hasGlobalAiAmbiance?: boolean;
+  keepAiAmbianceDuringUserPlans?: boolean;
+  applyAudioFades?: boolean;
   duckUserAudioOverAi?: boolean;
   normaliseLoudness?: boolean;
   crossfadeMillis?: number;
@@ -71,15 +65,45 @@ interface AudioRules {
   autoGain?: boolean;
 }
 
+interface EffectiveAudioRules extends AudioRules {
+  equalizer: boolean;
+  autoGain: boolean;
+  normaliseLoudness: boolean;
+  applyAudioFades: boolean;
+  crossfadeMillis: number;
+}
+
+interface SegmentInput {
+  markerId?: string;
+  type?: string;
+  source?: string;
+  videoUrl?: string;
+  durationSeconds?: number;
+  startSeconds?: number;
+  endSeconds?: number;
+  order?: number;
+}
+
+function normaliseAudioRules(rules: AudioRules): EffectiveAudioRules {
+  return {
+    ...rules,
+    equalizer: rules.equalizer !== false,
+    autoGain: rules.autoGain !== false,
+    normaliseLoudness: rules.normaliseLoudness !== false,
+    applyAudioFades: rules.applyAudioFades !== false,
+    crossfadeMillis: Math.max(0, Number(rules.crossfadeMillis ?? 120)),
+  };
+}
+
 /**
  * Construit la chaîne de filtres audio (EQ → AGC → loudnorm) en fonction des règles.
  * Retourne une chaîne séparée par des virgules, sans virgule de tête.
  * Si aucun filtre n'est sélectionné, retourne `"anull"`.
  */
-function buildAudioChain(rules: AudioRules): string {
-  const eq = rules.equalizer !== false;
-  const agc = rules.autoGain !== false;
-  const loud = rules.normaliseLoudness === true;
+function buildAudioChain(rules: EffectiveAudioRules): string {
+  const eq = rules.equalizer;
+  const agc = rules.autoGain;
+  const loud = rules.normaliseLoudness;
   const parts: string[] = [];
   if (eq) {
     // Anti-rumble (proximité, vibrations, vent) + anti-hiss numérique.
@@ -117,11 +141,56 @@ interface NormalisedSegment {
   type: string;
   source: "ai" | "user";
   videoUrl: string;
+  startSeconds: number;
+  endSeconds: number;
   durationSeconds: number;
   order: number;
 }
 
 const db = getFirestore();
+
+const forbiddenUrlParts = [
+  "flutter.github.io/assets-for-api-docs",
+  "bee.mp4",
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+];
+
+function isRemoteRenderableUrl(raw?: string): boolean {
+  const value = (raw ?? "").trim();
+  if (!value) return false;
+  if (
+    value.startsWith("assets/") ||
+    value.startsWith("file:") ||
+    value.startsWith("content:") ||
+    value.startsWith("blob:") ||
+    value.startsWith("data:") ||
+    value.startsWith("/")
+  ) return false;
+  const lower = value.toLowerCase();
+  if (forbiddenUrlParts.some((part) => lower.includes(part))) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch (_) {
+    return false;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+  return parsed.hostname.trim().length > 0;
+}
+
+function readPositiveDuration(value: unknown, fallback = 0): number {
+  const parsed = Number(value ?? fallback);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.round(parsed * 1000) / 1000;
+}
+
+function markerIsUser(marker: SegmentInput): boolean {
+  const type = (marker.type ?? "").toString();
+  const source = (marker.source ?? "").toString();
+  return source === "user_video" || type === "user_plan" || type === "user_reply";
+}
 
 /** Build the ordered segment list, prefer user recordings when present. */
 function mergeSegments(
@@ -139,49 +208,63 @@ function mergeSegments(
   }
 
   const merged: NormalisedSegment[] = [];
-  if (markers.length > 0) {
-    for (let i = 0; i < markers.length; i++) {
-      const marker = markers[i];
-      const id = (marker.markerId ?? "").toString();
-      const baseDuration = Math.max(Number(marker.durationSeconds ?? 0), 0);
-      const userSeg = userByMarker.get(id);
-      const aiSeg = aiByMarker.get(id);
-      const chosen = userSeg ?? aiSeg;
-      merged.push({
-        markerId: id,
-        type: (marker.type ?? "ai").toString(),
-        source: userSeg ? "user" : "ai",
-        videoUrl: (chosen?.videoUrl ?? "").toString(),
-        durationSeconds:
-          Number(chosen?.durationSeconds ?? baseDuration) || baseDuration,
-        order: Number(marker.order ?? i),
-      });
-    }
-  } else {
-    const all: NormalisedSegment[] = [];
-    for (const seg of ai) {
-      all.push({
-        markerId: (seg.markerId ?? "").toString(),
-        type: (seg.type ?? "ai").toString(),
-        source: "ai",
-        videoUrl: (seg.videoUrl ?? "").toString(),
-        durationSeconds: Number(seg.durationSeconds ?? 0),
-        order: Number(seg.order ?? 0),
-      });
-    }
-    for (const seg of user) {
-      all.push({
-        markerId: (seg.markerId ?? "").toString(),
-        type: (seg.type ?? "user").toString(),
-        source: "user",
-        videoUrl: (seg.videoUrl ?? "").toString(),
-        durationSeconds: Number(seg.durationSeconds ?? 0),
-        order: Number(seg.order ?? 0),
-      });
-    }
-    all.sort((a, b) => a.order - b.order);
-    merged.push(...all);
+  if (markers.length === 0) {
+    throw new HttpsError("invalid-argument", "La timeline guidée est vide.");
   }
+  for (let i = 0; i < markers.length; i++) {
+    const marker = markers[i];
+    const id = (marker.markerId ?? "").toString().trim();
+    if (!id) {
+      throw new HttpsError("invalid-argument", `Marker ${i + 1} sans markerId.`);
+    }
+    const isUser = markerIsUser(marker);
+    const chosen = isUser ? userByMarker.get(id) : aiByMarker.get(id);
+    if (!chosen) {
+      throw new HttpsError(
+        "failed-precondition",
+        `Segment ${isUser ? "utilisateur" : "IA"} manquant pour ${id}.`
+      );
+    }
+    const markerDuration = readPositiveDuration(marker.durationSeconds);
+    const chosenDuration = readPositiveDuration(chosen.durationSeconds, markerDuration);
+    const durationSeconds = markerDuration || chosenDuration;
+    const startSeconds = isUser
+      ? 0
+      : Math.max(0, Number(marker.startSeconds ?? chosen.startSeconds ?? 0));
+    const endSeconds = isUser
+      ? durationSeconds
+      : Math.max(
+        startSeconds + durationSeconds,
+        Number(marker.endSeconds ?? chosen.endSeconds ?? startSeconds + durationSeconds)
+      );
+    if (durationSeconds <= 0) {
+      throw new HttpsError("invalid-argument", `Durée invalide pour ${id}.`);
+    }
+    if (isUser && chosenDuration + 0.25 < durationSeconds) {
+      throw new HttpsError(
+        "failed-precondition",
+        `La prise utilisateur ${id} est trop courte pour la durée demandée.`
+      );
+    }
+    const videoUrl = (chosen.videoUrl ?? "").toString();
+    if (!isRemoteRenderableUrl(videoUrl)) {
+      throw new HttpsError(
+        "invalid-argument",
+        `URL vidéo non exploitable pour ${id}.`
+      );
+    }
+    merged.push({
+      markerId: id,
+      type: (marker.type ?? chosen.type ?? (isUser ? "user_plan" : "ai_plan")).toString(),
+      source: isUser ? "user" : "ai",
+      videoUrl,
+      startSeconds,
+      endSeconds,
+      durationSeconds,
+      order: Number(marker.order ?? i),
+    });
+  }
+  merged.sort((a, b) => a.order - b.order);
   return merged;
 }
 
@@ -192,17 +275,13 @@ function clampDuration(
 ): number {
   let total = 0;
   for (const seg of segments) total += seg.durationSeconds;
-  if (total <= maxDuration) return total;
-  let remaining = maxDuration;
-  for (const seg of segments) {
-    if (seg.durationSeconds <= remaining) {
-      remaining -= seg.durationSeconds;
-    } else {
-      seg.durationSeconds = Math.max(remaining, 0);
-      remaining = 0;
-    }
+  if (total > maxDuration) {
+    throw new HttpsError(
+      "invalid-argument",
+      "La timeline guidée dépasse 60 secondes."
+    );
   }
-  return maxDuration;
+  return total;
 }
 
 function downloadFile(url: string, dest: string): Promise<void> {
@@ -237,19 +316,41 @@ function downloadFile(url: string, dest: string): Promise<void> {
  */
 async function ffmpegConcat(
   segments: NormalisedSegment[],
-  rules: AudioRules,
+  rawRules: AudioRules,
   workDir: string
 ): Promise<{ videoPath: string; thumbPath: string; duration: number }> {
   if (!ffmpegLib) {
     throw new Error("FFmpeg unavailable in this environment.");
   }
+  const rules = normaliseAudioRules(rawRules);
+  // Chaîne unique obligatoire : EQ → AGC/gain → loudnorm. Elle est appliquée
+  // une première fois à chaque clip normalisé puis au master final pour éviter
+  // les écarts de niveau entre plans IA et plans utilisateur.
+  const audioChain = buildAudioChain(rules);
   const inputs: string[] = [];
   const durations: number[] = [];
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
     if (!seg.videoUrl) continue;
-    const local = path.join(workDir, `seg_${i}.mp4`);
-    await downloadFile(seg.videoUrl, local);
+    const downloaded = path.join(workDir, `raw_${i}.mp4`);
+    const local = path.join(workDir, `clip_${i}.mp4`);
+    await downloadFile(seg.videoUrl, downloaded);
+    await new Promise<void>((resolve, reject) => {
+      const cmd = ffmpegLib(downloaded)
+        .inputOptions(["-ss", `${Math.max(0, seg.startSeconds)}`])
+        .duration(seg.durationSeconds)
+        .videoCodec("libx264")
+        .audioCodec("aac")
+        .size("1920x1080")
+        .videoBitrate("4500k")
+        .audioBitrate("192k")
+        .audioFilters(audioChain)
+        .outputOptions(["-pix_fmt", "yuv420p", "-movflags", "+faststart"])
+        .save(local)
+        .on("end", () => resolve())
+        .on("error", (err: Error) => reject(err));
+      void cmd;
+    });
     inputs.push(local);
     durations.push(Math.max(seg.durationSeconds, 0));
   }
@@ -259,11 +360,9 @@ async function ffmpegConcat(
 
   const videoPath = path.join(workDir, "final.mp4");
   const fadeMs = Math.max(0, Number(rules.crossfadeMillis ?? 0));
+  const shouldFade = rules.applyAudioFades !== false;
   const fadeSec = fadeMs / 1000;
-  const useCrossfade = fadeSec > 0 && inputs.length >= 2;
-
-  // Chaîne unique : EQ → AGC → loudnorm. Réutilisée en fast-path et en filtergraph.
-  const audioChain = buildAudioChain(rules);
+  const useCrossfade = shouldFade && fadeSec > 0 && inputs.length >= 2;
 
   let finalDuration = 0;
 
@@ -377,7 +476,7 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
   const ai = Array.isArray(data.aiSegments) ? data.aiSegments : [];
   const user = Array.isArray(data.userSegments) ? data.userSegments : [];
   const markers = Array.isArray(data.markers) ? data.markers : [];
-  const rules: AudioRules = data.audioRules ?? {};
+  const rules = normaliseAudioRules(data.audioRules ?? {});
 
   const merged = mergeSegments(markers, ai, user);
   const totalDuration = clampDuration(merged, maxDuration);
@@ -395,60 +494,88 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     maxDurationSeconds: maxDuration,
     segments: merged,
     audioRules: rules,
+    audioPipeline: {
+      equalizer: rules.equalizer,
+      autoGain: rules.autoGain,
+      normaliseLoudness: rules.normaliseLoudness,
+      loudnessTarget: "I=-16:TP=-1.5:LRA=11",
+    },
     status: "rendering",
   });
 
-  // Try the real FFmpeg render. On failure (no ffmpeg, network errors…),
-  // fall back to returning the last AI segment as a preview.
+  // Try the real FFmpeg render. Failure is explicit: no raw segment fallback.
   let finalVideoUrl = "";
   let thumbnailUrl = "";
-  let renderStatus: "preview_ready" | "pending_render" = "pending_render";
+  let renderStatus: "preview_ready" | "failed" = "failed";
 
-  if (ffmpegLib) {
-    const workDir = await fs.mkdtemp(path.join(os.tmpdir(), `take60-${renderId}-`));
-    try {
-      const { videoPath, thumbPath, duration } = await ffmpegConcat(
-        merged,
-        rules,
-        workDir
-      );
-      const bucket = admin.storage().bucket();
-      const videoRemote = `take60_renders/${auth.uid}/${renderId}.mp4`;
-      const thumbRemote = `take60_renders/${auth.uid}/${renderId}.jpg`;
-      await bucket.upload(videoPath, {
-        destination: videoRemote,
-        contentType: "video/mp4",
-        metadata: { contentType: "video/mp4" },
-      });
-      await bucket.upload(thumbPath, {
-        destination: thumbRemote,
-        contentType: "image/jpeg",
-        metadata: { contentType: "image/jpeg" },
-      });
-      const [videoUrl] = await bucket.file(videoRemote).getSignedUrl({
-        action: "read",
-        expires: Date.now() + 1000 * 60 * 60 * 24 * 30,
-      });
-      const [thumbUrl] = await bucket.file(thumbRemote).getSignedUrl({
-        action: "read",
-        expires: Date.now() + 1000 * 60 * 60 * 24 * 30,
-      });
-      finalVideoUrl = videoUrl;
-      thumbnailUrl = thumbUrl;
-      renderStatus = "preview_ready";
-      logger.info(`Take60 render ${renderId} ok (${duration}s)`);
-    } catch (err) {
-      logger.error(`Take60 render ${renderId} failed`, err as Error);
-    } finally {
-      await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
-    }
+  if (!ffmpegLib) {
+    await renderRef.set(
+      {
+        status: "failed",
+        renderStatus: "failed",
+        error: "FFmpeg unavailable in this environment.",
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    throw new HttpsError(
+      "failed-precondition",
+      "Le moteur FFmpeg est indisponible pour générer le montage final."
+    );
   }
 
-  if (!finalVideoUrl) {
-    // Fallback: pick the last segment with a reachable URL.
-    const finalSeg = [...merged].reverse().find((s) => s.videoUrl);
-    finalVideoUrl = finalSeg?.videoUrl ?? "";
-    renderStatus = finalVideoUrl ? "preview_ready" : "pending_render";
+  const workDir = await fs.mkdtemp(path.join(os.tmpdir(), `take60-${renderId}-`));
+  try {
+    const { videoPath, thumbPath, duration } = await ffmpegConcat(
+      merged,
+      rules,
+      workDir
+    );
+    const bucket = admin.storage().bucket();
+    const videoRemote = `take60_renders/${auth.uid}/${renderId}.mp4`;
+    const thumbRemote = `take60_renders/${auth.uid}/${renderId}.jpg`;
+    await bucket.upload(videoPath, {
+      destination: videoRemote,
+      contentType: "video/mp4",
+      metadata: { contentType: "video/mp4" },
+    });
+    await bucket.upload(thumbPath, {
+      destination: thumbRemote,
+      contentType: "image/jpeg",
+      metadata: { contentType: "image/jpeg" },
+    });
+    const [videoUrl] = await bucket.file(videoRemote).getSignedUrl({
+      action: "read",
+      expires: Date.now() + 1000 * 60 * 60 * 24 * 30,
+    });
+    const [thumbUrl] = await bucket.file(thumbRemote).getSignedUrl({
+      action: "read",
+      expires: Date.now() + 1000 * 60 * 60 * 24 * 30,
+    });
+    finalVideoUrl = videoUrl;
+    thumbnailUrl = thumbUrl;
+    renderStatus = "preview_ready";
+    logger.info(`Take60 render ${renderId} ok (${duration}s)`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : `${err}`;
+    logger.error(`Take60 render ${renderId} failed`, err as Error);
+    await renderRef.set(
+      {
+        finalVideoUrl: "",
+        thumbnailUrl: "",
+        status: "failed",
+        renderStatus: "failed",
+        error: message,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    throw new HttpsError(
+      "internal",
+      "Le montage final n’a pas pu être généré. Réessaie ou rejoue certains plans."
+    );
+  } finally {
+    await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
   }
 
   await renderRef.set(
@@ -456,6 +583,7 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
       finalVideoUrl,
       thumbnailUrl,
       status: renderStatus,
+      renderStatus,
       durationSeconds: totalDuration,
       updatedAt: FieldValue.serverTimestamp(),
     },

@@ -178,6 +178,9 @@ class Take60GuidedSceneService {
               'videoUrl': (marker.videoUrl?.isNotEmpty ?? false)
                   ? marker.videoUrl
                   : scene.videoUrl,
+              'source': marker.source,
+              'startSeconds': marker.startSeconds,
+              'endSeconds': marker.endSeconds,
               'durationSeconds': marker.durationSeconds,
               'order': marker.order,
             },
@@ -189,6 +192,9 @@ class Take60GuidedSceneService {
               'markerId': recording.markerId,
               'type': GuidedMarkerType.userPlan.value,
               'videoUrl': recording.uploadedVideoUrl,
+              'source': 'user_video',
+              'startSeconds': recording.startSecond,
+              'endSeconds': recording.endSecond,
               'durationSeconds': recording.durationSeconds,
             },
           )
@@ -198,7 +204,10 @@ class Take60GuidedSceneService {
             (marker) => {
               'markerId': marker.id,
               'type': marker.type.value,
+              'source': marker.source,
               'order': marker.order,
+              'startSeconds': marker.startSeconds,
+              'endSeconds': marker.endSeconds,
               'durationSeconds': marker.durationSeconds,
             },
           )

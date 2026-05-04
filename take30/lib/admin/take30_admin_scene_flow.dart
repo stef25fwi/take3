@@ -3165,6 +3165,32 @@ class _AddScenePageState extends State<AddScenePage> {
     return true;
   }
 
+  int _timelineTotalDurationSeconds(List<Map<String, dynamic>> markers) {
+    return markers.fold<int>(
+      0,
+      (totalSeconds, marker) =>
+          totalSeconds + ((marker['durationSeconds'] as num?)?.toInt() ?? 0),
+    );
+  }
+
+  bool _validateTimelineDurationForPublish({bool showError = true}) {
+    final markers = _tryReadTimelineMarkers();
+    if (markers == null) {
+      return _validateTimelineIfPresent(showError: showError);
+    }
+    final total = _timelineTotalDurationSeconds(markers);
+    if (total > 60) {
+      if (showError) {
+        _showAdminMessage(
+          'La timeline dépasse 60 secondes. Réduis la durée des plans avant de publier.',
+          backgroundColor: const Color(0xFFB91C1C),
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
   bool _validateBeforePublish({bool showMessage = true}) {
     final missing = _missingRequiredPublicationFields();
     if (missing.isNotEmpty) {
@@ -3178,6 +3204,10 @@ class _AddScenePageState extends State<AddScenePage> {
     }
 
     if (!_validateTimelineIfPresent(showError: showMessage)) {
+      return false;
+    }
+
+    if (!_validateTimelineDurationForPublish(showError: showMessage)) {
       return false;
     }
 
@@ -4983,6 +5013,10 @@ class _AddScenePageState extends State<AddScenePage> {
     if (status != SceneStatus.draft) {
       final timeline = _tryDecodeGuidedTimelineJson(showError: true);
       if (timeline == null) {
+        _setCurrentStep(2, sectionKey: _timelineSectionKey);
+        return;
+      }
+      if (!_validateTimelineDurationForPublish(showError: true)) {
         _setCurrentStep(2, sectionKey: _timelineSectionKey);
         return;
       }
