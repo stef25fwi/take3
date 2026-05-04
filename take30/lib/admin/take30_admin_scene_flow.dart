@@ -1,8 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fa;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
@@ -28,9 +29,10 @@ const _kAdminPassword = String.fromEnvironment(
   'TAKE30_ADMIN_PASSWORD',
   defaultValue: 'Take60Admin2026!',
 );
+const _kDefaultVeoIntroDurationSeconds = 15;
 
 const _kDefaultVeoPrompt =
-    'Video cinematique realiste de 8 secondes, format 16:9, ambiance de court-metrage dramatique. '
+    'Video cinematique realiste de 15 secondes, format 16:9, ambiance de court-metrage dramatique. '
     'Plan large au debut sur une rue calme en fin d\'apres-midi, lumiere doree, atmosphere legerement tendue. '
     'La camera avance lentement en travelling vers l\'entree d\'un petit batiment, profondeur de champ cinematographique, '
     'rendu realiste, mouvement fluide, couleurs naturelles, style film independant. '
@@ -50,7 +52,7 @@ Drame / Thriller
 TEXTE / DIALOGUE ACTEUR
 Je n'ai rien vu, lieutenant. Vous voulez que je dise quoi exactement ?
 
-PROMPT VEO POUR LA VIDÉO IA D’INTRO 8 SECONDES
+PROMPT VEO POUR LA VIDÉO IA D’INTRO 15 SECONDES
 Plan large d'une salle d'interrogatoire sobre, néons froids, caméra lente qui glisse vers la table métallique, tension policière réaliste, fin sur une chaise vide prête à accueillir le suspect.
 
 TIMELINE TAKE60 GUIDÉE JSON
@@ -1814,15 +1816,15 @@ class SceneFormData {
       'aiIntroVideo': aiIntroVideo == null
           ? null
           : {
-              'provider': aiIntroVideo!.provider,
-              'prompt': aiIntroVideo!.prompt,
-              'videoUrl': aiIntroVideo!.videoUrl,
-              'thumbnailUrl': aiIntroVideo!.thumbnailUrl,
-              'durationSeconds': aiIntroVideo!.durationSeconds,
-              'aspectRatio': aiIntroVideo!.aspectRatio,
-              'status': aiIntroVideo!.status.value,
+            ...aiIntroVideo!.toJson(),
               'generatedAt': Timestamp.fromDate(aiIntroVideo!.generatedAt),
               'updatedAt': Timestamp.fromDate(aiIntroVideo!.updatedAt),
+            'generationStartedAt': aiIntroVideo!.generationStartedAt == null
+              ? null
+              : Timestamp.fromDate(aiIntroVideo!.generationStartedAt!),
+            'generationUpdatedAt': aiIntroVideo!.generationUpdatedAt == null
+              ? null
+              : Timestamp.fromDate(aiIntroVideo!.generationUpdatedAt!),
             },
       'raccord': {
         'visualTransitionPoint': visualTransitionPoint,
@@ -1954,27 +1956,19 @@ class SceneFormData {
           .toList(),
       aiIntroVideo: aiIntroVideo == null
           ? null
-          : AiGeneratedVideo(
-              provider: aiIntroVideo['provider'] as String? ?? 'veo3',
-              prompt: aiIntroVideo['prompt'] as String? ?? '',
-              videoUrl: aiIntroVideo['videoUrl'] as String? ?? '',
-              thumbnailUrl: aiIntroVideo['thumbnailUrl'] as String?,
-              durationSeconds:
-                  (aiIntroVideo['durationSeconds'] as num?)?.toInt() ?? 8,
-              aspectRatio: aiIntroVideo['aspectRatio'] as String? ?? '16:9',
-              status: aiIntroVideoStatusFromString(
-                aiIntroVideo['status'] as String?,
-              ),
-              generatedAt: _readAdminDate(aiIntroVideo['generatedAt']),
-              updatedAt: _readAdminDate(aiIntroVideo['updatedAt']),
-            ),
+          : AiGeneratedVideo.fromJson(Map<String, dynamic>.from(aiIntroVideo)),
       veoPrompt: data['veoPrompt'] as String? ??
           aiIntroVideo?['prompt'] as String? ??
           '',
       veoStatus: data['veoStatus'] as String? ??
+          aiIntroVideo?['generationStatus'] as String? ??
           (aiIntroVideo == null ? 'none' : 'completed'),
-      veoOperationId: data['veoOperationId'] as String?,
-      veoError: data['veoError'] as String?,
+        veoOperationId: data['veoOperationId'] as String? ??
+          aiIntroVideo?['veoOperationId'] as String? ??
+          aiIntroVideo?['operationId'] as String?,
+        veoError: data['veoError'] as String? ??
+          aiIntroVideo?['errorMessage'] as String? ??
+          aiIntroVideo?['veoError'] as String?,
       visualTransitionPoint: raccord['visualTransitionPoint'] as String? ?? '',
       emotionalTransitionPoint:
           raccord['emotionalTransitionPoint'] as String? ?? '',
@@ -3105,6 +3099,8 @@ class _AddScenePageState extends State<AddScenePage> {
   String? _veoGenerationError;
   AiGeneratedVideo? _generatedPreviewVideo;
   AiGeneratedVideo? _validatedPreviewVideo;
+  Timer? _veoElapsedTimer;
+  int _veoElapsedSeconds = 0;
   List<String> _testedPrompts = [];
   SceneStatus _selectedPublicationTarget = SceneStatus.draft;
   _PromptImportSummary? _lastPromptImportSummary;
@@ -3341,12 +3337,17 @@ class _AddScenePageState extends State<AddScenePage> {
     _isVeoPromptLocked = data.aiIntroVideo != null;
     _veoStatusValue = data.veoStatus;
     _veoOperationId = data.veoOperationId;
+    _veoGenerationStatus = data.aiIntroVideo?.isGenerating == true
+      ? _statusMessageFor(veoGenerationStatusFromString(data.veoStatus))
+      : null;
     _veoGenerationError = data.veoError;
     _selectedPublicationTarget = data.status;
+    _syncVeoElapsedTimer();
   }
 
   @override
   void dispose() {
+    _veoElapsedTimer?.cancel();
     _speechToText.cancel();
     _scrollController.dispose();
     for (final c in [
@@ -3429,13 +3430,26 @@ class _AddScenePageState extends State<AddScenePage> {
 
   SceneFormData _composeData(SceneStatus status, {DateTime? updatedAt}) {
     final now = updatedAt ?? DateTime.now();
-    final currentVideo =
-        (_validatedPreviewVideo ?? _generatedPreviewVideo)?.copyWith(
+    final currentVideoSource = _validatedPreviewVideo ?? _generatedPreviewVideo;
+    final currentVideo = currentVideoSource?.copyWith(
       status: _validatedPreviewVideo != null
           ? AiIntroVideoStatus.validated
           : (_generatedPreviewVideo?.status ?? AiIntroVideoStatus.generated),
       prompt: veoPromptCtrl.text.trim(),
       updatedAt: now,
+      generationStatus:
+        currentVideoSource.generationStatus ?? _normalizedVeoStatusValue(),
+      generationUpdatedAt:
+        currentVideoSource.isGenerating ? now : currentVideoSource.generationUpdatedAt,
+      estimatedDurationSeconds: currentVideoSource.estimatedDurationSeconds,
+      elapsedSeconds:
+        currentVideoSource.isGenerating ? _veoElapsedSeconds : currentVideoSource.elapsedSeconds,
+      progressPercent: currentVideoSource.hasPlayableVideo
+        ? (currentVideoSource.progressPercent ?? 100)
+        : currentVideoSource.progressPercent,
+      veoOperationId: currentVideoSource.veoOperationId ?? _veoOperationId,
+      veoModel: currentVideoSource.veoModel,
+      errorMessage: _veoGenerationError ?? currentVideoSource.errorMessage,
     );
     final geo = _deriveSceneGeoMetadata(
       countryCode: widget.initialData?.countryCode,
@@ -4226,17 +4240,35 @@ class _AddScenePageState extends State<AddScenePage> {
   }
 
   AiGeneratedVideo _buildAiVideoFromJob(VeoGenerationJob job, String prompt) {
-    final generatedAt = job.updatedAt ?? DateTime.now();
+    final previousVideo = _generatedPreviewVideo;
+    final updatedAt = job.generationUpdatedAt ?? job.updatedAt ?? DateTime.now();
+    final startedAt =
+        job.generationStartedAt ?? previousVideo?.generationStartedAt ?? updatedAt;
+    final isCompleted = job.isCompleted && (job.videoUrl?.isNotEmpty ?? false);
     return AiGeneratedVideo(
-      provider: 'veo3',
+      provider: job.provider ?? previousVideo?.provider ?? 'veo3',
       prompt: job.prompt.isEmpty ? prompt : job.prompt,
       videoUrl: job.videoUrl ?? '',
       thumbnailUrl: job.thumbnailUrl,
       durationSeconds: job.durationSeconds,
-      aspectRatio: job.aspectRatio,
-      status: AiIntroVideoStatus.generated,
-      generatedAt: generatedAt,
-      updatedAt: generatedAt,
+      aspectRatio: job.aspectRatio.isEmpty ? '16:9' : job.aspectRatio,
+      status: job.isFailed
+          ? AiIntroVideoStatus.failed
+          : (isCompleted
+              ? AiIntroVideoStatus.generated
+              : AiIntroVideoStatus.generating),
+      generatedAt: previousVideo?.generatedAt ?? updatedAt,
+      updatedAt: updatedAt,
+      generationStatus: job.generationStatus,
+      generationStartedAt: startedAt,
+      generationUpdatedAt: updatedAt,
+      estimatedDurationSeconds:
+          job.estimatedDurationSeconds ?? previousVideo?.estimatedDurationSeconds,
+      elapsedSeconds: job.elapsedSeconds,
+      progressPercent: job.progressPercent ?? (isCompleted ? 100 : null),
+      veoOperationId: job.operationId ?? _veoOperationId,
+      veoModel: job.veoModel ?? previousVideo?.veoModel,
+      errorMessage: job.errorMessage,
     );
   }
 
@@ -4270,11 +4302,13 @@ class _AddScenePageState extends State<AddScenePage> {
           _veoGenerationStatus =
               'Preview générée. Vérifie le raccord final puis valide la vidéo.';
         });
+        _syncVeoElapsedTimer();
         return;
       }
 
       if (job.isFailed) {
         setState(() {
+          _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
           _isGeneratingPreview = false;
           _isVeoPromptLocked = false;
           _veoStatusValue = job.status.value;
@@ -4282,14 +4316,19 @@ class _AddScenePageState extends State<AddScenePage> {
           _veoGenerationError =
               job.errorMessage ?? 'La génération VEO a échoué côté backend.';
         });
+        _syncVeoElapsedTimer();
         return;
       }
 
       setState(() {
+        _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+        _validatedPreviewVideo = null;
         _veoStatusValue = job.status.value;
         _veoOperationId = job.operationId ?? _veoOperationId;
         _veoGenerationStatus = _statusMessageFor(job.status);
+        _veoGenerationError = null;
       });
+      _syncVeoElapsedTimer();
     }
 
     if (!mounted) {
@@ -4304,6 +4343,7 @@ class _AddScenePageState extends State<AddScenePage> {
           'La génération vidéo IA continue côté backend. Vérifie à nouveau dans quelques instants sans relancer le prompt.';
       _veoGenerationError = null;
     });
+    _syncVeoElapsedTimer();
   }
 
   Future<void> _checkPendingCallableVeoGeneration() async {
@@ -4316,6 +4356,7 @@ class _AddScenePageState extends State<AddScenePage> {
       _veoGenerationError = null;
       _veoGenerationStatus = 'Vérification du job vidéo IA en cours…';
     });
+    _syncVeoElapsedTimer();
     try {
       await _pollCallablePreviewGeneration(
         prompt,
@@ -4332,6 +4373,7 @@ class _AddScenePageState extends State<AddScenePage> {
         _veoGenerationStatus = null;
         _veoGenerationError = error.message;
       });
+      _syncVeoElapsedTimer();
     } catch (_) {
       if (!mounted) {
         return;
@@ -4342,6 +4384,7 @@ class _AddScenePageState extends State<AddScenePage> {
         _veoGenerationError =
             'Impossible de vérifier la génération vidéo IA pour le moment.';
       });
+      _syncVeoElapsedTimer();
     }
   }
 
@@ -4421,7 +4464,7 @@ class _AddScenePageState extends State<AddScenePage> {
     if (_validatedPreviewVideo != null) {
       return 'Vidéo validée pour cette scène.';
     }
-    if (_generatedPreviewVideo != null) {
+    if (_generatedPreviewVideo?.hasPlayableVideo == true) {
       return 'Preview générée. Vérifiez la vidéo avant de l’utiliser.';
     }
     if (_isGeneratingPreview) {
@@ -4434,6 +4477,378 @@ class _AddScenePageState extends State<AddScenePage> {
       return 'Aucun prompt vidéo pour le moment.';
     }
     return 'Le prompt est prêt. Vous pouvez tester une vidéo IA.';
+  }
+
+  bool get _hasPlayableGeneratedPreview =>
+      _generatedPreviewVideo?.hasPlayableVideo ?? false;
+
+  bool get _shouldShowVeoProgressCard {
+    final snapshot = _generatedPreviewVideo ?? _validatedPreviewVideo;
+    return _isGeneratingPreview ||
+        _hasPendingCallableVeoJob ||
+        (snapshot?.isGenerating ?? false);
+  }
+
+  int _resolveVeoElapsedSeconds(AiGeneratedVideo? snapshot) {
+    if (snapshot == null) {
+      return 0;
+    }
+    final stored = snapshot.elapsedSeconds ?? 0;
+    final startedAt = snapshot.generationStartedAt;
+    if (startedAt == null) {
+      return stored;
+    }
+    final diff = DateTime.now().difference(startedAt).inSeconds;
+    return diff > stored ? diff : stored;
+  }
+
+  void _syncVeoElapsedTimer() {
+    _veoElapsedTimer?.cancel();
+    _veoElapsedTimer = null;
+
+    final snapshot = _generatedPreviewVideo ?? _validatedPreviewVideo;
+    _veoElapsedSeconds = _resolveVeoElapsedSeconds(snapshot);
+    if (!(snapshot?.isGenerating ?? false)) {
+      return;
+    }
+
+    _veoElapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _veoElapsedSeconds = _resolveVeoElapsedSeconds(
+          _generatedPreviewVideo ?? _validatedPreviewVideo,
+        );
+      });
+    });
+  }
+
+  String _formatClockDuration(int totalSeconds) {
+    final safeSeconds = totalSeconds < 0 ? 0 : totalSeconds;
+    final minutes = safeSeconds ~/ 60;
+    final seconds = safeSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _formatApproximateDuration(int totalSeconds) {
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
+    if (minutes <= 0) {
+      return '$seconds s';
+    }
+    if (seconds == 0) {
+      return '$minutes min';
+    }
+    return '$minutes min $seconds s';
+  }
+
+  String _veoEstimatedDurationLabel(AiGeneratedVideo? snapshot) {
+    final estimate = snapshot?.estimatedDurationSeconds;
+    if (estimate != null && estimate > 0) {
+      return 'Temps estimé : environ ${_formatApproximateDuration(estimate)}';
+    }
+    if ((snapshot?.generationStatus == 'queued' ||
+            snapshot?.generationStatus == 'generating') ||
+        _isGeneratingPreview ||
+        _hasPendingCallableVeoJob) {
+      return 'Temps estimé : quelques minutes';
+    }
+    return 'Estimation indisponible pour le moment';
+  }
+
+  Widget _buildVeoProgressStep({
+    required String label,
+    required bool completed,
+    required bool active,
+    required bool isLast,
+  }) {
+    final color = completed || active
+        ? const Color(0xFF38BDF8)
+        : const Color(0xFF475569);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: completed
+                    ? const Color(0xFF22C55E)
+                    : active
+                        ? const Color(0xFF38BDF8)
+                        : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 2),
+                boxShadow: active
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x5538BDF8),
+                          blurRadius: 12,
+                          offset: Offset(0, 0),
+                        ),
+                      ]
+                    : const [],
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 26,
+                color: color.withValues(alpha: 0.45),
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: completed || active
+                    ? Colors.white
+                    : const Color(0xFFCBD5E1),
+                fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVeoGenerationProgressCard() {
+    final snapshot = _generatedPreviewVideo ?? _validatedPreviewVideo;
+    final progressPercent = snapshot?.progressPercent;
+    final progressValue = progressPercent == null
+        ? null
+        : progressPercent.clamp(0, 100) / 100;
+    final hasPreciseEstimate = snapshot?.estimatedDurationSeconds != null;
+    final hasPreciseProgress = progressPercent != null;
+    final isReady = _hasPlayableGeneratedPreview ||
+        (_validatedPreviewVideo?.hasPlayableVideo ?? false);
+    final isReviewActive = isReady && _validatedPreviewVideo == null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F172A), Color(0xFF111827), Color(0xFF172554)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 24,
+            offset: Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: const Color(0xFF38BDF8).withValues(alpha: 0.16),
+                  border: Border.all(
+                    color: const Color(0xFF7DD3FC).withValues(alpha: 0.35),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Color(0xFFE0F2FE),
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Génération de la vidéo IA en cours…',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'VEO prépare la séquence d’introduction de 15 secondes.',
+                      style: TextStyle(
+                        color: Color(0xFFCBD5E1),
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Chip(
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
+                label: Text(
+                  _veoEstimatedDurationLabel(snapshot),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              Chip(
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
+                label: Text(
+                  'Temps écoulé : ${_formatClockDuration(_veoElapsedSeconds)}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              if (snapshot?.veoModel?.trim().isNotEmpty ?? false)
+                Chip(
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  label: Text(
+                    'Modèle : ${snapshot!.veoModel}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              if (_veoOperationId?.trim().isNotEmpty ?? false)
+                Chip(
+                  backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  label: Text(
+                    'Opération : $_veoOperationId',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            hasPreciseProgress
+                ? 'Progression VEO : $progressPercent%'
+                : 'Progression VEO : en attente du backend',
+            style: const TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: progressValue,
+              minHeight: 10,
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF38BDF8)),
+            ),
+          ),
+          if (!hasPreciseEstimate && !hasPreciseProgress) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: const Text(
+                'VEO ne fournit pas encore d’estimation précise. La génération peut prendre quelques minutes.',
+                style: TextStyle(
+                  color: Color(0xFFE2E8F0),
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildVeoProgressStep(
+                  label: 'Prompt envoyé',
+                  completed: veoPromptCtrl.text.trim().isNotEmpty,
+                  active: snapshot != null,
+                  isLast: false,
+                ),
+                _buildVeoProgressStep(
+                  label: 'Génération vidéo',
+                  completed: isReady,
+                  active: !isReady,
+                  isLast: false,
+                ),
+                _buildVeoProgressStep(
+                  label: 'Vérification du rendu',
+                  completed: _validatedPreviewVideo != null,
+                  active: isReviewActive,
+                  isLast: false,
+                ),
+                _buildVeoProgressStep(
+                  label: 'Vidéo prête',
+                  completed: isReady,
+                  active: isReady,
+                  isLast: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Vous pouvez rester sur cette page pendant la génération.',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'La scène sera disponible dans la bibliothèque dès que la vidéo sera prête.',
+            style: TextStyle(
+              color: Color(0xFFCBD5E1),
+              height: 1.45,
+            ),
+          ),
+          if (_veoGenerationError != null) ...[
+            const SizedBox(height: 14),
+            Text(
+              _veoGenerationError!,
+              style: const TextStyle(
+                color: Color(0xFFFCA5A5),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   List<Map<String, dynamic>>? _tryReadTimelineMarkers() {
@@ -5151,7 +5566,7 @@ class _AddScenePageState extends State<AddScenePage> {
                               if (_isVeoHelpExpanded) ...[
                                 const SizedBox(height: 10),
                                 const Text(
-                                    '• Durée recommandée : 8 secondes.'),
+                                  '• Durée recommandée : 15 secondes.'),
                                 const Text('• Format recommandé : 16:9.'),
                                 const Text(
                                     '• Décrire le décor, l’ambiance, la lumière, le mouvement de caméra et le raccord final.'),
@@ -5201,7 +5616,9 @@ class _AddScenePageState extends State<AddScenePage> {
                                 )
                                 .toList(),
                           ),
-                        if (_veoGenerationError != null ||
+                        if (_shouldShowVeoProgressCard)
+                          _buildVeoGenerationProgressCard()
+                        else if (_veoGenerationError != null ||
                             _veoGenerationStatus != null)
                           Container(
                             padding: const EdgeInsets.all(14),
@@ -5237,64 +5654,81 @@ class _AddScenePageState extends State<AddScenePage> {
                               ],
                             ),
                           ),
-                        FilledButton.icon(
-                          onPressed: _isGeneratingPreview
-                            ? null
-                            : _handleVeoPrimaryAction,
-                          icon: _isGeneratingPreview
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  _hasPendingCallableVeoJob
-                                      ? Icons.refresh_rounded
-                                      : Icons.auto_awesome_rounded,
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: _isGeneratingPreview
+                                  ? null
+                                  : _handleVeoPrimaryAction,
+                              icon: _isGeneratingPreview
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(
+                                      _hasPendingCallableVeoJob
+                                          ? Icons.refresh_rounded
+                                          : Icons.auto_awesome_rounded,
+                                    ),
+                              label: Text(_veoPrimaryActionLabel()),
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(260, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
                                 ),
-                          label: Text(_veoPrimaryActionLabel()),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              ),
                             ),
-                          ),
+                            OutlinedButton.icon(
+                              onPressed: _saveDraft,
+                              icon: const Icon(Icons.save_outlined),
+                              label: const Text('Enregistrer le brouillon'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed:
+                                  _hasPendingCallableVeoJob && !_isGeneratingPreview
+                                      ? _checkPendingCallableVeoGeneration
+                                      : null,
+                              icon: const Icon(Icons.sync_rounded),
+                              label: const Text('Actualiser le statut'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: _hasPlayableGeneratedPreview
+                                  ? _correctVeoPrompt
+                                  : null,
+                              icon: const Icon(Icons.edit_rounded),
+                              label: const Text('Modifier le prompt'),
+                            ),
+                            FilledButton.icon(
+                              onPressed: _validatedPreviewVideo != null ||
+                                      !_hasPlayableGeneratedPreview ||
+                                      _isGeneratingPreview
+                                  ? null
+                                  : _validateGeneratedVideo,
+                              icon: Icon(
+                                _validatedPreviewVideo != null
+                                    ? Icons.check_circle_rounded
+                                    : Icons.verified_rounded,
+                              ),
+                              label: Text(
+                                _validatedPreviewVideo != null
+                                    ? 'Vidéo validée'
+                                    : 'Valider cette vidéo',
+                              ),
+                            ),
+                          ],
                         ),
-                        if (_generatedPreviewVideo != null) ...[
+                        if (_hasPlayableGeneratedPreview) ...[
                           AdminVideoPreview(
                             videoUrl: _generatedPreviewVideo!.videoUrl,
                             thumbnailUrl: _generatedPreviewVideo!.thumbnailUrl,
                             caption:
                                 'Vidéo IA d’introduction — destinée à créer l’ambiance de la scène.',
-                          ),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed: _correctVeoPrompt,
-                                icon: const Icon(Icons.edit_rounded),
-                                label: const Text('Modifier le prompt'),
-                              ),
-                              FilledButton.icon(
-                                onPressed: _validatedPreviewVideo != null
-                                    ? null
-                                    : _validateGeneratedVideo,
-                                icon: Icon(
-                                  _validatedPreviewVideo != null
-                                      ? Icons.check_circle_rounded
-                                      : Icons.verified_rounded,
-                                ),
-                                label: Text(
-                                  _validatedPreviewVideo != null
-                                      ? 'Vidéo validée'
-                                      : 'Utiliser cette vidéo pour la scène',
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                                 ],
@@ -5957,23 +6391,45 @@ class _AddScenePageState extends State<AddScenePage> {
     }
 
     setState(() {
+      final now = DateTime.now();
       _veoGenerationError = null;
       _veoGenerationStatus = 'Génération vidéo IA demandée. Le backend prépare le job.';
       _isGeneratingPreview = true;
       _isVeoPromptLocked = true;
       _veoStatusValue = 'queued';
       _veoOperationId = null;
+      _generatedPreviewVideo = AiGeneratedVideo(
+        provider: _generatedPreviewVideo?.provider ?? 'veo3',
+        prompt: prompt,
+        videoUrl: '',
+        thumbnailUrl: _generatedPreviewVideo?.thumbnailUrl,
+        durationSeconds: _kDefaultVeoIntroDurationSeconds,
+        aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
+            ? '16:9'
+            : requestedVideoFormatCtrl.text.trim(),
+        status: AiIntroVideoStatus.generating,
+        generatedAt: now,
+        updatedAt: now,
+        generationStatus: 'queued',
+        generationStartedAt: now,
+        generationUpdatedAt: now,
+        elapsedSeconds: 0,
+        veoOperationId: null,
+        veoModel: _generatedPreviewVideo?.veoModel,
+      );
+      _validatedPreviewVideo = null;
       if (!_testedPrompts.contains(prompt)) {
         _testedPrompts = [..._testedPrompts, prompt];
       }
     });
+    _syncVeoElapsedTimer();
 
     try {
       if (_useCallableVeoFlow) {
         final job = await _veoSceneGenerationService.requestVeoScenePreview(
           sceneId: _sceneDraftId,
           prompt: prompt,
-          durationSeconds: 8,
+          durationSeconds: _kDefaultVeoIntroDurationSeconds,
           aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
               ? '16:9'
               : requestedVideoFormatCtrl.text.trim(),
@@ -5984,10 +6440,14 @@ class _AddScenePageState extends State<AddScenePage> {
         }
 
         setState(() {
+          _generatedPreviewVideo = _buildAiVideoFromJob(job, prompt);
+          _validatedPreviewVideo = null;
           _veoStatusValue = job.status.value;
           _veoOperationId = job.operationId;
           _veoGenerationStatus = _statusMessageFor(job.status);
+          _veoGenerationError = job.errorMessage;
         });
+        _syncVeoElapsedTimer();
 
         if (job.isCompleted && (job.videoUrl?.isNotEmpty ?? false)) {
           setState(() {
@@ -5998,6 +6458,7 @@ class _AddScenePageState extends State<AddScenePage> {
             _veoGenerationStatus =
                 'Preview générée. Vérifie le raccord final puis valide la vidéo.';
           });
+          _syncVeoElapsedTimer();
           return;
         }
 
@@ -6009,7 +6470,7 @@ class _AddScenePageState extends State<AddScenePage> {
           await _veoVideoGenerationService.generateSceneIntroVideo(
         sceneDraftId: _sceneDraftId,
         prompt: prompt,
-        durationSeconds: 8,
+        durationSeconds: _kDefaultVeoIntroDurationSeconds,
         aspectRatio: requestedVideoFormatCtrl.text.trim().isEmpty
             ? '16:9'
             : requestedVideoFormatCtrl.text.trim(),
@@ -6020,7 +6481,17 @@ class _AddScenePageState extends State<AddScenePage> {
       }
 
       setState(() {
-        _generatedPreviewVideo = generated;
+        final completedAt = DateTime.now();
+        _generatedPreviewVideo = generated.copyWith(
+          generationStatus: generated.generationStatus ?? 'completed',
+          generationStartedAt:
+              generated.generationStartedAt ?? _generatedPreviewVideo?.generationStartedAt,
+          generationUpdatedAt: generated.generationUpdatedAt ?? completedAt,
+          elapsedSeconds:
+              generated.elapsedSeconds ?? _resolveVeoElapsedSeconds(_generatedPreviewVideo),
+          progressPercent: generated.progressPercent ?? 100,
+          veoOperationId: generated.veoOperationId ?? _veoOperationId,
+        );
         _validatedPreviewVideo = null;
         _isGeneratingPreview = false;
         _veoStatusValue = 'completed';
@@ -6028,6 +6499,7 @@ class _AddScenePageState extends State<AddScenePage> {
         _veoGenerationStatus =
             'Preview générée. Vérifie le raccord final puis valide la vidéo.';
       });
+      _syncVeoElapsedTimer();
     } on VeoSceneGenerationException catch (error) {
       if (!mounted) {
         return;
@@ -6038,7 +6510,15 @@ class _AddScenePageState extends State<AddScenePage> {
         _veoStatusValue = 'failed';
         _veoGenerationStatus = null;
         _veoGenerationError = error.message;
+        _generatedPreviewVideo = _generatedPreviewVideo?.copyWith(
+          status: AiIntroVideoStatus.failed,
+          generationStatus: 'failed',
+          generationUpdatedAt: DateTime.now(),
+          elapsedSeconds: _veoElapsedSeconds,
+          errorMessage: error.message,
+        );
       });
+      _syncVeoElapsedTimer();
     } catch (_) {
       if (!mounted) {
         return;
@@ -6050,7 +6530,16 @@ class _AddScenePageState extends State<AddScenePage> {
         _veoGenerationStatus = null;
         _veoGenerationError =
             'Impossible de générer la preview pour le moment. Réessaie.';
+        _generatedPreviewVideo = _generatedPreviewVideo?.copyWith(
+          status: AiIntroVideoStatus.failed,
+          generationStatus: 'failed',
+          generationUpdatedAt: DateTime.now(),
+          elapsedSeconds: _veoElapsedSeconds,
+          errorMessage:
+              'Impossible de générer la preview pour le moment. Réessaie.',
+        );
       });
+      _syncVeoElapsedTimer();
     }
   }
 
@@ -6068,7 +6557,7 @@ class _AddScenePageState extends State<AddScenePage> {
 
   Future<void> _validateGeneratedVideo() async {
     final preview = _generatedPreviewVideo;
-    if (preview == null) {
+    if (preview == null || !preview.hasPlayableVideo) {
       return;
     }
 
@@ -6078,12 +6567,18 @@ class _AddScenePageState extends State<AddScenePage> {
         prompt: veoPromptCtrl.text.trim(),
         status: AiIntroVideoStatus.validated,
         updatedAt: now,
+        generationStatus: 'completed',
+        generationUpdatedAt: now,
+        elapsedSeconds: preview.elapsedSeconds ?? _veoElapsedSeconds,
+        progressPercent: preview.progressPercent ?? 100,
+        veoOperationId: preview.veoOperationId ?? _veoOperationId,
       );
       _isVeoPromptLocked = true;
       _veoGenerationError = null;
       _veoGenerationStatus =
           'Vidéo IA validée. Tu peux finaliser la prévisualisation détaillée.';
     });
+    _syncVeoElapsedTimer();
 
     _setCurrentStep(3, sectionKey: _step16SectionKey);
   }

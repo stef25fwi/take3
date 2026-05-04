@@ -85,15 +85,28 @@ class CloudFunctionsVeoVideoGenerationService implements VeoVideoGenerationServi
   ) {
     final generatedAt = job.updatedAt ?? DateTime.now();
     return AiGeneratedVideo(
-      provider: 'veo3',
+      provider: job.provider ?? 'veo3',
       prompt: job.prompt.isEmpty ? prompt : job.prompt,
       videoUrl: job.videoUrl ?? '',
       thumbnailUrl: job.thumbnailUrl,
       durationSeconds: job.durationSeconds,
       aspectRatio: job.aspectRatio.isEmpty ? aspectRatio : job.aspectRatio,
-      status: aiIntroVideoStatusFromString(job.status.value),
+      status: job.isFailed
+          ? AiIntroVideoStatus.failed
+          : (job.isCompleted
+              ? AiIntroVideoStatus.generated
+              : AiIntroVideoStatus.generating),
       generatedAt: generatedAt,
       updatedAt: generatedAt,
+      generationStatus: job.generationStatus,
+      generationStartedAt: job.generationStartedAt,
+      generationUpdatedAt: job.generationUpdatedAt ?? generatedAt,
+      estimatedDurationSeconds: job.estimatedDurationSeconds,
+      elapsedSeconds: job.elapsedSeconds,
+      progressPercent: job.progressPercent,
+      veoOperationId: job.operationId,
+      veoModel: job.veoModel,
+      errorMessage: job.errorMessage,
     );
   }
 }
@@ -127,6 +140,13 @@ class MockVeoVideoGenerationService implements VeoVideoGenerationService {
       status: AiIntroVideoStatus.generated,
       generatedAt: now,
       updatedAt: now,
+      generationStatus: 'completed',
+      generationStartedAt: now.subtract(const Duration(seconds: 2)),
+      generationUpdatedAt: now,
+      estimatedDurationSeconds: 120,
+      elapsedSeconds: 2,
+      progressPercent: 100,
+      veoModel: 'mock-veo3',
     );
   }
 }

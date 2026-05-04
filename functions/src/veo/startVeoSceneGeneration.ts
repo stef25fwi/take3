@@ -77,6 +77,8 @@ export const startVeoSceneGeneration = onCall({
     );
   }
 
+  const nowIso = new Date().toISOString();
+
   await db().doc(`scenes/${sceneId}`).set(
     {
       id: sceneId,
@@ -84,9 +86,16 @@ export const startVeoSceneGeneration = onCall({
       veoPrompt: prompt,
       veoStatus: "queued",
       veoOperationId: startResult.operationId,
+      veoModel: config.modelId || null,
+      veoProvider: startResult.provider,
       veoError: FieldValue.delete(),
       durationSeconds,
       aspectRatio,
+      generationStartedAt: FieldValue.serverTimestamp(),
+      generationUpdatedAt: FieldValue.serverTimestamp(),
+      estimatedDurationSeconds: FieldValue.delete(),
+      elapsedSeconds: 0,
+      progressPercent: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true }
@@ -97,11 +106,18 @@ export const startVeoSceneGeneration = onCall({
     sceneId,
     operationId: startResult.operationId,
     status: startResult.status,
+    generationStatus: startResult.status,
     prompt,
     durationSeconds,
     aspectRatio,
+    generationStartedAt: nowIso,
+    generationUpdatedAt: nowIso,
+    elapsedSeconds: 0,
+    estimatedDurationSeconds: null,
+    progressPercent: null,
     vertexLocation: config.location || "TODO_VERTEX_LOCATION",
     modelId: config.modelId || "TODO_VEO_MODEL_ID",
+    veoModel: config.modelId || null,
     provider: startResult.provider,
   };
 });

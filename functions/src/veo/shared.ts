@@ -1,4 +1,4 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { defineSecret } from "firebase-functions/params";
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
@@ -13,10 +13,17 @@ export interface VeoSceneState {
   veoPrompt?: string;
   veoOperationId?: string;
   veoError?: string;
+  veoModel?: string;
+  veoProvider?: string;
   videoUrl?: string;
   thumbnailUrl?: string;
   durationSeconds?: number;
   aspectRatio?: string;
+  generationStartedAt?: Timestamp | Date | string;
+  generationUpdatedAt?: Timestamp | Date | string;
+  estimatedDurationSeconds?: number;
+  elapsedSeconds?: number;
+  progressPercent?: number;
   veoMockChecks?: number;
 }
 
@@ -113,12 +120,28 @@ export function parsePrompt(raw: unknown): string {
   return prompt;
 }
 
-export function parseDurationSeconds(raw: unknown): 4 | 6 | 8 {
-  const value = Number(raw ?? 8);
-  if (value !== 4 && value !== 6 && value !== 8) {
-    throw new HttpsError("invalid-argument", "durationSeconds doit valoir 4, 6 ou 8.");
+export function parseDurationSeconds(raw: unknown): 4 | 6 | 8 | 15 {
+  const value = Number(raw ?? 15);
+  if (value !== 4 && value !== 6 && value !== 8 && value !== 15) {
+    throw new HttpsError("invalid-argument", "durationSeconds doit valoir 4, 6, 8 ou 15.");
   }
-  return value as 4 | 6 | 8;
+  return value as 4 | 6 | 8 | 15;
+}
+
+export function readSceneDate(raw: unknown): Date | null {
+  if (raw instanceof Timestamp) {
+    return raw.toDate();
+  }
+  if (raw instanceof Date) {
+    return raw;
+  }
+  if (typeof raw === "string") {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  return null;
 }
 
 export function parseAspectRatio(raw: unknown): string {

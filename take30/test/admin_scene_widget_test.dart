@@ -45,6 +45,26 @@ AiGeneratedVideo _validatedTestVideo({String prompt = 'Prompt VEO validé'}) {
   );
 }
 
+AiGeneratedVideo _generatingTestVideo({String prompt = 'Prompt VEO en cours'}) {
+  final startedAt = DateTime(2026, 4, 27, 18, 0, 0);
+  return AiGeneratedVideo(
+    provider: 'veo3',
+    prompt: prompt,
+    videoUrl: '',
+    thumbnailUrl: 'https://example.com/generating.jpg',
+    durationSeconds: 15,
+    aspectRatio: '16:9',
+    status: AiIntroVideoStatus.generating,
+    generatedAt: startedAt,
+    updatedAt: startedAt,
+    generationStatus: 'generating',
+    generationStartedAt: startedAt,
+    generationUpdatedAt: startedAt,
+    veoOperationId: 'op_test_123',
+    veoModel: 'veo-3.1-fast-generate-001',
+  );
+}
+
 Future<void> _goToAdminStep(
   WidgetTester tester,
   int step,
@@ -83,10 +103,22 @@ void main() {
         ),
       );
 
-      await _goToAdminStep(tester, 3, 'Enrichissements');
+      final stepFinder = find.byWidgetPredicate((widget) {
+        if (widget is! ChoiceChip) {
+          return false;
+        }
+        final label = widget.label;
+        if (label is! Text) {
+          return false;
+        }
+        final data = label.data ?? '';
+        return data.startsWith('3. ') && data.contains('Enrichissements');
+      });
+      await tester.tap(stepFinder.first);
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Enrichissements IA'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.scrollUntilVisible(
         find.text('15) Vidéo IA d’introduction'),
@@ -113,15 +145,15 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Modifier le prompt'), findsOneWidget);
-      expect(find.text('Utiliser cette vidéo pour la scène'), findsOneWidget);
+      expect(find.text('Valider cette vidéo'), findsOneWidget);
 
       await tester.scrollUntilVisible(
-        find.text('Utiliser cette vidéo pour la scène'),
+        find.text('Valider cette vidéo'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pump(const Duration(milliseconds: 200));
-      await tester.tap(find.text('Utiliser cette vidéo pour la scène'));
+      await tester.tap(find.text('Valider cette vidéo'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -136,6 +168,82 @@ void main() {
       expect(find.textContaining('Plan 2 — Réplique principale'), findsOneWidget);
       expect(find.textContaining('Plan 3 — Fissure finale'), findsOneWidget);
       expect(find.textContaining('Vidéo IA'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'affiche la carte premium VEO avec fallback honnête quand aucune estimation ni progression n’est disponible',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 2800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final initialData = SceneFormData.testPoliceInterrogation().copyWith(
+        aiIntroVideo: _generatingTestVideo(),
+        veoPrompt: 'Prompt VEO en cours',
+        veoStatus: 'generating',
+        veoOperationId: 'op_test_123',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AddScenePage(
+            initialData: initialData,
+            veoVideoGenerationService: _FakeVeoVideoGenerationService(),
+          ),
+        ),
+      );
+
+      final stepFinder = find.byWidgetPredicate((widget) {
+        if (widget is! ChoiceChip) {
+          return false;
+        }
+        final label = widget.label;
+        if (label is! Text) {
+          return false;
+        }
+        final data = label.data ?? '';
+        return data.startsWith('3. ') && data.contains('Enrichissements');
+      });
+      await tester.tap(stepFinder.first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text('Enrichissements IA'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.scrollUntilVisible(
+        find.text('15) Vidéo IA d’introduction'),
+        600,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Génération de la vidéo IA en cours…'), findsOneWidget);
+      expect(
+        find.text('VEO prépare la séquence d’introduction de 15 secondes.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Temps estimé : quelques minutes'), findsOneWidget);
+      expect(find.textContaining('Temps écoulé :'), findsOneWidget);
+      expect(
+        find.text(
+          'VEO ne fournit pas encore d’estimation précise. La génération peut prendre quelques minutes.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Prompt envoyé'), findsOneWidget);
+      expect(find.text('Génération vidéo'), findsOneWidget);
+      expect(find.text('Vérification du rendu'), findsOneWidget);
+      expect(find.text('Vidéo prête'), findsOneWidget);
+      expect(find.text('Enregistrer le brouillon'), findsWidgets);
+      expect(find.text('Actualiser le statut'), findsOneWidget);
+
+      final validateButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Valider cette vidéo'),
+      );
+      expect(validateButton.onPressed, isNull);
     },
   );
 

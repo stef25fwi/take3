@@ -11,6 +11,7 @@ import {
   MOCK_VEO_THUMBNAIL_URL,
   MOCK_VEO_VIDEO_URL,
   parseSceneId,
+  readSceneDate,
   VeoSceneState,
   VEO_API_KEY,
 } from "./shared";
@@ -19,6 +20,30 @@ import {
   copyVertexAssetToFirebaseStorage,
   VertexResponseError,
 } from "./vertexClient";
+
+function buildGenerationMetadata(
+  scene: VeoSceneState,
+  status: "queued" | "generating" | "completed" | "failed",
+  fallbackUpdatedAt: Date,
+  providerFallback: "mock" | "vertex"
+) {
+  const startedAt = readSceneDate(scene.generationStartedAt);
+  const updatedAt = readSceneDate(scene.generationUpdatedAt) ?? fallbackUpdatedAt;
+  const elapsedSeconds = startedAt == null
+    ? scene.elapsedSeconds ?? null
+    : Math.max(0, Math.floor((fallbackUpdatedAt.getTime() - startedAt.getTime()) / 1000));
+
+  return {
+    generationStatus: status,
+    generationStartedAt: startedAt?.toISOString() ?? null,
+    generationUpdatedAt: updatedAt.toISOString(),
+    estimatedDurationSeconds: scene.estimatedDurationSeconds ?? null,
+    elapsedSeconds,
+    progressPercent: scene.progressPercent ?? (status === "completed" ? 100 : null),
+    veoModel: scene.veoModel ?? null,
+    provider: scene.veoProvider ?? providerFallback,
+  };
+}
 
 export const checkVeoSceneGeneration = onCall({
   secrets: [VEO_API_KEY],
@@ -43,6 +68,8 @@ export const checkVeoSceneGeneration = onCall({
   const scene = (snap.data() ?? {}) as VeoSceneState;
   const operationId = scene.veoOperationId ?? null;
   const currentStatus = scene.veoStatus ?? "none";
+  const config = getVertexVeoConfig();
+  const now = new Date();
   if (currentStatus === "completed" || currentStatus === "failed") {
     return {
       ok: true,
@@ -55,7 +82,13 @@ export const checkVeoSceneGeneration = onCall({
       errorMessage: scene.veoError ?? null,
       durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
-      updatedAt: new Date().toISOString(),
+      updatedAt: now.toISOString(),
+      ...buildGenerationMetadata(
+        scene,
+        currentStatus,
+        now,
+        isMockOperationId(operationId) || config.useMock ? "mock" : "vertex"
+      ),
     };
   }
 
@@ -65,8 +98,6 @@ export const checkVeoSceneGeneration = onCall({
       "Aucune operation VEO n'est associee a cette scene."
     );
   }
-
-  const config = getVertexVeoConfig();
   if (isMockOperationId(operationId) || config.useMock) {
     const checks = (scene.veoMockChecks ?? 0) + 1;
     if (checks < 2) {
@@ -74,6 +105,7 @@ export const checkVeoSceneGeneration = onCall({
         {
           veoStatus: "generating",
           veoMockChecks: checks,
+          generationUpdatedAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -86,7 +118,8 @@ export const checkVeoSceneGeneration = onCall({
         prompt: scene.veoPrompt ?? "",
         durationSeconds: scene.durationSeconds ?? 8,
         aspectRatio: scene.aspectRatio ?? "16:9",
-        updatedAt: new Date().toISOString(),
+        updatedAt: now.toISOString(),
+        ...buildGenerationMetadata(scene, "generating", now, "mock"),
       };
     }
 
@@ -97,6 +130,9 @@ export const checkVeoSceneGeneration = onCall({
         videoUrl: scene.videoUrl ?? MOCK_VEO_VIDEO_URL,
         thumbnailUrl: scene.thumbnailUrl ?? MOCK_VEO_THUMBNAIL_URL,
         veoError: FieldValue.delete(),
+        generationUpdatedAt: FieldValue.serverTimestamp(),
+        elapsedSeconds: buildGenerationMetadata(scene, "completed", now, "mock").elapsedSeconds,
+        progressPercent: 100,
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
@@ -112,7 +148,9 @@ export const checkVeoSceneGeneration = onCall({
       thumbnailUrl: scene.thumbnailUrl ?? MOCK_VEO_THUMBNAIL_URL,
       durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
-      updatedAt: new Date().toISOString(),
+      updatedAt: now.toISOString(),
+      ...buildGenerationMetadata(scene, "completed", now, "mock"),
+      progressPercent: 100,
     };
   }
 
@@ -130,6 +168,7 @@ export const checkVeoSceneGeneration = onCall({
       await sceneRef.set(
         {
           veoStatus: "generating",
+          generationUpdatedAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -142,15 +181,19 @@ export const checkVeoSceneGeneration = onCall({
         prompt: scene.veoPrompt ?? "",
         durationSeconds: scene.durationSeconds ?? 8,
         aspectRatio: scene.aspectRatio ?? "16:9",
-        updatedAt: new Date().toISOString(),
+        updatedAt: now.toISOString(),
+        ...buildGenerationMetadata(scene, "generating", now, "vertex"),
       };
     }
 
     if (vertexResult.status === "failed") {
+      const failureMeta = buildGenerationMetadata(scene, "failed", now, "vertex");
       await sceneRef.set(
         {
           veoStatus: "failed",
           veoError: vertexResult.errorMessage ?? "Erreur Vertex AI inconnue.",
+          generationUpdatedAt: FieldValue.serverTimestamp(),
+          elapsedSeconds: failureMeta.elapsedSeconds,
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -164,7 +207,8 @@ export const checkVeoSceneGeneration = onCall({
         errorMessage: vertexResult.errorMessage ?? "Erreur Vertex AI inconnue.",
         durationSeconds: scene.durationSeconds ?? 8,
         aspectRatio: scene.aspectRatio ?? "16:9",
-        updatedAt: new Date().toISOString(),
+        updatedAt: now.toISOString(),
+        ...failureMeta,
       };
     }
 
@@ -182,12 +226,17 @@ export const checkVeoSceneGeneration = onCall({
         )
       : scene.thumbnailUrl ?? buildFirebaseDownloadUrl(config.outputBucket, thumbnailPath);
 
+    const completedMeta = buildGenerationMetadata(scene, "completed", now, "vertex");
+
     await sceneRef.set(
       {
         veoStatus: "completed",
         videoUrl,
         thumbnailUrl,
         veoError: FieldValue.delete(),
+        generationUpdatedAt: FieldValue.serverTimestamp(),
+        elapsedSeconds: completedMeta.elapsedSeconds,
+        progressPercent: 100,
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
@@ -203,7 +252,9 @@ export const checkVeoSceneGeneration = onCall({
       thumbnailUrl,
       durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
-      updatedAt: new Date().toISOString(),
+      updatedAt: now.toISOString(),
+      ...completedMeta,
+      progressPercent: 100,
     };
   } catch (error) {
     const errorMessage = error instanceof VertexResponseError
@@ -225,10 +276,14 @@ export const checkVeoSceneGeneration = onCall({
       });
     }
 
+    const failureMeta = buildGenerationMetadata(scene, "failed", now, isMockOperationId(operationId) || config.useMock ? "mock" : "vertex");
+
     await sceneRef.set(
       {
         veoStatus: "failed",
         veoError: errorMessage,
+        generationUpdatedAt: FieldValue.serverTimestamp(),
+        elapsedSeconds: failureMeta.elapsedSeconds,
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
@@ -242,7 +297,8 @@ export const checkVeoSceneGeneration = onCall({
       errorMessage,
       durationSeconds: scene.durationSeconds ?? 8,
       aspectRatio: scene.aspectRatio ?? "16:9",
-      updatedAt: new Date().toISOString(),
+      updatedAt: now.toISOString(),
+      ...failureMeta,
     };
   }
 });
