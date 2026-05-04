@@ -94,9 +94,56 @@ void main() {
         isTrue,
       );
     });
+
+    test('rejects localhost and private network URLs', () {
+      expect(
+        isTake60RenderableRemoteVideoUrl('http://localhost:8080/video.mp4'),
+        isFalse,
+      );
+      expect(
+        isTake60RenderableRemoteVideoUrl('https://192.168.1.24/video.mp4'),
+        isFalse,
+      );
+      expect(
+        isTake60RenderableRemoteVideoUrl('https://10.0.0.1/video.mp4'),
+        isFalse,
+      );
+    });
+
+    test('allows debug mock URL only when explicitly enabled', () {
+      const mockUrl =
+          'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+      expect(
+        isTake60RenderableRemoteVideoUrl(mockUrl, allowDebugMock: true),
+        isTrue,
+      );
+      expect(
+        isTake60RenderableRemoteVideoUrl(mockUrl, allowDebugMock: false),
+        isFalse,
+      );
+    });
   });
 
   group('validateTake60RenderRequest', () {
+    test('rejects missing required user segment', () {
+      final scene = buildScene(aiVideoUrl: 'https://example.com/ai.mp4');
+
+      expect(
+        () => validateTake60RenderRequest(
+          scene: scene,
+          markers: scene.markers,
+          recordings: const [],
+        ),
+        throwsA(
+          isA<Take60GuidedSceneException>().having(
+            (error) => error.code,
+            'code',
+            'missing-user-segment',
+          ),
+        ),
+      );
+    });
+
     test('rejects mock AI segment URLs outside debug fallback', () {
       final scene = buildScene(
         aiVideoUrl:
@@ -150,6 +197,25 @@ void main() {
           recordings: [
             buildRecording(uploadedVideoUrl: 'https://example.com/user.mp4'),
           ],
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('accepts debug mock AI URL when debug override is enabled', () {
+      final scene = buildScene(
+        aiVideoUrl:
+            'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      );
+
+      expect(
+        () => validateTake60RenderRequest(
+          scene: scene,
+          markers: scene.markers,
+          recordings: [
+            buildRecording(uploadedVideoUrl: 'https://example.com/user.mp4'),
+          ],
+          allowDebugMockAi: true,
         ),
         returnsNormally,
       );

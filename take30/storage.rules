@@ -3,27 +3,33 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function isSignedIn() { return request.auth != null; }
-    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isMp4(name) { return name.matches('.*\\.mp4$'); }
+    function isJpg(name) { return name.matches('.*\\.jpg$'); }
 
-    match /scenes/{userId}/{fileName} {
+    // Vidéos de scènes : owner only, <= 50 MB, video/*
+    match /scenes/{uid}/{fileName} {
       allow read: if true;
-      allow write: if isOwner(userId)
-        && request.resource.size < 300 * 1024 * 1024
+      allow write: if isSelf(uid)
+        && isMp4(fileName)
+        && request.resource.size < 50 * 1024 * 1024
         && request.resource.contentType.matches('video/.*');
     }
 
-    match /thumbnails/{userId}/{fileName} {
+    // Thumbnails : owner only, <= 2 MB, image/*
+    match /thumbnails/{uid}/{fileName} {
       allow read: if true;
-      allow write: if isOwner(userId)
-        && request.resource.size < 10 * 1024 * 1024
+      allow write: if isSelf(uid)
+        && isJpg(fileName)
+        && request.resource.size < 2 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
 
+    // Avatars : owner only, <= 2 MB, image/*
     match /avatars/{fileName} {
       allow read: if true;
-      allow write: if isSignedIn()
-        && fileName == request.auth.uid + '.jpg'
-        && request.resource.size < 5 * 1024 * 1024
+      allow write: if fileName.matches('^' + request.auth.uid + '\\.jpg$')
+        && request.resource.size < 2 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
 
@@ -42,7 +48,7 @@ service firebase.storage {
     // Segments vidéo utilisateur Take60.
     match /take60_user_recordings/{userId}/{projectId}/{fileName} {
       allow read: if true;
-      allow write: if isOwner(userId)
+      allow write: if isSelf(userId)
         && fileName.matches('.*\\.mp4$')
         && request.resource.size < 300 * 1024 * 1024
         && request.resource.contentType.matches('video/.*');

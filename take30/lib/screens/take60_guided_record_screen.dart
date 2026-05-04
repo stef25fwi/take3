@@ -96,6 +96,8 @@ class _Take60GuidedRecordScreenState
   String _publicationStatus = '';
   String? _renderErrorMessage;
   String? _statusMessage;
+  bool _savingDraft = false;
+  bool _publishing = false;
   CameraInitResult? _cameraInitResult;
   String? _cameraPermissionMessage;
 
@@ -524,6 +526,45 @@ class _Take60GuidedRecordScreenState
     return requiredMarkers.isNotEmpty;
   }
 
+  Take60UserRecordingDraft? _recordingForMarker(Take60SceneMarker marker) {
+    return _recordings[marker.id] ??
+        (_previewRecording?.markerId == marker.id ? _previewRecording : null);
+  }
+
+  int get _requiredUserSegmentCount {
+    return _timeline.where((marker) => marker.requiresUserRecording).length;
+  }
+
+  int get _validatedUserSegmentCount {
+    var count = 0;
+    for (final marker in _timeline.where((m) => m.requiresUserRecording)) {
+      final recording = _recordingForMarker(marker);
+      if (recording?.status == UserPlanStatus.validated) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  int get _uploadedUserSegmentCount {
+    var count = 0;
+    for (final marker in _timeline.where((m) => m.requiresUserRecording)) {
+      final recording = _recordingForMarker(marker);
+      if (recording?.isUploaded == true) {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  double get _userSegmentProgress {
+    final requiredCount = _requiredUserSegmentCount;
+    if (requiredCount == 0) {
+      return 0;
+    }
+    return (_validatedUserSegmentCount / requiredCount).clamp(0, 1);
+  }
+
   bool get _isPreviewValidated {
     return _previewRecording?.status == UserPlanStatus.validated;
   }
@@ -610,16 +651,33 @@ class _Take60GuidedRecordScreenState
           'Le rendu final doit être disponible avant de garder ce Take en brouillon.');
       return;
     }
-    setState(() => _publicationStatus = 'Brouillon en cours d\'enregistrement…');
-    await _service.saveRenderedProject(
-      projectId: projectId,
-      scene: scene,
-      recordings: _recordings.values.toList(),
-      renderResult: renderResult,
-      status: 'draft',
-    );
-    if (!mounted) return;
-    setState(() => _publicationStatus = 'Brouillon enregistré.');
+    setState(() {
+      _savingDraft = true;
+      _publicationStatus = 'Brouillon en cours d\'enregistrement…';
+    });
+    try {
+      await _service.saveRenderedProject(
+        projectId: projectId,
+        scene: scene,
+        recordings: _recordings.values.toList(),
+        renderResult: renderResult,
+        status: 'draft',
+      );
+      if (!mounted) return;
+      setState(() => _publicationStatus = 'Brouillon enregistré.');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _publicationStatus =
+            'Impossible d\'enregistrer le brouillon pour le moment.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _savingDraft = false;
+        });
+      }
+    }
   }
 
   Future<void> _publish() async {
@@ -632,17 +690,33 @@ class _Take60GuidedRecordScreenState
           'Le rendu final doit être disponible avant publication.');
       return;
     }
-    setState(() => _publicationStatus = 'Publication en cours…');
-    await _service.saveRenderedProject(
-      projectId: projectId,
-      scene: scene,
-      recordings: _recordings.values.toList(),
-      renderResult: renderResult,
-      status: 'published',
-    );
-    if (!mounted) return;
-    setState(() => _publicationStatus = 'Vidéo publiée.');
-    await _service.clearDraft(scene.id);
+    setState(() {
+      _publishing = true;
+      _publicationStatus = 'Publication en cours…';
+    });
+    try {
+      await _service.saveRenderedProject(
+        projectId: projectId,
+        scene: scene,
+        recordings: _recordings.values.toList(),
+        renderResult: renderResult,
+        status: 'published',
+      );
+      if (!mounted) return;
+      setState(() => _publicationStatus = 'Vidéo publiée.');
+      await _service.clearDraft(scene.id);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _publicationStatus = 'Publication impossible pour le moment.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _publishing = false;
+        });
+      }
+    }
   }
 
   Future<void> _persistDraft() async {
@@ -1389,6 +1463,8 @@ class _Take60GuidedRecordScreenState
   // ─── Stage: Preview ──────────────────────────────────────────────────
   Widget _buildPreview() {
     final draft = _previewRecording;
+    final remainingUploads = _requiredUserSegmentCount - _uploadedUserSegmentCount;
+    final canRenderNow = _isLastTimelineMarker && _allRequiredUserSegmentsUploaded;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       child: Column(
@@ -1437,6 +1513,44 @@ class _Take60GuidedRecordScreenState
                     ),
                   )
                 : const _CenteredLoader(label: 'Préparation preview…'),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _surface(context),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _softBorder(context)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Progression prise utilisateur',
+                  style: GoogleFonts.dmSans(
+                    color: _primaryText(context),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: _userSegmentProgress,
+                  minHeight: 8,
+                  backgroundColor: _surfaceMuted(context),
+                  valueColor: const AlwaysStoppedAnimation<Color>(_accent),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$_validatedUserSegmentCount/$_requiredUserSegmentCount segments validés · $_uploadedUserSegmentCount uploadés',
+                  style: GoogleFonts.dmSans(
+                    color: _secondaryText(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
           if (draft != null)
@@ -1501,9 +1615,8 @@ class _Take60GuidedRecordScreenState
               SizedBox(
                 width: 260,
                 child: FilledButton.icon(
-                  onPressed: _isLastTimelineMarker
-                      ? (_allRequiredUserSegmentsUploaded ? _renderFinalVideo : null)
-                      : _goToNextSegment,
+                  onPressed:
+                      _isLastTimelineMarker ? (canRenderNow ? _renderFinalVideo : null) : _goToNextSegment,
                   icon: Icon(
                     _isLastTimelineMarker ? Icons.auto_fix_high : Icons.skip_next,
                   ),
@@ -1521,6 +1634,20 @@ class _Take60GuidedRecordScreenState
               ),
             ],
           ),
+          if (_isLastTimelineMarker && !canRenderNow)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                remainingUploads > 0
+                    ? 'Rendu final bloqué: $remainingUploads segment(s) pas encore uploadé(s) sur Storage.'
+                    : 'Rendu final bloqué: valide d’abord la prise en cours.',
+                style: GoogleFonts.dmSans(
+                  color: _danger,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1694,9 +1821,17 @@ class _Take60GuidedRecordScreenState
             runSpacing: 12,
             children: [
               OutlinedButton.icon(
-                onPressed: _saveAsDraft,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Garder en brouillon'),
+                onPressed: (_savingDraft || _publishing) ? null : _saveAsDraft,
+                icon: _savingDraft
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+                label: Text(_savingDraft
+                    ? 'Enregistrement…'
+                    : 'Garder en brouillon'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _primaryText(context),
                   side: BorderSide(color: _softBorder(context)),
@@ -1704,9 +1839,22 @@ class _Take60GuidedRecordScreenState
               ),
               FilledButton.icon(
                 onPressed:
-                    (result?.finalVideoUrl.isNotEmpty ?? false) ? _publish : null,
-                icon: const Icon(Icons.publish),
-                label: const Text('Publier mon Take'),
+                    (_publishing || _savingDraft)
+                        ? null
+                        : ((result?.finalVideoUrl.isNotEmpty ?? false)
+                            ? _publish
+                            : null),
+                icon: _publishing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.black,
+                        ),
+                      )
+                    : const Icon(Icons.publish),
+                label: Text(_publishing ? 'Publication…' : 'Publier mon Take'),
                 style: FilledButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.black,

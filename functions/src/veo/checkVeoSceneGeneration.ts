@@ -20,7 +20,11 @@ import {
   VertexResponseError,
 } from "./vertexClient";
 
-export const checkVeoSceneGeneration = onCall({ secrets: [VEO_API_KEY], cors: true }, async (req) => {
+export const checkVeoSceneGeneration = onCall({
+  secrets: [VEO_API_KEY],
+  cors: true,
+  region: "europe-west1",
+}, async (req) => {
   const uid = req.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Connexion requise.");

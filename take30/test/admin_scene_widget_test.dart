@@ -50,7 +50,18 @@ Future<void> _goToAdminStep(
   int step,
   String title,
 ) async {
-  await tester.tap(find.text('$step. $title').first);
+  final stepFinder = find.byWidgetPredicate((widget) {
+    if (widget is! ChoiceChip) {
+      return false;
+    }
+    final label = widget.label;
+    if (label is! Text) {
+      return false;
+    }
+    final data = label.data ?? '';
+    return data.startsWith('$step. ') && data.contains(title);
+  });
+  await tester.tap(stepFinder.first);
   await tester.pumpAndSettle();
 }
 
@@ -72,7 +83,10 @@ void main() {
         ),
       );
 
-      await _goToAdminStep(tester, 3, 'Enrichissements avancés');
+      await _goToAdminStep(tester, 3, 'Enrichissements');
+
+      await tester.tap(find.text('Enrichissements IA'));
+      await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
         find.text('15) Vidéo IA d’introduction'),
@@ -81,7 +95,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Prompt VEO3'), findsWidgets);
+      expect(find.text('Prompt vidéo IA'), findsWidgets);
       expect(find.text('Tester la vidéo IA'), findsOneWidget);
 
       await tester.scrollUntilVisible(
@@ -98,7 +112,7 @@ void main() {
         find.text('Preview générée. Vérifie le raccord final puis valide la vidéo.'),
         findsOneWidget,
       );
-      expect(find.text('Corriger le prompt'), findsOneWidget);
+      expect(find.text('Modifier le prompt'), findsOneWidget);
       expect(find.text('Utiliser cette vidéo pour la scène'), findsOneWidget);
 
       await tester.scrollUntilVisible(
@@ -111,13 +125,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.text('Vidéo validée'), findsOneWidget);
       expect(
         find.text('16) Prévisualisation de la page détail de scène'),
         findsOneWidget,
       );
       expect(find.text('Intention de raccord'), findsOneWidget);
-      expect(find.textContaining('Prompt VEO3'), findsWidgets);
+      expect(find.textContaining('Prompt vidéo IA'), findsWidgets);
       expect(find.textContaining('Timeline guidée — 60 secondes'), findsOneWidget);
       expect(find.textContaining('Plan 1 — Observation silencieuse'), findsOneWidget);
       expect(find.textContaining('Plan 2 — Réplique principale'), findsOneWidget);
@@ -159,7 +172,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Prompt VEO3'), findsWidgets);
+      expect(find.text('Prompt vidéo IA'), findsWidgets);
       expect(
         find.text('Timeline indisponible ou JSON invalide.'),
         findsOneWidget,
@@ -185,7 +198,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Importer un prompt scénario'), findsOneWidget);
+      expect(find.text('Import rapide de scénario'), findsOneWidget);
       await tester.tap(find.text('Insérer exemple police'));
       await tester.pumpAndSettle();
 
@@ -193,10 +206,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('Champs remplis automatiquement.'), findsOneWidget);
-      expect(find.textContaining('champs détectés'), findsOneWidget);
-      expect(find.text('Timeline JSON détectée'), findsOneWidget);
-      expect(find.text('Prompt VEO détecté'), findsOneWidget);
-      expect(find.text('Dialogue détecté'), findsOneWidget);
+      expect(find.textContaining('Import terminé :'), findsOneWidget);
+      expect(find.text('Timeline détectée et ajoutée.'), findsOneWidget);
+      expect(find.text('Prompt vidéo IA détecté.'), findsOneWidget);
+      expect(find.text('Dialogue détecté.'), findsOneWidget);
 
       final dynamic state = tester.state(find.byType(AddScenePage));
       expect(state.sceneNameCtrl.text, 'Interrogatoire sous tension');
@@ -303,11 +316,14 @@ Je garde mon ancienne preview.
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(state.veoPromptCtrl.text, lockedPrompt);
-      expect(find.text('Prompt VEO détecté'), findsOneWidget);
-      expect(find.text('Prompt VEO non importé'), findsOneWidget);
+      expect(find.text('Prompt vidéo IA détecté.'), findsOneWidget);
+      expect(
+        find.text('Prompt vidéo IA ignoré : une vidéo est déjà validée.'),
+        findsOneWidget,
+      );
       expect(
         find.text(
-          'Prompt VEO ignoré : une vidéo IA est déjà validée. Supprime ou régénère la preview pour changer le prompt.',
+          'Prompt vidéo IA ignoré : une vidéo est déjà validée pour cette scène.',
         ),
         findsOneWidget,
       );
@@ -444,7 +460,10 @@ Ne doit jamais être copié dans markersJsonCtrl.
       state.setState(() {});
       await tester.pump();
 
-      await _goToAdminStep(tester, 3, 'Enrichissements avancés');
+      await _goToAdminStep(tester, 3, 'Enrichissements');
+
+      await tester.tap(find.text('Enrichissements IA'));
+      await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
         find.text('Tester la vidéo IA'),
@@ -460,7 +479,7 @@ Ne doit jamais être copié dans markersJsonCtrl.
       expect(find.text('Corriger le prompt'), findsNothing);
       expect(
         find.text(
-          'Timeline JSON invalide : colle uniquement un tableau JSON qui commence par [ et finit par ].',
+          'La timeline contient une erreur. Corrigez-la ou revenez au modèle automatique 60 s.',
         ),
         findsOneWidget,
       );

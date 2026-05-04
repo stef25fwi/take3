@@ -31,8 +31,8 @@ class VeoServiceException implements Exception {
 class CloudFunctionsVeoVideoGenerationService implements VeoVideoGenerationService {
   CloudFunctionsVeoVideoGenerationService({
     VeoSceneGenerationService? service,
-    this.pollAttempts = 12,
-    this.pollDelay = const Duration(seconds: 2),
+    this.pollAttempts = 60,
+    this.pollDelay = const Duration(seconds: 3),
   }) : _service = service ?? VeoSceneGenerationService();
 
   final VeoSceneGenerationService _service;
@@ -68,7 +68,7 @@ class CloudFunctionsVeoVideoGenerationService implements VeoVideoGenerationServi
       }
 
       throw VeoServiceException(
-        'La génération VEO prend plus de temps que prévu.',
+        'La génération vidéo IA continue côté backend. Vérifie à nouveau dans quelques instants.',
       );
     } on VeoSceneGenerationException catch (error) {
       throw VeoServiceException(
