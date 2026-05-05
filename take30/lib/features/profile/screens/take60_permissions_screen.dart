@@ -8,7 +8,18 @@ import '../../../services/permission_service.dart';
 import '../../../theme/app_theme.dart';
 
 class Take60PermissionsScreen extends ConsumerStatefulWidget {
-  const Take60PermissionsScreen({super.key});
+  const Take60PermissionsScreen({
+    super.key,
+    this.loadStatusesOverride,
+    this.requestPermissionOverride,
+    this.openSettingsOverride,
+  });
+
+  final Future<Map<AppPermission, PermissionStatus>> Function()?
+      loadStatusesOverride;
+  final Future<PermissionStatus> Function(AppPermission permission)?
+      requestPermissionOverride;
+  final Future<bool> Function()? openSettingsOverride;
 
   @override
   ConsumerState<Take60PermissionsScreen> createState() =>
@@ -16,17 +27,37 @@ class Take60PermissionsScreen extends ConsumerStatefulWidget {
 }
 
 class _Take60PermissionsScreenState
-    extends ConsumerState<Take60PermissionsScreen> {
+    extends ConsumerState<Take60PermissionsScreen>
+    with WidgetsBindingObserver {
   late Future<Map<AppPermission, PermissionStatus>> _statusesFuture;
   var _openingSettings = false;
 
   @override
   void initState() {
     super.initState();
-    _statusesFuture = _loadStatuses();
+    WidgetsBinding.instance.addObserver(this);
+    _statusesFuture = _refreshStatuses();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      setState(() {
+        _statusesFuture = _refreshStatuses();
+      });
+    }
   }
 
   Future<Map<AppPermission, PermissionStatus>> _loadStatuses() async {
+    if (widget.loadStatusesOverride != null) {
+      return widget.loadStatusesOverride!.call();
+    }
     final service = ref.read(permissionProvider);
     final result = <AppPermission, PermissionStatus>{};
     for (final permission in AppPermission.values) {
@@ -35,8 +66,14 @@ class _Take60PermissionsScreenState
     return result;
   }
 
+  Future<Map<AppPermission, PermissionStatus>> _refreshStatuses() {
+    return _loadStatuses();
+  }
+
   Future<void> _request(AppPermission permission) async {
-    final status = await ref.read(permissionProvider).request(permission);
+    final status = widget.requestPermissionOverride != null
+        ? await widget.requestPermissionOverride!(permission)
+        : await ref.read(permissionProvider).request(permission);
     if (!mounted) {
       return;
     }
@@ -45,19 +82,21 @@ class _Take60PermissionsScreenState
       SnackBar(content: Text(message)),
     );
     setState(() {
-      _statusesFuture = _loadStatuses();
+      _statusesFuture = _refreshStatuses();
     });
   }
 
   Future<void> _openSystemSettings() async {
     setState(() => _openingSettings = true);
-    final opened = await ref.read(permissionProvider).openSettings();
+    final opened = widget.openSettingsOverride != null
+        ? await widget.openSettingsOverride!.call()
+        : await ref.read(permissionProvider).openSettings();
     if (!mounted) {
       return;
     }
     setState(() {
       _openingSettings = false;
-      _statusesFuture = _loadStatuses();
+      _statusesFuture = _refreshStatuses();
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -71,7 +110,7 @@ class _Take60PermissionsScreenState
   }
 
   String _statusMessage(AppPermission permission, PermissionStatus status) {
-    final title = _titleFor(permission).toLowerCase();
+    final title = _permissionTitle(permission).toLowerCase();
     if (status.isGranted) {
       return 'Accès $title autorisé.';
     }
@@ -100,18 +139,39 @@ class _Take60PermissionsScreenState
       body: FutureBuilder<Map<AppPermission, PermissionStatus>>(
         future: _statusesFuture,
         builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const _PermissionScreenLoader();
+          }
+
+          if (snapshot.hasError) {
+            return _PermissionScreenMessage(
+              icon: Icons.error_outline_rounded,
+              title: 'Impossible de verifier les permissions',
+              message:
+                  'Take60 n’a pas reussi a lire les autorisations de cet appareil. Reessaie ou ouvre les reglages systeme.',
+              primaryActionLabel: 'Reessayer',
+              onPrimaryAction: () {
+                setState(() {
+                  _statusesFuture = _refreshStatuses();
+                });
+              },
+              secondaryActionLabel: 'Ouvrir les reglages systeme',
+              onSecondaryAction: _openingSettings ? null : _openSystemSettings,
+            );
+          }
+
           final statuses =
               snapshot.data ?? const <AppPermission, PermissionStatus>{};
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
-              Text(
-                'Verifiez les acces camera, micro, stockage et notifications sans quitter votre profil Take60.',
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppThemeTokens.secondaryText(context),
-                ),
+              _PermissionIntroCard(
+                blockedCount: statuses.values
+                    .where(
+                      (status) =>
+                          status.isPermanentlyDenied || status.isRestricted,
+                    )
+                    .length,
               ),
               const SizedBox(height: 18),
               for (final permission in AppPermission.values) ...[
@@ -119,6 +179,7 @@ class _Take60PermissionsScreenState
                   permission: permission,
                   status: statuses[permission],
                   onRequest: () => _request(permission),
+                  onOpenSettings: _openSystemSettings,
                 ),
                 const SizedBox(height: 10),
               ],
@@ -146,11 +207,13 @@ class _PermissionTile extends StatelessWidget {
     required this.permission,
     required this.status,
     required this.onRequest,
+    required this.onOpenSettings,
   });
 
   final AppPermission permission;
   final PermissionStatus? status;
   final VoidCallback onRequest;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +231,7 @@ class _PermissionTile extends StatelessWidget {
         : limited
           ? 'Ajuster'
           : 'Autoriser';
+    final action = blocked ? onOpenSettings : onRequest;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -213,7 +277,7 @@ class _PermissionTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           TextButton(
-            onPressed: onRequest,
+            onPressed: action,
             child: Text(actionLabel),
           ),
         ],
@@ -261,11 +325,153 @@ class _PermissionTile extends StatelessWidget {
   }
 
   String _titleFor(AppPermission permission) {
-    return _titleFor(permission);
+    return _permissionTitle(permission);
   }
 }
 
-String _titleFor(AppPermission permission) {
+class _PermissionIntroCard extends StatelessWidget {
+  const _PermissionIntroCard({required this.blockedCount});
+
+  final int blockedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppThemeTokens.surface(context),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppThemeTokens.border(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Permissions appareil',
+            style: GoogleFonts.dmSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppThemeTokens.primaryText(context),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            blockedCount > 0
+                ? 'Certaines autorisations sont bloquees. Ouvre les reglages systeme pour redonner acces a la camera, au micro ou aux notifications.'
+                : 'Verifie les acces camera, micro, stockage et notifications sans quitter ton profil Take60.',
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppThemeTokens.secondaryText(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'La camera et le micro sont requis pour enregistrer. Les autres autorisations servent a importer, partager et recevoir les alertes.',
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppThemeTokens.secondaryText(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PermissionScreenLoader extends StatelessWidget {
+  const _PermissionScreenLoader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: SizedBox.square(
+        dimension: 28,
+        child: CircularProgressIndicator(strokeWidth: 2.4),
+      ),
+    );
+  }
+}
+
+class _PermissionScreenMessage extends StatelessWidget {
+  const _PermissionScreenMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.primaryActionLabel,
+    required this.onPrimaryAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String primaryActionLabel;
+  final VoidCallback onPrimaryAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppThemeTokens.surface(context),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppThemeTokens.border(context)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 28, color: AppThemeTokens.primaryText(context)),
+                const SizedBox(height: 14),
+                Text(
+                  title,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppThemeTokens.primaryText(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppThemeTokens.secondaryText(context),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FilledButton(
+                  onPressed: onPrimaryAction,
+                  child: Text(primaryActionLabel),
+                ),
+                if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: onSecondaryAction,
+                    child: Text(secondaryActionLabel!),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _permissionTitle(AppPermission permission) {
   switch (permission) {
     case AppPermission.camera:
       return 'Caméra';
