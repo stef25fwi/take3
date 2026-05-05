@@ -17,7 +17,12 @@ import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
-  const ExploreScreen({super.key});
+  const ExploreScreen({
+    super.key,
+    this.showDiscoverySections = true,
+  });
+
+  final bool showDiscoverySections;
 
   @override
   ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
@@ -96,16 +101,18 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     _RegionalRankingSection(palette: palette),
                     const SizedBox(height: 18),
                     _NationalRankingSection(palette: palette),
-                    const SizedBox(height: 18),
-                    _NewScenariosSection(
-                      palette: palette,
-                      onPlay: _openExplorerScene,
-                    ),
-                    const SizedBox(height: 18),
-                    _TrendingScenesSection(
-                      palette: palette,
-                      onPlay: _openExplorerScene,
-                    ),
+                    if (widget.showDiscoverySections) ...[
+                      const SizedBox(height: 18),
+                      _NewScenariosSection(
+                        palette: palette,
+                        onPlay: _openExplorerScene,
+                      ),
+                      const SizedBox(height: 18),
+                      _TrendingScenesSection(
+                        palette: palette,
+                        onPlay: _openExplorerScene,
+                      ),
+                    ],
                     const SizedBox(height: 22),
                     _SectionTitle(label: 'Catégories', palette: palette),
                     const SizedBox(height: 10),

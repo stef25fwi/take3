@@ -14,7 +14,6 @@ import '../screens/ai_vertical_feed_screen.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
 import '../screens/battle/battle_detail_screen.dart';
-import '../screens/battle/battle_leaderboard_screen.dart';
 import '../screens/battle/battle_list_screen.dart';
 import '../screens/battle/battle_record_screen.dart';
 import '../screens/daily_challenge_screen.dart';
@@ -175,7 +174,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRouter.battleLeaderboard,
-            builder: (_, __) => const BattleLeaderboardScreen(),
+            builder: (_, __) => const ExploreScreen(
+              showDiscoverySections: false,
+            ),
           ),
           GoRoute(
             path: '${AppRouter.battle}/:battleId',
