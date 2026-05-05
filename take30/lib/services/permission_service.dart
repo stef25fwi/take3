@@ -90,7 +90,7 @@ class PermissionService {
     return status.isGranted;
   }
 
-  Future<void> openSettings() => openAppSettings();
+  Future<bool> openSettings() => openAppSettings();
 
   Permission _permissionFor(AppPermission permission) {
     switch (permission) {

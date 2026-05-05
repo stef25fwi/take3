@@ -1034,6 +1034,11 @@ bool _needsPermissionSettings(PermissionStatus status) {
       status == PermissionStatus.restricted;
 }
 
+bool _isPermissionGranted(PermissionStatus status) {
+  return status == PermissionStatus.granted ||
+      status == PermissionStatus.limited;
+}
+
 class RecordingNotifier extends StateNotifier<RecordingState> {
   RecordingNotifier(
     this._api,
@@ -1054,35 +1059,34 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
   final DemoPublishedScenesStore _demoPublishedScenesStore;
 
   Future<CameraInitResult> initCamera(BuildContext context) async {
-    final cameraGranted = await _permissions.requestWithExplanation(
+    final permissionsGranted = await _permissions.requestWithExplanation(
       context,
       AppPermission.camera,
       title: 'Caméra requise',
-      message: 'Take 60 a besoin de ta caméra pour enregistrer tes performances.',
+      message:
+          'Take 60 a besoin de ta caméra et de ton microphone pour enregistrer tes performances avec le son.',
     );
-    if (!cameraGranted) {
-      final cameraStatus = await _permissions.status(AppPermission.camera);
-      return CameraInitResult.denied(
-        needsSettings: _needsPermissionSettings(cameraStatus),
-        missingPermissions: const [AppPermission.camera],
-      );
-    }
 
     if (!context.mounted) {
       return const CameraInitResult.unavailable();
     }
 
-    final microphoneGranted = await _permissions.requestWithExplanation(
-      context,
-      AppPermission.microphone,
-      title: 'Micro requis',
-      message: 'Take 60 a besoin du microphone pour capturer le son.',
-    );
-    if (!microphoneGranted) {
-      final microphoneStatus = await _permissions.status(AppPermission.microphone);
+    final microphoneStatus = await _permissions.request(AppPermission.microphone);
+    final microphoneGranted = _isPermissionGranted(microphoneStatus);
+    final cameraStatus = await _permissions.status(AppPermission.camera);
+    if (!permissionsGranted || !microphoneGranted) {
+      final missingPermissions = <AppPermission>[
+        if (!_isPermissionGranted(cameraStatus)) AppPermission.camera,
+        if (!_isPermissionGranted(microphoneStatus)) AppPermission.microphone,
+      ];
+      final needsSettings = _needsPermissionSettings(cameraStatus) ||
+          _needsPermissionSettings(microphoneStatus);
+
       return CameraInitResult.denied(
-        needsSettings: _needsPermissionSettings(microphoneStatus),
-        missingPermissions: const [AppPermission.microphone],
+        needsSettings: needsSettings,
+        missingPermissions: missingPermissions.isEmpty
+            ? const [AppPermission.camera, AppPermission.microphone]
+            : missingPermissions,
       );
     }
 

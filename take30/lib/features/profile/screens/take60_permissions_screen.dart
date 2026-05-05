@@ -18,6 +18,7 @@ class Take60PermissionsScreen extends ConsumerStatefulWidget {
 class _Take60PermissionsScreenState
     extends ConsumerState<Take60PermissionsScreen> {
   late Future<Map<AppPermission, PermissionStatus>> _statusesFuture;
+  var _openingSettings = false;
 
   @override
   void initState() {
@@ -35,13 +36,52 @@ class _Take60PermissionsScreenState
   }
 
   Future<void> _request(AppPermission permission) async {
-    await ref.read(permissionProvider).request(permission);
+    final status = await ref.read(permissionProvider).request(permission);
+    if (!mounted) {
+      return;
+    }
+    final message = _statusMessage(permission, status);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+    setState(() {
+      _statusesFuture = _loadStatuses();
+    });
+  }
+
+  Future<void> _openSystemSettings() async {
+    setState(() => _openingSettings = true);
+    final opened = await ref.read(permissionProvider).openSettings();
     if (!mounted) {
       return;
     }
     setState(() {
+      _openingSettings = false;
       _statusesFuture = _loadStatuses();
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          opened
+              ? 'Réglages système ouverts. Reviens ici pour vérifier les accès.'
+              : 'Impossible d’ouvrir les réglages système depuis cet appareil.',
+        ),
+      ),
+    );
+  }
+
+  String _statusMessage(AppPermission permission, PermissionStatus status) {
+    final title = _titleFor(permission).toLowerCase();
+    if (status.isGranted) {
+      return 'Accès $title autorisé.';
+    }
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      return 'Accès $title bloqué. Ouvre les réglages système pour l’activer.';
+    }
+    if (status.isLimited) {
+      return 'Accès $title partiel. Ajuste-le dans les réglages si nécessaire.';
+    }
+    return 'Accès $title refusé.';
   }
 
   @override
@@ -84,9 +124,14 @@ class _Take60PermissionsScreenState
               ],
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                onPressed: () => ref.read(permissionProvider).openSettings(),
-                icon: const Icon(Icons.open_in_new_rounded),
-                label: const Text('Ouvrir les reglages systeme'),
+                onPressed: _openingSettings ? null : _openSystemSettings,
+                icon: _openingSettings
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.open_in_new_rounded),
+                label: const Text('Ouvrir les réglages système'),
               ),
             ],
           );
@@ -112,6 +157,17 @@ class _PermissionTile extends StatelessWidget {
     final accent = Theme.of(context).colorScheme.primary;
     final resolvedStatus = status;
     final granted = resolvedStatus?.isGranted ?? false;
+    final blocked = resolvedStatus?.isPermanentlyDenied == true ||
+      resolvedStatus?.isRestricted == true;
+    final limited = resolvedStatus?.isLimited == true;
+    final statusLabel = _statusLabel(resolvedStatus);
+    final actionLabel = granted
+      ? 'Vérifier'
+      : blocked
+        ? 'Ouvrir'
+        : limited
+          ? 'Ajuster'
+          : 'Autoriser';
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -145,7 +201,7 @@ class _PermissionTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  granted ? 'Autorise' : 'Autorisation requise',
+                  statusLabel,
                   style: GoogleFonts.dmSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -158,11 +214,33 @@ class _PermissionTile extends StatelessWidget {
           const SizedBox(width: 12),
           TextButton(
             onPressed: onRequest,
-            child: Text(granted ? 'Verifier' : 'Autoriser'),
+            child: Text(actionLabel),
           ),
         ],
       ),
     );
+  }
+
+  String _statusLabel(PermissionStatus? status) {
+    if (status == null) {
+      return 'Vérification en cours';
+    }
+    if (status.isGranted) {
+      return 'Autorisé';
+    }
+    if (status.isLimited) {
+      return 'Accès partiel';
+    }
+    if (status.isPermanentlyDenied) {
+      return 'Bloqué dans les réglages';
+    }
+    if (status.isRestricted) {
+      return 'Restreint par le système';
+    }
+    if (status.isDenied) {
+      return 'Autorisation requise';
+    }
+    return 'Statut inconnu';
   }
 
   IconData _iconFor(AppPermission permission) {
@@ -183,19 +261,23 @@ class _PermissionTile extends StatelessWidget {
   }
 
   String _titleFor(AppPermission permission) {
-    switch (permission) {
-      case AppPermission.camera:
-        return 'Camera';
-      case AppPermission.microphone:
-        return 'Microphone';
-      case AppPermission.storage:
-        return 'Stockage';
-      case AppPermission.photos:
-        return 'Photos';
-      case AppPermission.notifications:
-        return 'Notifications';
-      case AppPermission.mediaLibrary:
-        return 'Bibliotheque media';
-    }
+    return _titleFor(permission);
+  }
+}
+
+String _titleFor(AppPermission permission) {
+  switch (permission) {
+    case AppPermission.camera:
+      return 'Caméra';
+    case AppPermission.microphone:
+      return 'Microphone';
+    case AppPermission.storage:
+      return 'Stockage';
+    case AppPermission.photos:
+      return 'Photos';
+    case AppPermission.notifications:
+      return 'Notifications';
+    case AppPermission.mediaLibrary:
+      return 'Bibliothèque média';
   }
 }

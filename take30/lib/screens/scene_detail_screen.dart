@@ -187,8 +187,6 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SceneHeroCard(scene: scene),
-            SizedBox(height: isCompact ? 12 : 16),
             SizedBox(
               width: double.infinity,
               child: Text(
@@ -201,6 +199,8 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
                 ),
               ),
             ),
+            SizedBox(height: isCompact ? 12 : 16),
+            _SceneHeroCard(scene: scene),
             SizedBox(height: isCompact ? 8 : 10),
             _SceneMetaHeader(scene: scene, compact: isCompact),
             SizedBox(height: isCompact ? 8 : 10),

@@ -468,14 +468,31 @@ class _Take60GuidedRecordScreenState
   Future<void> _beginRecording() async {
     final marker = _currentMarker;
     if (marker == null) return;
+    final cameraService = ref.read(cameraServiceProvider);
+    if (!cameraService.isReady) {
+      setState(() {
+        _stage = _Stage.prepCamera;
+        _cameraPermissionMessage = cameraService.errorMessage ??
+            'La caméra et le micro doivent être autorisés avant de lancer l’enregistrement.';
+      });
+      return;
+    }
     setState(() {
       _stage = _Stage.recording;
       _waitingForRecordingResult = true;
     });
     await _persistDraftWithStatus(SceneRecordingStatus.recordingUserPlan);
-    await ref.read(recordingProvider.notifier).startRecording(
+    final started = await ref.read(recordingProvider.notifier).startRecording(
           maxDurationSeconds: marker.durationSeconds,
         );
+    if (!started && mounted) {
+      setState(() {
+        _stage = _Stage.prepCamera;
+        _waitingForRecordingResult = false;
+        _cameraPermissionMessage = cameraService.errorMessage ??
+            'Impossible de démarrer l’enregistrement. Vérifie l’accès caméra et micro puis réessaie.';
+      });
+    }
   }
 
   void _handleRecordingResult(RecordingResult result) {
@@ -1489,8 +1506,9 @@ class _Take60GuidedRecordScreenState
               ? CameraPreview(cameraService.controller!)
               : _PermissionStateView(
                 title: 'Caméra non disponible',
-                message:
-                  'La caméra n’a pas pu être initialisée. Réessaie ou vérifie tes autorisations.',
+                message: _cameraPermissionMessage ??
+                  cameraService.errorMessage ??
+                  'La caméra n’a pas pu être initialisée. Réessaie ou vérifie tes autorisations caméra et micro.',
                 needsSettings: false,
                 onRetry: _enterPrepCamera,
               )),
@@ -1544,6 +1562,7 @@ class _Take60GuidedRecordScreenState
         const Positioned.fill(
           child: IgnorePointer(child: _FramingOverlay()),
         ),
+        if (cameraService.isReady && !cameraDenied)
         const Positioned(
           top: 82,
           left: 20,
