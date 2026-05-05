@@ -6,6 +6,8 @@
     "seed": "node seed_firestore.js",
     "seed:force": "node seed_firestore.js --force",
     "seed:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node seed_firestore.js --force",
+    "take60:backfill:render-urls": "node backfill_take60_render_urls.js",
+    "take60:backfill:render-urls:apply": "node backfill_take60_render_urls.js --apply",
     "battle:init:dry-run": "node init_battle_readiness.js",
     "battle:init": "node init_battle_readiness.js --apply",
     "battle:init:emulator": "FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 node init_battle_readiness.js --apply",

@@ -247,6 +247,54 @@ class Take60GuidedSceneService {
     };
   }
 
+  @visibleForTesting
+  static Future<Take60RenderResult> resolvePersistentRenderUrls(
+    Take60RenderResult renderResult, {
+    required Future<String> Function(String storagePath) resolveDownloadUrl,
+  }) async {
+    var resolvedVideoUrl = renderResult.finalVideoUrl;
+    var resolvedThumbnailUrl = renderResult.thumbnailUrl;
+
+    final videoStoragePath = renderResult.videoStoragePath?.trim() ?? '';
+    if (videoStoragePath.isNotEmpty) {
+      try {
+        resolvedVideoUrl = await resolveDownloadUrl(videoStoragePath);
+      } catch (_) {
+        // Keep the last known URL as a non-breaking fallback.
+      }
+    }
+
+    final thumbnailStoragePath =
+        renderResult.thumbnailStoragePath?.trim() ?? '';
+    if (thumbnailStoragePath.isNotEmpty) {
+      try {
+        resolvedThumbnailUrl = await resolveDownloadUrl(thumbnailStoragePath);
+      } catch (_) {
+        // Keep the last known URL as a non-breaking fallback.
+      }
+    }
+
+    return renderResult.copyWith(
+      finalVideoUrl: resolvedVideoUrl,
+      thumbnailUrl: resolvedThumbnailUrl,
+    );
+  }
+
+  @visibleForTesting
+  static List<Take60UserRecordingDraft> mergeProjectRecordings({
+    required List<Take60UserRecordingDraft> existingRecordings,
+    required Take60UserRecordingDraft latestRecording,
+  }) {
+    final recordingsByMarker = <String, Take60UserRecordingDraft>{
+      for (final recording in existingRecordings) recording.markerId: recording,
+    };
+    recordingsByMarker[latestRecording.markerId] = latestRecording;
+    return recordingsByMarker.values.toList()
+      ..sort(
+        (left, right) => left.startSecond.compareTo(right.startSecond),
+      );
+  }
+
   Future<List<SceneModel>> loadGuidedScenes({
     required UserModel fallbackAuthor,
   }) async {
@@ -613,10 +661,29 @@ class Take60GuidedSceneService {
     );
 
     if (currentUserId != 'guest') {
-      final batch = _firestore.batch();
+      final timelineMarkers = buildTimeline(scene);
+      final markerIndex = timelineMarkers.indexWhere(
+        (timelineMarker) => timelineMarker.id == marker.id,
+      );
       final projectRef = _firestore
           .collection('take60_guided_projects')
           .doc(projectId);
+        Map<String, dynamic>? existingProjectData;
+        try {
+          final projectSnapshot = await projectRef.get();
+          existingProjectData = projectSnapshot.data();
+        } catch (_) {
+          existingProjectData = null;
+        }
+      final mergedRecordings = mergeProjectRecordings(
+          existingRecordings: _readProjectRecordings(existingProjectData),
+        latestRecording: recording,
+      );
+      final createdAt = await _resolveProjectCreatedAt(
+        projectId: projectId,
+        fallback: now,
+      );
+      final batch = _firestore.batch();
       final segmentRef = projectRef.collection('segments').doc(marker.id);
       final legacyRef = _firestore
           .collection('take60_user_recordings')
@@ -626,9 +693,21 @@ class Take60GuidedSceneService {
         _projectPayload(
           projectId: projectId,
           scene: scene,
-          status: finalUploadedUrl?.isNotEmpty == true ? 'ready_for_render' : 'recording',
+          status:
+              finalUploadedUrl?.isNotEmpty == true ? 'ready_for_render' : 'recording',
+          createdAt: createdAt,
           updatedAt: now,
+          currentMarkerIndex: markerIndex >= 0 ? markerIndex : null,
+          markers: timelineMarkers,
+          recordings: mergedRecordings,
         ),
+        SetOptions(merge: true),
+      );
+      batch.set(
+        projectRef,
+        {
+          'recordingStatus': SceneRecordingStatus.previewUserPlan.value,
+        },
         SetOptions(merge: true),
       );
       batch.set(
@@ -674,8 +753,11 @@ class Take60GuidedSceneService {
       );
       final callable = _functions.httpsCallable('renderTake60GuidedScene');
       final result = await callable.call(payload);
-      final renderResult = Take60RenderResult.fromMap(
+      final renderResult = await resolvePersistentRenderUrls(
+        Take60RenderResult.fromMap(
         Map<String, dynamic>.from(result.data as Map),
+        ),
+        resolveDownloadUrl: _storage.resolveDownloadUrl,
       );
       await _updateProjectStatus(
         projectId: projectId,
@@ -717,6 +799,10 @@ class Take60GuidedSceneService {
     required int currentMarkerIndex,
     Take60BattleRecordingContext? battleContext,
   }) async {
+    final persistentRenderResult = await resolvePersistentRenderUrls(
+      renderResult,
+      resolveDownloadUrl: _storage.resolveDownloadUrl,
+    );
     final now = DateTime.now();
     final createdAt = await _resolveProjectCreatedAt(
       projectId: projectId,
@@ -730,12 +816,12 @@ class Take60GuidedSceneService {
         createdAt: createdAt,
         updatedAt: now,
         currentMarkerIndex: currentMarkerIndex,
-        finalVideoUrl: renderResult.finalVideoUrl,
-        renderResult: renderResult,
+        finalVideoUrl: persistentRenderResult.finalVideoUrl,
+        renderResult: persistentRenderResult,
         recordings: recordings,
       ),
       'status': status,
-      'renderResult': renderResult.toMap(),
+      'renderResult': persistentRenderResult.toMap(),
       'recordings': recordings.map((recording) => recording.toMap()).toList(),
       'updatedAt': now.toIso8601String(),
       'publishedAt': status == 'published' ? now.toIso8601String() : null,
@@ -756,7 +842,7 @@ class Take60GuidedSceneService {
         .doc(projectId)
         .set(payload, SetOptions(merge: true));
 
-    if (status == 'published' && renderResult.finalVideoUrl.isNotEmpty) {
+    if (status == 'published' && persistentRenderResult.finalVideoUrl.isNotEmpty) {
       await _firestore.collection('takes').doc(projectId).set({
         'projectId': projectId,
         'sceneId': scene.id,
@@ -764,13 +850,13 @@ class Take60GuidedSceneService {
         'category': scene.category,
         'sceneType': scene.sceneType,
         'userId': currentUserId,
-        'videoUrl': renderResult.finalVideoUrl,
-        'thumbnailUrl': renderResult.thumbnailUrl,
-        'renderId': renderResult.renderId,
-        'videoStoragePath': renderResult.videoStoragePath,
-        'thumbnailStoragePath': renderResult.thumbnailStoragePath,
-        'renderStatus': renderResult.renderStatus,
-        'durationSeconds': renderResult.durationSeconds,
+        'videoUrl': persistentRenderResult.finalVideoUrl,
+        'thumbnailUrl': persistentRenderResult.thumbnailUrl,
+        'renderId': persistentRenderResult.renderId,
+        'videoStoragePath': persistentRenderResult.videoStoragePath,
+        'thumbnailStoragePath': persistentRenderResult.thumbnailStoragePath,
+        'renderStatus': persistentRenderResult.renderStatus,
+        'durationSeconds': persistentRenderResult.durationSeconds,
         'status': 'published',
         if (battleContext != null) ...battleContext.toMap(),
         'createdAt': now.toIso8601String(),
@@ -791,6 +877,8 @@ class Take60GuidedSceneService {
     List<Take60SceneMarker>? markers,
     List<Take60UserRecordingDraft>? recordings,
   }) {
+    final shouldPersistTimelineMarkers = markers != null;
+    final shouldPersistUserRecordings = recordings != null;
     final timelineMarkers = markers ?? buildTimeline(scene);
     final userRecordings = recordings ?? const <Take60UserRecordingDraft>[];
     final totalUserMarkersCount =
@@ -821,8 +909,10 @@ class Take60GuidedSceneService {
       'introAiDurationSeconds': introAiDurationSeconds > 0
         ? introAiDurationSeconds
         : null,
-      'timelineMarkers': timelineMarkers.map((marker) => marker.toMap()).toList(),
-      'userRecordings': userRecordings.map((recording) => recording.toMap()).toList(),
+      if (shouldPersistTimelineMarkers)
+        'timelineMarkers': timelineMarkers.map((marker) => marker.toMap()).toList(),
+      if (shouldPersistUserRecordings)
+        'userRecordings': userRecordings.map((recording) => recording.toMap()).toList(),
       'completedUserMarkersCount': completedUserMarkersCount,
       'totalUserMarkersCount': totalUserMarkersCount,
       if (createdAt != null) 'createdAt': createdAt.toIso8601String(),
@@ -869,6 +959,10 @@ class Take60GuidedSceneService {
     if (currentUserId == 'guest') {
       return;
     }
+    final createdAt = await _resolveProjectCreatedAt(
+      projectId: projectId,
+      fallback: DateTime.now(),
+    );
     await _firestore
         .collection('take60_guided_projects')
         .doc(projectId)
@@ -877,6 +971,7 @@ class Take60GuidedSceneService {
             projectId: projectId,
             scene: scene,
             status: status,
+            createdAt: createdAt,
             updatedAt: DateTime.now(),
             finalVideoUrl: finalVideoUrl,
             renderResult: renderResult,
@@ -893,6 +988,18 @@ class Take60GuidedSceneService {
 
   String _projectStorageKey(String projectId) =>
       'take60_guided_project_$projectId';
+
+  List<Take60UserRecordingDraft> _readProjectRecordings(
+    Map<String, dynamic>? projectData,
+  ) {
+    if (projectData == null || projectData.isEmpty) {
+      return const [];
+    }
+    return Take60GuidedResumeState.fromProjectMap(
+      projectData,
+      fallbackMarkers: const [],
+    ).recordings;
+  }
 
   Future<DateTime> _resolveProjectCreatedAt({
     required String projectId,

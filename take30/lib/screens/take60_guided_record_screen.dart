@@ -819,13 +819,21 @@ class _Take60GuidedRecordScreenState
           finalVideoUrl: renderResult.finalVideoUrl,
           battleContext: battleContext,
         );
+        final battleStoragePath =
+            mirroredBattleAsset?.storagePath ?? renderResult.videoStoragePath ?? '';
+        if (battleStoragePath.isEmpty) {
+          throw const Take60GuidedSceneException(
+            code: 'battle-storage-path-missing',
+            message:
+                'La performance Battle ne dispose pas d’un chemin Storage durable.',
+          );
+        }
         await ref.read(battleServiceProvider).submitBattlePerformance(
               battleId: battleContext.battleId,
               recordingId: projectId,
               videoUrl:
                   mirroredBattleAsset?.downloadUrl ?? renderResult.finalVideoUrl,
-              storagePath:
-                  mirroredBattleAsset?.storagePath ?? renderResult.finalVideoUrl,
+              storagePath: battleStoragePath,
             );
       }
       if (!mounted) return;

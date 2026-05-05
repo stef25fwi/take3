@@ -338,6 +338,108 @@ void main() {
       expect(scene.isGuidedRecordingReady, isTrue);
     });
 
+    test('hydrates persistent render URLs from storage paths', () async {
+      const renderResult = Take60RenderResult(
+        renderId: 'render_1',
+        finalVideoUrl: 'https://signed.example.com/video.mp4',
+        thumbnailUrl: 'https://signed.example.com/thumb.jpg',
+        durationSeconds: 60,
+        renderStatus: 'preview_ready',
+        segments: [],
+        videoStoragePath: 'take60_renders/user_1/render_1.mp4',
+        thumbnailStoragePath: 'take60_renders/user_1/render_1.jpg',
+      );
+
+      final hydrated = await Take60GuidedSceneService
+          .resolvePersistentRenderUrls(
+        renderResult,
+        resolveDownloadUrl: (storagePath) async =>
+            'https://durable.example.com/${Uri.encodeComponent(storagePath)}',
+      );
+
+      expect(
+        hydrated.finalVideoUrl,
+        'https://durable.example.com/take60_renders%2Fuser_1%2Frender_1.mp4',
+      );
+      expect(
+        hydrated.thumbnailUrl,
+        'https://durable.example.com/take60_renders%2Fuser_1%2Frender_1.jpg',
+      );
+    });
+
+    test('keeps previous render URLs when storage resolution fails', () async {
+      const renderResult = Take60RenderResult(
+        renderId: 'render_1',
+        finalVideoUrl: 'https://signed.example.com/video.mp4',
+        thumbnailUrl: 'https://signed.example.com/thumb.jpg',
+        durationSeconds: 60,
+        renderStatus: 'preview_ready',
+        segments: [],
+        videoStoragePath: 'take60_renders/user_1/render_1.mp4',
+        thumbnailStoragePath: 'take60_renders/user_1/render_1.jpg',
+      );
+
+      final hydrated = await Take60GuidedSceneService
+          .resolvePersistentRenderUrls(
+        renderResult,
+        resolveDownloadUrl: (_) async => throw Exception('storage failure'),
+      );
+
+      expect(hydrated.finalVideoUrl, renderResult.finalVideoUrl);
+      expect(hydrated.thumbnailUrl, renderResult.thumbnailUrl);
+    });
+
+    test('merges latest recording into remote project recordings by marker', () {
+      final first = Take60UserRecordingDraft(
+        recordingId: 'rec_1',
+        projectId: 'project_1',
+        sceneId: 'scene_1',
+        userId: 'user_1',
+        markerId: 'user_1',
+        startSecond: 10,
+        endSecond: 20,
+        localTempPath: '/tmp/old.mp4',
+        durationSeconds: 10,
+        status: UserPlanStatus.recorded,
+        createdAt: DateTime(2026, 5, 1),
+        updatedAt: DateTime(2026, 5, 1),
+      );
+      final replacement = first.copyWith(
+        localTempPath: '/tmp/new.mp4',
+        uploadedVideoUrl: 'https://example.com/new.mp4',
+        updatedAt: DateTime(2026, 5, 2),
+      );
+
+      final merged = Take60GuidedSceneService.mergeProjectRecordings(
+        existingRecordings: [
+          first,
+          Take60UserRecordingDraft(
+            recordingId: 'rec_2',
+            projectId: 'project_1',
+            sceneId: 'scene_1',
+            userId: 'user_1',
+            markerId: 'user_2',
+            startSecond: 20,
+            endSecond: 30,
+            localTempPath: '/tmp/other.mp4',
+            uploadedVideoUrl: 'https://example.com/other.mp4',
+            durationSeconds: 10,
+            status: UserPlanStatus.recorded,
+            createdAt: DateTime(2026, 5, 1),
+            updatedAt: DateTime(2026, 5, 1),
+          ),
+        ],
+        latestRecording: replacement,
+      );
+
+      expect(merged, hasLength(2));
+      expect(
+        merged.singleWhere((recording) => recording.markerId == 'user_1')
+            .uploadedVideoUrl,
+        'https://example.com/new.mp4',
+      );
+    });
+
     test('maps audio rules to backend controls', () {
       final rules = const Take60AudioRules(
         hasGlobalAiAmbiance: true,
