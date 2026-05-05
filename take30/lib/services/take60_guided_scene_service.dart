@@ -277,9 +277,17 @@ class Take60GuidedSceneService {
 
   List<Take60SceneMarker> buildTimeline(SceneModel scene) {
     if (scene.markers.isNotEmpty) {
+      final fallbackAiVideoUrl = _resolveAiVideoUrl(scene.videoUrl);
       final markers = [...scene.markers]
         ..sort((left, right) => left.order.compareTo(right.order));
-      return markers;
+      return markers
+          .map(
+            (marker) => !marker.requiresUserRecording &&
+                    (marker.videoUrl?.trim().isEmpty ?? true)
+                ? marker.copyWith(videoUrl: fallbackAiVideoUrl)
+                : marker,
+          )
+          .toList();
     }
 
     final userCharacter = scene.characterToPlay.isEmpty

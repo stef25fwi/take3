@@ -176,6 +176,20 @@ GuidedMarkerType guidedMarkerTypeFromString(String? value) {
       return GuidedMarkerType.userSequence;
     case 'final_sequence':
       return GuidedMarkerType.finalSequence;
+    case 'ai_plan':
+      return GuidedMarkerType.aiPlan;
+    case 'ai_dialogue':
+    case 'ai_reaction':
+    case 'ai_outro':
+      return GuidedMarkerType.aiSequence;
+    case 'user_dialogue':
+    case 'user_intro':
+    case 'user_emotion':
+    case 'user_silent_action':
+    case 'close_up':
+    case 'medium_shot':
+    case 'over_shoulder':
+      return GuidedMarkerType.userPlan;
     case 'user_plan':
       return GuidedMarkerType.userPlan;
     case 'reaction_shot':
@@ -319,6 +333,26 @@ class Take60SceneMarker {
   }
 
   bool get usesAiPlayback => !requiresUserRecording;
+
+  Take60SceneMarker copyWith({String? videoUrl}) {
+    return Take60SceneMarker(
+      id: id,
+      order: order,
+      type: type,
+      startSeconds: startSeconds,
+      endSeconds: endSeconds,
+      durationSeconds: durationSeconds,
+      source: source,
+      character: character,
+      dialogue: dialogue,
+      cameraPlan: cameraPlan,
+      label: label,
+      videoUrl: videoUrl ?? this.videoUrl,
+      cueText: cueText,
+      audioMode: audioMode,
+      status: status,
+    );
+  }
 
   factory Take60SceneMarker.fromMap(Map<String, dynamic> json) {
     final startSeconds = (json['startSeconds'] as num?)?.toInt() ??

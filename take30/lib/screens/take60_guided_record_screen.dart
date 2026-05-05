@@ -310,8 +310,11 @@ class _Take60GuidedRecordScreenState
     });
     await _persistDraftWithStatus(SceneRecordingStatus.aiIntroPlaying);
     if (url.isEmpty) {
-      // Pas d'URL → on saute la lecture et on passe directement à la suite.
-      _markAiCompleted();
+      setState(() {
+        _stage = _Stage.director;
+        _publicationStatus =
+            'Vidéo IA indisponible pour ce plan. Vérifie que la scène publiée contient une URL vidéo VEO validée.';
+      });
       return;
     }
     try {
@@ -333,8 +336,12 @@ class _Take60GuidedRecordScreenState
         setState(() {});
       });
     } catch (_) {
-      // On ne bloque pas le flow si la lecture échoue.
-      _markAiCompleted();
+      if (!mounted) return;
+      setState(() {
+        _stage = _Stage.director;
+        _publicationStatus =
+            'Impossible de charger la vidéo IA. Vérifie l’URL VEO ou régénère le plan IA.';
+      });
     }
   }
 
@@ -849,11 +856,24 @@ class _Take60GuidedRecordScreenState
   void _startMarkerFromPlan(Take60SceneMarker marker) {
     final index = _timeline.indexWhere((m) => m.id == marker.id);
     if (index < 0) return;
+    if (!marker.requiresUserRecording && !_hasPlayableAiVideo(marker)) {
+      setState(() {
+        _publicationStatus =
+            'Vidéo IA indisponible pour ce plan. Vérifie que la scène publiée contient une URL vidéo VEO validée.';
+      });
+      return;
+    }
     setState(() {
       _currentIndex = index;
       _publicationStatus = '';
     });
     _enterMarker(marker);
+  }
+
+  bool _hasPlayableAiVideo(Take60SceneMarker marker) {
+    if (marker.requiresUserRecording) return false;
+    return (marker.videoUrl?.trim().isNotEmpty ?? false) ||
+        (_scene?.videoUrl?.trim().isNotEmpty ?? false);
   }
 
   String _statusLabelForMarker(Take60SceneMarker marker) {
@@ -1256,6 +1276,7 @@ class _Take60GuidedRecordScreenState
               marker: marker,
               statusLabel: _statusLabelForMarker(marker),
               statusColor: _statusColorForMarker(marker),
+              hasPlayableVideo: _hasPlayableAiVideo(marker),
               onPrimary: marker.requiresUserRecording
                   ? () => _startMarkerFromPlan(marker)
                   : () => _startMarkerFromPlan(marker),
@@ -2358,6 +2379,7 @@ class _ShootingPlanCard extends StatelessWidget {
     required this.marker,
     required this.statusLabel,
     required this.statusColor,
+    required this.hasPlayableVideo,
     required this.onPrimary,
     this.onReplay,
   });
@@ -2365,6 +2387,7 @@ class _ShootingPlanCard extends StatelessWidget {
   final Take60SceneMarker marker;
   final String statusLabel;
   final Color statusColor;
+  final bool hasPlayableVideo;
   final VoidCallback onPrimary;
   final VoidCallback? onReplay;
 
@@ -2372,9 +2395,12 @@ class _ShootingPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = marker.requiresUserRecording;
     final title = isUser ? 'À toi de jouer' : 'Plan IA';
+    final canOpenPlan = isUser || hasPlayableVideo;
     final buttonLabel = isUser
         ? 'Enregistrer cette séquence'
-        : (marker.type == GuidedMarkerType.introAiVideo
+      : (!hasPlayableVideo
+        ? 'Vidéo IA indisponible'
+        : marker.type == GuidedMarkerType.introAiVideo
             ? 'Voir l’introduction'
             : 'Voir le plan IA');
     final borderColor = isUser
@@ -2472,7 +2498,7 @@ class _ShootingPlanCard extends StatelessWidget {
             runSpacing: 10,
             children: [
               FilledButton.icon(
-                onPressed: onPrimary,
+                onPressed: canOpenPlan ? onPrimary : null,
                 icon: Icon(isUser ? Icons.fiber_manual_record : Icons.play_arrow),
                 label: Text(buttonLabel),
               ),
