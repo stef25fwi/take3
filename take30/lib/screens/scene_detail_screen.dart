@@ -140,7 +140,6 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
     _trackSceneView(scene);
 
     final isLiked = _likedOverride ?? scene.isLiked;
-    final likesCount = _likesCountOverride ?? scene.likesCount;
     final commentsCount = isDemoMode ? demoComments.length : scene.commentsCount;
     final isCompact = MediaQuery.sizeOf(context).width < 380;
 
@@ -216,41 +215,26 @@ class _SceneDetailScreenState extends ConsumerState<SceneDetailScreen> {
               ],
             ),
             SizedBox(height: isCompact ? 10 : 12),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: isCompact ? 6 : 8,
-              mainAxisSpacing: isCompact ? 6 : 8,
-              childAspectRatio: isCompact ? 2.15 : 1.95,
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
+            Row(
               children: [
-                const _StatBox(
-                  value: '4.8',
-                  label: 'note',
-                  icon: Icons.workspace_premium_rounded,
-                  accentColor: Color(0xFFFFB84D),
-                  compact: false,
+                Expanded(
+                  child: _StatBox(
+                    value: '4.8',
+                    label: 'note',
+                    icon: Icons.workspace_premium_rounded,
+                    accentColor: const Color(0xFFFFB84D),
+                    compact: isCompact,
+                  ),
                 ),
-                _StatBox(
-                  value: '${scene.viewsCount}',
-                  label: 'vues',
-                  icon: Icons.visibility_rounded,
-                  accentColor: const Color(0xFF79B8FF),
-                  compact: isCompact,
-                ),
-                _StatBox(
-                  value: '$commentsCount',
-                  label: 'commentaires',
-                  icon: Icons.forum_rounded,
-                  accentColor: const Color(0xFF5ED0B0),
-                  compact: isCompact,
-                ),
-                _StatBox(
-                  value: '$likesCount',
-                  label: 'likes',
-                  icon: Icons.favorite_rounded,
-                  accentColor: const Color(0xFFFF7D8F),
-                  compact: isCompact,
+                SizedBox(width: isCompact ? 6 : 8),
+                Expanded(
+                  child: _StatBox(
+                    value: '$commentsCount',
+                    label: 'commentaires',
+                    icon: Icons.forum_rounded,
+                    accentColor: const Color(0xFF5ED0B0),
+                    compact: isCompact,
+                  ),
                 ),
               ],
             ),
