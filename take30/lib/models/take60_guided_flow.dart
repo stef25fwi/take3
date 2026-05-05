@@ -152,6 +152,10 @@ extension UserPlanStatusX on UserPlanStatus {
 }
 
 enum GuidedMarkerType {
+  introAiVideo,
+  aiSequence,
+  userSequence,
+  finalSequence,
   aiPlan,
   userPlan,
   reactionShot,
@@ -164,6 +168,14 @@ enum GuidedMarkerType {
 
 GuidedMarkerType guidedMarkerTypeFromString(String? value) {
   switch (_normalizeTake60Key(value)) {
+    case 'intro_ai_video':
+      return GuidedMarkerType.introAiVideo;
+    case 'ai_sequence':
+      return GuidedMarkerType.aiSequence;
+    case 'user_sequence':
+      return GuidedMarkerType.userSequence;
+    case 'final_sequence':
+      return GuidedMarkerType.finalSequence;
     case 'user_plan':
       return GuidedMarkerType.userPlan;
     case 'reaction_shot':
@@ -186,6 +198,14 @@ GuidedMarkerType guidedMarkerTypeFromString(String? value) {
 extension GuidedMarkerTypeX on GuidedMarkerType {
   String get value {
     switch (this) {
+      case GuidedMarkerType.introAiVideo:
+        return 'intro_ai_video';
+      case GuidedMarkerType.aiSequence:
+        return 'ai_sequence';
+      case GuidedMarkerType.userSequence:
+        return 'user_sequence';
+      case GuidedMarkerType.finalSequence:
+        return 'final_sequence';
       case GuidedMarkerType.aiPlan:
         return 'ai_plan';
       case GuidedMarkerType.userPlan:
@@ -206,7 +226,8 @@ extension GuidedMarkerTypeX on GuidedMarkerType {
   }
 
   bool get requiresUserRecording {
-    return this == GuidedMarkerType.userPlan ||
+    return this == GuidedMarkerType.userSequence ||
+        this == GuidedMarkerType.userPlan ||
         this == GuidedMarkerType.userReply;
   }
 }
@@ -273,6 +294,8 @@ class Take60SceneMarker {
     required this.label,
     this.videoUrl,
     this.cueText = '',
+    this.audioMode = '',
+    this.status = 'ready',
   });
 
   final String id;
@@ -288,6 +311,8 @@ class Take60SceneMarker {
   final String label;
   final String? videoUrl;
   final String cueText;
+  final String audioMode;
+  final String status;
 
   bool get requiresUserRecording {
     return type.requiresUserRecording || source == 'user_video';
@@ -296,9 +321,15 @@ class Take60SceneMarker {
   bool get usesAiPlayback => !requiresUserRecording;
 
   factory Take60SceneMarker.fromMap(Map<String, dynamic> json) {
-    final startSeconds = (json['start'] as num?)?.toInt() ?? 0;
-    final rawDuration = (json['duration'] as num?)?.toInt();
-    final endSeconds = (json['end'] as num?)?.toInt() ??
+    final startSeconds = (json['startSeconds'] as num?)?.toInt() ??
+      (json['startSecond'] as num?)?.toInt() ??
+      (json['start'] as num?)?.toInt() ??
+      0;
+    final rawDuration = (json['durationSeconds'] as num?)?.toInt() ??
+      (json['duration'] as num?)?.toInt();
+    final endSeconds = (json['endSeconds'] as num?)?.toInt() ??
+      (json['endSecond'] as num?)?.toInt() ??
+      (json['end'] as num?)?.toInt() ??
         (rawDuration == null ? startSeconds : startSeconds + rawDuration);
     final durationSeconds = rawDuration ??
         (endSeconds > startSeconds ? endSeconds - startSeconds : 0);
@@ -316,6 +347,12 @@ class Take60SceneMarker {
       label: json['label'] as String? ?? '',
       videoUrl: json['videoUrl'] as String?,
       cueText: json['cueText'] as String? ?? '',
+      audioMode: json['audioMode'] as String? ??
+          ((json['source'] as String?) == 'user_video'
+              ? 'user_voice_with_optional_ai_ambiance'
+              : 'ai_only'),
+      status: json['status'] as String? ??
+          ((json['source'] as String?) == 'user_video' ? 'pending' : 'ready'),
     );
   }
 
@@ -325,8 +362,13 @@ class Take60SceneMarker {
       'order': order,
       'type': type.value,
       'start': startSeconds,
+      'startSecond': startSeconds,
+      'startSeconds': startSeconds,
       'end': endSeconds,
+      'endSecond': endSeconds,
+      'endSeconds': endSeconds,
       'duration': durationSeconds,
+      'durationSeconds': durationSeconds,
       'source': source,
       'character': character,
       'dialogue': dialogue,
@@ -334,6 +376,8 @@ class Take60SceneMarker {
       'label': label,
       'videoUrl': videoUrl,
       'cueText': cueText,
+      'audioMode': audioMode,
+      'status': status,
     };
   }
 }

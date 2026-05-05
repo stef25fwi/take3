@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
+  startVertexSceneGeneration,
   checkVertexSceneOperation,
   __vertexClientTestUtils,
   VertexResponseError,
@@ -130,6 +131,104 @@ test('checkVertexSceneOperation utilise fetchPredictOperation en POST', async ()
         operationName:
           'projects/take30/locations/us-central1/publishers/google/models/veo-3.1-fast-generate-001/operations/op-123',
       });
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+});
+
+test('startVertexSceneGeneration envoie durationSeconds, aspectRatio et storageUri', async () => {
+  const originalFetch = global.fetch;
+  let capturedUrl = '';
+  let capturedInit = {};
+
+  await withEnv({
+    GOOGLE_CLOUD_PROJECT: 'take30',
+    VERTEX_LOCATION: 'us-central1',
+    VEO_MODEL: 'veo-3.1-fast-generate-001',
+    VEO_OUTPUT_BUCKET: 'take30.firebasestorage.app',
+    VEO_USE_MOCK: 'false',
+    GOOGLE_ACCESS_TOKEN: 'fake-oauth-token',
+    VEO_AUTH_MODE: undefined,
+  }, async () => {
+    global.fetch = async (url, init) => {
+      capturedUrl = String(url);
+      capturedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: { get: () => 'application/json' },
+        async text() {
+          return JSON.stringify({
+            name: 'projects/take30/locations/us-central1/publishers/google/models/veo-3.1-fast-generate-001/operations/op-start',
+          });
+        },
+      };
+    };
+
+    try {
+      const result = await startVertexSceneGeneration({
+        sceneId: 'scene_123',
+        prompt: 'Plan cinéma réaliste.',
+        durationSeconds: 8,
+        aspectRatio: '16:9',
+      }, 'fake-api-key');
+
+      const body = JSON.parse(capturedInit.body);
+      assert.match(capturedUrl, /:predictLongRunning$/);
+      assert.equal(capturedInit.method, 'POST');
+      assert.equal(body.instances[0].prompt, 'Plan cinéma réaliste.');
+      assert.equal(body.parameters.storageUri, 'gs://take30.firebasestorage.app/veo/scene_123/');
+      assert.equal(body.parameters.sampleCount, 1);
+      assert.equal(body.parameters.durationSeconds, 8);
+      assert.equal(body.parameters.aspectRatio, '16:9');
+      assert.equal(result.operationId, 'projects/take30/locations/us-central1/publishers/google/models/veo-3.1-fast-generate-001/operations/op-start');
+      assert.equal(result.provider, 'vertex');
+      assert.equal(result.status, 'queued');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+});
+
+test('checkVertexSceneOperation détecte une vidéo gs:// dans une opération terminée', async () => {
+  const originalFetch = global.fetch;
+
+  await withEnv({
+    GOOGLE_CLOUD_PROJECT: 'take30',
+    VERTEX_LOCATION: 'us-central1',
+    VEO_MODEL: 'veo-3.1-fast-generate-001',
+    VEO_USE_MOCK: 'false',
+    GOOGLE_ACCESS_TOKEN: 'fake-oauth-token',
+    VEO_AUTH_MODE: undefined,
+  }, async () => {
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => 'application/json' },
+      async text() {
+        return JSON.stringify({
+          done: true,
+          response: {
+            videos: [
+              { videoUri: 'gs://take30.firebasestorage.app/veo/scene_123/sample_0.mp4' },
+            ],
+            thumbnails: [
+              { thumbnailUri: 'gs://take30.firebasestorage.app/veo/scene_123/thumb.jpg' },
+            ],
+          },
+        });
+      },
+    });
+
+    try {
+      const result = await checkVertexSceneOperation('operations/op-complete', 'fake-api-key');
+      assert.equal(result.done, true);
+      assert.equal(result.status, 'completed');
+      assert.equal(result.sourceVideoUri, 'gs://take30.firebasestorage.app/veo/scene_123/sample_0.mp4');
+      assert.equal(result.sourceThumbnailUri, 'gs://take30.firebasestorage.app/veo/scene_123/thumb.jpg');
     } finally {
       global.fetch = originalFetch;
     }

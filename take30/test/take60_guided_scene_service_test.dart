@@ -10,7 +10,10 @@ void main() {
     avatarUrl: '',
   );
 
-  SceneModel buildScene({required String? aiVideoUrl}) {
+  SceneModel buildScene({
+    required String? aiVideoUrl,
+    String? globalAiAmbianceAudioUrl,
+  }) {
     return SceneModel(
       id: 'scene_1',
       title: 'Scene test',
@@ -20,6 +23,7 @@ void main() {
       author: author,
       createdAt: DateTime(2026, 5, 1),
       adminWorkflow: true,
+      globalAiAmbianceAudioUrl: globalAiAmbianceAudioUrl,
       markers: [
         Take60SceneMarker(
           id: 'ai_1',
@@ -274,16 +278,41 @@ void main() {
       expect(firstMarker['source'], 'ai_video');
       expect(firstMarker['startSeconds'], 0);
       expect(firstMarker['endSeconds'], 10);
+      expect(firstMarker['audioMode'], 'ai_only');
+      expect(firstMarker['character'], isNotEmpty);
 
       final aiSegments = payload['aiSegments'] as List<dynamic>;
       final firstAi = aiSegments.first as Map<String, dynamic>;
       expect(firstAi['startSeconds'], 0);
       expect(firstAi['endSeconds'], 10);
+      expect(firstAi['audioMode'], 'ai_only');
 
       final firstUser = userSegments.first as Map<String, dynamic>;
       expect(firstUser['source'], 'user_video');
       expect(firstUser['startSeconds'], 10);
       expect(firstUser['endSeconds'], 20);
+      expect(firstUser['audioMode'], 'user_voice_with_optional_ai_ambiance');
+    });
+
+    test('adds audioBed when scene has a global AI ambience audio URL', () {
+      final scene = buildScene(
+        aiVideoUrl: 'https://example.com/ai.mp4',
+        globalAiAmbianceAudioUrl: 'https://example.com/ambiance.m4a',
+      );
+      final payload = Take60GuidedSceneService.buildRenderPayload(
+        projectId: 'project_1',
+        userId: 'user_1',
+        scene: scene,
+        markers: scene.markers,
+        recordings: [
+          buildRecording(uploadedVideoUrl: 'https://example.com/user.mp4'),
+        ],
+      );
+
+      final audioBed = payload['audioBed'] as Map<String, dynamic>;
+      expect(audioBed['url'], 'https://example.com/ambiance.m4a');
+      expect(audioBed['mode'], 'ai_ambiance_only');
+      expect(audioBed['durationSeconds'], 60);
     });
 
     test('maps audio rules to backend controls', () {

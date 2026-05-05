@@ -73,6 +73,12 @@ interface EffectiveAudioRules extends AudioRules {
   crossfadeMillis: number;
 }
 
+interface AudioBedInput {
+  url?: string;
+  durationSeconds?: number;
+  mode?: string;
+}
+
 interface SegmentInput {
   markerId?: string;
   type?: string;
@@ -82,6 +88,11 @@ interface SegmentInput {
   startSeconds?: number;
   endSeconds?: number;
   order?: number;
+  dialogue?: string;
+  character?: string;
+  cameraPlan?: string;
+  label?: string;
+  audioMode?: string;
 }
 
 function normaliseAudioRules(rules: AudioRules): EffectiveAudioRules {
@@ -131,6 +142,7 @@ interface RenderRequest {
   userId?: string;
   maxDurationSeconds?: number;
   audioRules?: AudioRules;
+  audioBed?: AudioBedInput;
   aiSegments?: SegmentInput[];
   userSegments?: SegmentInput[];
   markers?: SegmentInput[];
@@ -145,6 +157,11 @@ interface NormalisedSegment {
   endSeconds: number;
   durationSeconds: number;
   order: number;
+  dialogue: string;
+  character: string;
+  cameraPlan: string;
+  label: string;
+  audioMode: string;
 }
 
 const db = getFirestore();
@@ -262,6 +279,12 @@ function mergeSegments(
       endSeconds,
       durationSeconds,
       order: Number(marker.order ?? i),
+      dialogue: (marker.dialogue ?? chosen.dialogue ?? "").toString(),
+      character: (marker.character ?? chosen.character ?? "").toString(),
+      cameraPlan: (marker.cameraPlan ?? chosen.cameraPlan ?? "").toString(),
+      label: (marker.label ?? chosen.label ?? "").toString(),
+      audioMode: (marker.audioMode ?? chosen.audioMode ??
+        (isUser ? "user_voice_with_optional_ai_ambiance" : "ai_only")).toString(),
     });
   }
   merged.sort((a, b) => a.order - b.order);
@@ -317,8 +340,9 @@ function downloadFile(url: string, dest: string): Promise<void> {
 async function ffmpegConcat(
   segments: NormalisedSegment[],
   rawRules: AudioRules,
+  audioBed: AudioBedInput | undefined,
   workDir: string
-): Promise<{ videoPath: string; thumbPath: string; duration: number }> {
+): Promise<{ videoPath: string; thumbPath: string; duration: number; audioMode: string }> {
   if (!ffmpegLib) {
     throw new Error("FFmpeg unavailable in this environment.");
   }
@@ -328,6 +352,7 @@ async function ffmpegConcat(
   // les écarts de niveau entre plans IA et plans utilisateur.
   const audioChain = buildAudioChain(rules);
   const inputs: string[] = [];
+  const videoOnlyInputs: string[] = [];
   const durations: number[] = [];
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
@@ -352,6 +377,17 @@ async function ffmpegConcat(
       void cmd;
     });
     inputs.push(local);
+    const videoOnly = path.join(workDir, `clip_video_${i}.mp4`);
+    await new Promise<void>((resolve, reject) => {
+      ffmpegLib(local)
+        .noAudio()
+        .videoCodec("copy")
+        .outputOptions(["-movflags", "+faststart"])
+        .save(videoOnly)
+        .on("end", () => resolve())
+        .on("error", (err: Error) => reject(err));
+    });
+    videoOnlyInputs.push(videoOnly);
     durations.push(Math.max(seg.durationSeconds, 0));
   }
   if (inputs.length === 0) {
@@ -359,6 +395,105 @@ async function ffmpegConcat(
   }
 
   const videoPath = path.join(workDir, "final.mp4");
+  const audioBedUrl = (audioBed?.url ?? "").trim();
+  const useAudioBed =
+    rules.keepAiAmbianceDuringUserPlans !== false &&
+    rules.duckUserAudioOverAi !== false &&
+    isRemoteRenderableUrl(audioBedUrl);
+
+  if (useAudioBed) {
+    const videoListFile = path.join(workDir, "concat_video_only.txt");
+    const videoOnlyPath = path.join(workDir, "video_only.mp4");
+    await fs.writeFile(
+      videoListFile,
+      videoOnlyInputs.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n")
+    );
+    const finalDurationForBed = durations.reduce((a, b) => a + b, 0);
+    await new Promise<void>((resolve, reject) => {
+      ffmpegLib()
+        .input(videoListFile)
+        .inputOptions(["-f", "concat", "-safe", "0"])
+        .videoCodec("libx264")
+        .size("1920x1080")
+        .videoBitrate("4500k")
+        .outputOptions(["-pix_fmt", "yuv420p", "-movflags", "+faststart"])
+        .duration(finalDurationForBed)
+        .save(videoOnlyPath)
+        .on("end", () => resolve())
+        .on("error", (err: Error) => reject(err));
+    });
+
+    const bedPath = path.join(workDir, "audio_bed_source");
+    await downloadFile(audioBedUrl, bedPath);
+    await new Promise<void>((resolve, reject) => {
+      const cmd = ffmpegLib();
+      cmd.input(videoOnlyPath);
+      for (const input of inputs) cmd.input(input);
+      cmd.input(bedPath);
+
+      const bedInputIndex = inputs.length + 1;
+      const filters: string[] = [];
+      const audioLabels: string[] = [];
+      let cursor = 0;
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const label = `segmix${i}`;
+        const bedLabel = `bed${i}`;
+        const sourceAudio = `[${i + 1}:a]`;
+        const start = cursor.toFixed(3);
+        const duration = seg.durationSeconds.toFixed(3);
+        filters.push(
+          `[${bedInputIndex}:a]atrim=start=${start}:duration=${duration},asetpts=PTS-STARTPTS,volume=${seg.source === "user" ? "0.18" : "1.0"}[${bedLabel}]`
+        );
+        if (seg.source === "user") {
+          if (rules.duckUserAudioOverAi !== false) {
+            const ducked = `duck${i}`;
+            filters.push(`[${bedLabel}]asplit[${bedLabel}a][${bedLabel}b]`);
+            filters.push(`[${bedLabel}a]anull[${bedLabel}main]`);
+            filters.push(`${sourceAudio}asplit[user${i}main][user${i}side]`);
+            filters.push(`[${bedLabel}main][user${i}side]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=300[${ducked}]`);
+            filters.push(`[user${i}main][${ducked}]amix=inputs=2:duration=first:dropout_transition=0,${audioChain}[${label}]`);
+          } else {
+            filters.push(`${sourceAudio}[${bedLabel}]amix=inputs=2:duration=first:dropout_transition=0,${audioChain}[${label}]`);
+          }
+        } else {
+          filters.push(`${sourceAudio}${audioChain}[${label}]`);
+        }
+        audioLabels.push(`[${label}]`);
+        cursor += seg.durationSeconds;
+      }
+      filters.push(`${audioLabels.join("")}concat=n=${audioLabels.length}:v=0:a=1[aout]`);
+      cmd
+        .complexFilter(filters, ["aout"])
+        .outputOptions(["-map", "0:v:0", "-map", "[aout]", "-pix_fmt", "yuv420p", "-movflags", "+faststart"])
+        .videoCodec("copy")
+        .audioCodec("aac")
+        .audioBitrate("192k")
+        .duration(finalDurationForBed)
+        .save(videoPath)
+        .on("end", () => resolve())
+        .on("error", (err: Error) => reject(err));
+    });
+
+    const thumbPath = path.join(workDir, "thumb.jpg");
+    await new Promise<void>((resolve, reject) => {
+      ffmpegLib(videoPath)
+        .seekInput(Math.min(1, finalDurationForBed / 2))
+        .frames(1)
+        .size("1920x1080")
+        .save(thumbPath)
+        .on("end", () => resolve())
+        .on("error", (err: Error) => reject(err));
+    });
+
+    return {
+      videoPath,
+      thumbPath,
+      duration: finalDurationForBed,
+      audioMode: "ai_bed_ducked_mix",
+    };
+  }
+
   const fadeMs = Math.max(0, Number(rules.crossfadeMillis ?? 0));
   const shouldFade = rules.applyAudioFades !== false;
   const fadeSec = fadeMs / 1000;
@@ -455,7 +590,7 @@ async function ffmpegConcat(
       .on("error", (err: Error) => reject(err));
   });
 
-  return { videoPath, thumbPath, duration: finalDuration };
+  return { videoPath, thumbPath, duration: finalDuration, audioMode: "segmented_audio_only" };
 }
 
 export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
@@ -477,6 +612,11 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
   const user = Array.isArray(data.userSegments) ? data.userSegments : [];
   const markers = Array.isArray(data.markers) ? data.markers : [];
   const rules = normaliseAudioRules(data.audioRules ?? {});
+  const audioBed = data.audioBed;
+  const audioBedUrl = (audioBed?.url ?? "").trim();
+  if (audioBedUrl && !isRemoteRenderableUrl(audioBedUrl)) {
+    throw new HttpsError("invalid-argument", "URL audioBed non exploitable.");
+  }
 
   const merged = mergeSegments(markers, ai, user);
   const totalDuration = clampDuration(merged, maxDuration);
@@ -494,7 +634,15 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     maxDurationSeconds: maxDuration,
     segments: merged,
     audioRules: rules,
+    audioBed: audioBedUrl
+      ? {
+        url: audioBedUrl,
+        durationSeconds: Number(audioBed?.durationSeconds ?? totalDuration),
+        mode: audioBed?.mode ?? "ai_ambiance_only",
+      }
+      : null,
     audioPipeline: {
+      mode: audioBedUrl ? "ai_bed_requested" : "segmented_audio_only",
       equalizer: rules.equalizer,
       autoGain: rules.autoGain,
       normaliseLoudness: rules.normaliseLoudness,
@@ -526,9 +674,10 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
 
   const workDir = await fs.mkdtemp(path.join(os.tmpdir(), `take60-${renderId}-`));
   try {
-    const { videoPath, thumbPath, duration } = await ffmpegConcat(
+    const { videoPath, thumbPath, duration, audioMode } = await ffmpegConcat(
       merged,
       rules,
+      audioBed,
       workDir
     );
     const bucket = admin.storage().bucket();
@@ -556,6 +705,20 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     thumbnailUrl = thumbUrl;
     renderStatus = "preview_ready";
     logger.info(`Take60 render ${renderId} ok (${duration}s)`);
+    await renderRef.set(
+      {
+        audioPipeline: {
+          mode: audioMode,
+          equalizer: rules.equalizer,
+          autoGain: rules.autoGain,
+          normaliseLoudness: rules.normaliseLoudness,
+          keepAiAmbianceDuringUserPlans: rules.keepAiAmbianceDuringUserPlans !== false,
+          duckUserAudioOverAi: rules.duckUserAudioOverAi !== false,
+          loudnessTarget: "I=-16:TP=-1.5:LRA=11",
+        },
+      },
+      { merge: true }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : `${err}`;
     logger.error(`Take60 render ${renderId} failed`, err as Error);

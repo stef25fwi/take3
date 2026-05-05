@@ -183,6 +183,13 @@ class Take60GuidedSceneService {
               'endSeconds': marker.endSeconds,
               'durationSeconds': marker.durationSeconds,
               'order': marker.order,
+              'dialogue': marker.dialogue,
+              'character': marker.character,
+              'cameraPlan': marker.cameraPlan,
+              'label': marker.label,
+              'audioMode': marker.audioMode.isNotEmpty
+                  ? marker.audioMode
+                  : 'ai_only',
             },
           )
           .toList(),
@@ -196,6 +203,7 @@ class Take60GuidedSceneService {
               'startSeconds': recording.startSecond,
               'endSeconds': recording.endSecond,
               'durationSeconds': recording.durationSeconds,
+              'audioMode': 'user_voice_with_optional_ai_ambiance',
             },
           )
           .toList(),
@@ -209,10 +217,29 @@ class Take60GuidedSceneService {
               'startSeconds': marker.startSeconds,
               'endSeconds': marker.endSeconds,
               'durationSeconds': marker.durationSeconds,
+              'videoUrl': marker.videoUrl,
+              'dialogue': marker.dialogue,
+              'character': marker.character,
+              'cameraPlan': marker.cameraPlan,
+              'label': marker.label,
+              'audioMode': marker.audioMode.isNotEmpty
+                  ? marker.audioMode
+                  : (marker.requiresUserRecording
+                      ? 'user_voice_with_optional_ai_ambiance'
+                      : 'ai_only'),
+              'status': marker.status,
             },
           )
           .toList(),
       'audioRules': scene.audioRules.toMap(),
+      if ((scene.globalAiAmbianceAudioUrl?.trim().isNotEmpty ?? false))
+        'audioBed': {
+          'url': scene.globalAiAmbianceAudioUrl!.trim(),
+          'durationSeconds': scene.durationSeconds > 0
+              ? scene.durationSeconds
+              : 60,
+          'mode': 'ai_ambiance_only',
+        },
       'maxDurationSeconds': scene.durationSeconds > 0
           ? scene.durationSeconds
           : 60,
@@ -262,22 +289,24 @@ class Take60GuidedSceneService {
         ? 'Policière'
         : 'Réplique IA';
     final dialogueLines = _extractDialogueLines(scene.dialogueText);
-    const durations = <int>[12, 8, 10, 8, 12, 10];
+    const durations = <int>[8, 8, 8, 8, 8, 8, 8];
     final labels = <String>[
-      'Plan VO3 1 — intro cinéma',
+      'Vidéo IA d’introduction — segment 1/2',
+      'Vidéo IA d’introduction — segment 2/2',
       'Plan utilisateur 1 — réplique',
-      'Plan VO3 2 — réaction',
+      'Réaction IA',
       'Plan utilisateur 2 — réponse',
-      'Plan VO3 3 — tension',
+      'Séquence IA de tension',
       'Plan utilisateur final — dernière réplique',
     ];
     final markerTypes = <GuidedMarkerType>[
-      GuidedMarkerType.aiPlan,
+      GuidedMarkerType.introAiVideo,
+      GuidedMarkerType.introAiVideo,
       GuidedMarkerType.userPlan,
-      GuidedMarkerType.reactionShot,
+      GuidedMarkerType.aiSequence,
       GuidedMarkerType.userPlan,
-      GuidedMarkerType.aiReply,
-      GuidedMarkerType.finalShot,
+      GuidedMarkerType.aiSequence,
+      GuidedMarkerType.userPlan,
     ];
     final markers = <Take60SceneMarker>[];
     var start = 0;
@@ -310,6 +339,10 @@ class Take60GuidedSceneService {
           cueText: requiresUserRecording
               ? 'Joue ta réplique maintenant.'
               : 'Regarde la scène IA.',
+            audioMode: requiresUserRecording
+              ? 'user_voice_with_optional_ai_ambiance'
+              : 'ai_only',
+            status: requiresUserRecording ? 'pending' : 'ready',
         ),
       );
       start += duration;
@@ -346,6 +379,54 @@ class Take60GuidedSceneService {
     );
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_draftKey(scene.id), jsonEncode(draft.toMap()));
+  }
+
+  Future<void> saveGuidedProjectDraft({
+    required String projectId,
+    required SceneModel scene,
+    required List<Take60SceneMarker> markers,
+    required List<Take60UserRecordingDraft> recordings,
+    required SceneRecordingStatus recordingStatus,
+  }) async {
+    final now = DateTime.now();
+    final totalUserMarkersCount =
+        markers.where((marker) => marker.requiresUserRecording).length;
+    final completedUserMarkersCount = markers
+        .where((marker) => marker.requiresUserRecording)
+        .where((marker) => recordings.any(
+              (recording) =>
+                  recording.markerId == marker.id &&
+                  recording.status == UserPlanStatus.validated,
+            ))
+        .length;
+    final payload = <String, dynamic>{
+      ..._projectPayload(
+        projectId: projectId,
+        scene: scene,
+        status: completedUserMarkersCount >= totalUserMarkersCount &&
+                totalUserMarkersCount > 0
+            ? 'ready_to_render'
+            : 'draft',
+        updatedAt: now,
+        markers: markers,
+        recordings: recordings,
+      ),
+      'recordingStatus': recordingStatus.value,
+    };
+
+    if (currentUserId == 'guest') {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'take60_guided_project_$projectId',
+        jsonEncode(payload),
+      );
+      return;
+    }
+
+    await _firestore
+        .collection('take60_guided_projects')
+        .doc(projectId)
+        .set(payload, SetOptions(merge: true));
   }
 
   Future<void> clearDraft(String sceneId) async {
@@ -609,7 +690,24 @@ class Take60GuidedSceneService {
     required String status,
     required DateTime updatedAt,
     String? finalVideoUrl,
+    List<Take60SceneMarker>? markers,
+    List<Take60UserRecordingDraft>? recordings,
   }) {
+    final timelineMarkers = markers ?? buildTimeline(scene);
+    final userRecordings = recordings ?? const <Take60UserRecordingDraft>[];
+    final totalUserMarkersCount =
+      timelineMarkers.where((marker) => marker.requiresUserRecording).length;
+    final completedUserMarkersCount = timelineMarkers
+      .where((marker) => marker.requiresUserRecording)
+      .where((marker) => userRecordings.any(
+          (recording) =>
+            recording.markerId == marker.id &&
+            recording.status == UserPlanStatus.validated,
+        ))
+      .length;
+    final introAiDurationSeconds = timelineMarkers
+      .where((marker) => marker.type == GuidedMarkerType.introAiVideo)
+      .fold<int>(0, (total, marker) => total + marker.durationSeconds);
     return <String, dynamic>{
       'id': projectId,
       'projectId': projectId,
@@ -619,6 +717,15 @@ class Take60GuidedSceneService {
       'category': scene.category,
       'sceneType': scene.sceneType,
       'status': status,
+      'introAiVideoUrl': scene.videoUrl,
+      'globalAiAmbianceAudioUrl': scene.globalAiAmbianceAudioUrl,
+      'introAiDurationSeconds': introAiDurationSeconds > 0
+        ? introAiDurationSeconds
+        : null,
+      'timelineMarkers': timelineMarkers.map((marker) => marker.toMap()).toList(),
+      'userRecordings': userRecordings.map((recording) => recording.toMap()).toList(),
+      'completedUserMarkersCount': completedUserMarkersCount,
+      'totalUserMarkersCount': totalUserMarkersCount,
       'createdAt': updatedAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       if (finalVideoUrl != null) 'finalVideoUrl': finalVideoUrl,

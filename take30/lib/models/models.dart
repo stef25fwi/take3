@@ -237,6 +237,7 @@ class SceneModel {
     this.adminWorkflow = false,
     this.audioRules = const Take60AudioRules(),
     this.markers = const [],
+    this.globalAiAmbianceAudioUrl,
   });
 
   final String id;
@@ -275,6 +276,7 @@ class SceneModel {
   final bool adminWorkflow;
   final Take60AudioRules audioRules;
   final List<Take60SceneMarker> markers;
+  final String? globalAiAmbianceAudioUrl;
 
   String get authorId => author.id;
   int get userPlanCount =>
@@ -327,6 +329,7 @@ class SceneModel {
       adminWorkflow: adminWorkflow,
       audioRules: audioRules,
       markers: markers,
+      globalAiAmbianceAudioUrl: globalAiAmbianceAudioUrl,
     );
   }
 
@@ -416,6 +419,9 @@ class SceneModel {
           .map(Take60SceneMarker.fromMap)
           .toList()
         ..sort((left, right) => left.order.compareTo(right.order)),
+      globalAiAmbianceAudioUrl: d['globalAiAmbianceAudioUrl'] as String? ??
+          d['aiAmbianceAudioUrl'] as String? ??
+          d['audioBedUrl'] as String?,
     );
   }
 
@@ -452,6 +458,7 @@ class SceneModel {
         'status': status,
         'adminWorkflow': adminWorkflow,
         'audioRules': audioRules.toMap(),
+        'globalAiAmbianceAudioUrl': globalAiAmbianceAudioUrl,
         'markers': markers.map((marker) => marker.toMap()).toList(),
         'createdAt': _writeDate(createdAt),
         'updatedAt': _writeDate(updatedAt ?? createdAt),

@@ -550,8 +550,21 @@ class _Take60GuidedRecordScreenState
     });
     await _persistDraftWithStatus(SceneRecordingStatus.userPlanValidated);
     if (autoAdvance) {
-      _advanceAfterValidation();
+      _returnToShootingPlan(
+        message: 'Séquence validée. Tu peux continuer depuis le plan de tournage.',
+      );
     }
+  }
+
+  void _returnToShootingPlan({String? message}) {
+    _disposePreviewController();
+    setState(() {
+      _previewRecording = null;
+      _stage = _Stage.director;
+      if (message != null) {
+        _publicationStatus = message;
+      }
+    });
   }
 
   bool get _allRequiredUserSegmentsUploaded {
@@ -634,17 +647,6 @@ class _Take60GuidedRecordScreenState
     _enterMarker(_timeline[nextIndex]);
   }
 
-  void _advanceAfterValidation() {
-    if (_isLastTimelineMarker ||
-        _validatedUserSegmentCount >= _requiredUserSegmentCount) {
-      if (_allRequiredUserSegmentsUploaded) {
-        _renderFinalVideo();
-      }
-      return;
-    }
-    _goToNextSegment();
-  }
-
   // ── Final render ────────────────────────────────────────────────────────
   Future<void> _renderFinalVideo() async {
     final scene = _scene;
@@ -711,28 +713,33 @@ class _Take60GuidedRecordScreenState
     final scene = _scene;
     final renderResult = _renderResult;
     final projectId = _projectId;
-    if (scene == null || renderResult == null || projectId == null) return;
-    if (renderResult.finalVideoUrl.isEmpty) {
-      setState(() => _publicationStatus =
-          'Le rendu final doit être disponible avant de garder ce Take en brouillon.');
-      return;
-    }
+    if (scene == null || projectId == null) return;
     setState(() {
       _savingDraft = true;
       _publicationStatus = 'Brouillon en cours d\'enregistrement…';
     });
     try {
-      await _service.saveRenderedProject(
-        projectId: projectId,
-        scene: scene,
-        recordings: _recordings.values.toList(),
-        renderResult: renderResult,
-        status: 'draft',
-        battleContext: widget.battleContext,
-      );
+      if (renderResult != null && renderResult.finalVideoUrl.isNotEmpty) {
+        await _service.saveRenderedProject(
+          projectId: projectId,
+          scene: scene,
+          recordings: _recordings.values.toList(),
+          renderResult: renderResult,
+          status: 'draft',
+          battleContext: widget.battleContext,
+        );
+      } else {
+        await _service.saveGuidedProjectDraft(
+          projectId: projectId,
+          scene: scene,
+          markers: _timeline,
+          recordings: _recordings.values.toList(),
+          recordingStatus: SceneRecordingStatus.draftSaved,
+        );
+        await _persistDraftWithStatus(SceneRecordingStatus.draftSaved);
+      }
       if (!mounted) return;
       setState(() => _publicationStatus = 'Brouillon enregistré.');
-      await _persistDraftWithStatus(SceneRecordingStatus.draftSaved);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -817,6 +824,16 @@ class _Take60GuidedRecordScreenState
       status: status,
       recordings: _recordings.values.toList(),
     );
+    final projectId = _projectId;
+    if (projectId != null) {
+      await _service.saveGuidedProjectDraft(
+        projectId: projectId,
+        scene: _scene!,
+        markers: _timeline,
+        recordings: _recordings.values.toList(),
+        recordingStatus: status,
+      ).catchError((_) {});
+    }
   }
 
   void _replayPlan(Take60SceneMarker marker) {
@@ -827,6 +844,43 @@ class _Take60GuidedRecordScreenState
       _currentIndex = index;
     });
     _enterMarker(marker);
+  }
+
+  void _startMarkerFromPlan(Take60SceneMarker marker) {
+    final index = _timeline.indexWhere((m) => m.id == marker.id);
+    if (index < 0) return;
+    setState(() {
+      _currentIndex = index;
+      _publicationStatus = '';
+    });
+    _enterMarker(marker);
+  }
+
+  String _statusLabelForMarker(Take60SceneMarker marker) {
+    if (!marker.requiresUserRecording) return 'Prête';
+    final recording = _recordingForMarker(marker);
+    if (recording == null) return 'À enregistrer';
+    switch (recording.status) {
+      case UserPlanStatus.pending:
+        return 'À enregistrer';
+      case UserPlanStatus.recording:
+        return 'Enregistrée';
+      case UserPlanStatus.previewed:
+        return 'Enregistrée';
+      case UserPlanStatus.validated:
+        return 'Validée';
+      case UserPlanStatus.retakeRequested:
+        return 'À rejouer';
+      case UserPlanStatus.recorded:
+        return 'Enregistrée';
+    }
+  }
+
+  Color _statusColorForMarker(Take60SceneMarker marker) {
+    final status = _statusLabelForMarker(marker);
+    if (status == 'Validée' || status == 'Prête') return Colors.green.shade600;
+    if (status == 'À rejouer') return Colors.orange.shade700;
+    return _accent;
   }
 
   // ── Reactions to camera state changes ───────────────────────────────────
@@ -1071,6 +1125,11 @@ class _Take60GuidedRecordScreenState
   Widget _buildDirectorSheet() {
     final scene = _scene!;
     final userPlanCount = _timeline.where((m) => m.requiresUserRecording).length;
+    final introDuration = _timeline
+        .where((m) => m.type == GuidedMarkerType.introAiVideo)
+        .fold<int>(0, (total, marker) => total + marker.durationSeconds);
+    final completed = _validatedUserSegmentCount;
+    final canGenerate = _allRequiredUserSegmentsUploaded;
     final metadata = <String>[
       scene.category,
       if (scene.sceneType.trim().isNotEmpty) scene.sceneType,
@@ -1090,7 +1149,7 @@ class _Take60GuidedRecordScreenState
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  'Fiche réalisateur',
+                  'Plan de tournage Take60',
                   style: GoogleFonts.dmSans(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -1099,6 +1158,17 @@ class _Take60GuidedRecordScreenState
                 ),
               ),
             ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 52),
+            child: Text(
+              'Visualise toute la scène, puis enregistre tes séquences une par une.',
+              style: GoogleFonts.dmSans(
+                color: _secondaryText(context),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           _DirectorBlock(
@@ -1130,66 +1200,110 @@ class _Take60GuidedRecordScreenState
             label: 'Séquences à enregistrer',
             value: '$userPlanCount plan(s) utilisateur',
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Timeline',
-            style: GoogleFonts.dmSans(
-              fontWeight: FontWeight.w700,
-              color: _primaryText(context),
+          _DirectorRow(
+            label: 'Intro IA',
+            value: '${introDuration > 0 ? introDuration : 16} secondes · prête',
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _surface(context),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _softBorder(context)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$completed / $userPlanCount séquences enregistrées et validées',
+                  style: GoogleFonts.dmSans(
+                    color: _primaryText(context),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(
+                  value: _userSegmentProgress,
+                  minHeight: 8,
+                  backgroundColor: _surfaceMuted(context),
+                  valueColor: const AlwaysStoppedAnimation<Color>(_accent),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Durée totale : 60 secondes max · ${_timeline.length} plans · alternance IA / utilisateur',
+                  style: GoogleFonts.dmSans(
+                    color: _secondaryText(context),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
+          Text(
+            'Liste complète des séquences',
+            style: GoogleFonts.dmSans(
+              fontWeight: FontWeight.w800,
+              color: _primaryText(context),
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 10),
           ..._timeline.map(
-            (marker) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Icon(
-                    marker.requiresUserRecording
-                        ? Icons.videocam_rounded
-                        : Icons.movie_filter_outlined,
-                    size: 16,
-                    color: marker.requiresUserRecording ? _accent : _accent2,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${marker.label} · ${marker.durationSeconds}s',
-                      style: GoogleFonts.dmSans(
-                        color: _secondaryText(context),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            (marker) => _ShootingPlanCard(
+              marker: marker,
+              statusLabel: _statusLabelForMarker(marker),
+              statusColor: _statusColorForMarker(marker),
+              onPrimary: marker.requiresUserRecording
+                  ? () => _startMarkerFromPlan(marker)
+                  : () => _startMarkerFromPlan(marker),
+              onReplay: marker.requiresUserRecording &&
+                      _recordingForMarker(marker) != null
+                  ? () => _replayPlan(marker)
+                  : null,
             ),
           ),
           const SizedBox(height: 24),
+          if (_publicationStatus.isNotEmpty) ...[
+            Text(
+              _publicationStatus,
+              style: GoogleFonts.dmSans(
+                color: _accent2,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _backToLibrary,
+                  onPressed: (_savingDraft || _publishing) ? null : _saveAsDraft,
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: _softBorder(context)),
                     foregroundColor: _primaryText(context),
                     minimumSize: const Size.fromHeight(50),
                   ),
-                  child: const Text('Retour'),
+                  child: Text(_savingDraft
+                      ? 'Enregistrement…'
+                      : 'Enregistrer en brouillon'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 flex: 2,
                 child: FilledButton(
-                  onPressed: _startScene,
+                  onPressed: canGenerate ? _renderFinalVideo : _startScene,
                   style: FilledButton.styleFrom(
                     backgroundColor: _accent,
                     foregroundColor: Colors.black,
                     minimumSize: const Size.fromHeight(50),
                   ),
-                  child: const Text('Démarrer la scène'),
+                  child: Text(canGenerate
+                      ? 'Générer le montage final'
+                      : 'Démarrer la scène'),
                 ),
               ),
             ],
@@ -2234,6 +2348,173 @@ class _CameraStatusChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ShootingPlanCard extends StatelessWidget {
+  const _ShootingPlanCard({
+    required this.marker,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.onPrimary,
+    this.onReplay,
+  });
+
+  final Take60SceneMarker marker;
+  final String statusLabel;
+  final Color statusColor;
+  final VoidCallback onPrimary;
+  final VoidCallback? onReplay;
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = marker.requiresUserRecording;
+    final title = isUser ? 'À toi de jouer' : 'Plan IA';
+    final buttonLabel = isUser
+        ? 'Enregistrer cette séquence'
+        : (marker.type == GuidedMarkerType.introAiVideo
+            ? 'Voir l’introduction'
+            : 'Voir le plan IA');
+    final borderColor = isUser
+        ? const Color(0xFF7C3AED).withValues(alpha: 0.36)
+        : const Color(0xFF06B6D4).withValues(alpha: 0.34);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: (isUser
+                          ? const Color(0xFF7C3AED)
+                          : const Color(0xFF06B6D4))
+                      .withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  isUser ? Icons.videocam_rounded : Icons.movie_filter_outlined,
+                  color: isUser
+                      ? const Color(0xFFA78BFA)
+                      : const Color(0xFF22D3EE),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$title · ${marker.durationSeconds}s',
+                      style: GoogleFonts.dmSans(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      marker.label.isEmpty ? marker.type.value : marker.label,
+                      style: GoogleFonts.dmSans(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.66),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.38)),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: GoogleFonts.dmSans(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (marker.character.trim().isNotEmpty)
+            _PlanCardLine(label: 'Personnage', value: marker.character),
+          if (marker.dialogue.trim().isNotEmpty)
+            _PlanCardLine(label: 'Dialogue attendu', value: marker.dialogue),
+          if (marker.cueText.trim().isNotEmpty)
+            _PlanCardLine(label: 'Consigne', value: marker.cueText),
+          _PlanCardLine(label: 'Caméra', value: marker.cameraPlan),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              FilledButton.icon(
+                onPressed: onPrimary,
+                icon: Icon(isUser ? Icons.fiber_manual_record : Icons.play_arrow),
+                label: Text(buttonLabel),
+              ),
+              if (onReplay != null)
+                OutlinedButton.icon(
+                  onPressed: onReplay,
+                  icon: const Icon(Icons.replay),
+                  label: const Text('Rejouer'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanCardLine extends StatelessWidget {
+  const _PlanCardLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: RichText(
+        text: TextSpan(
+          style: GoogleFonts.dmSans(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 12.5,
+          ),
+          children: [
+            TextSpan(
+              text: '$label : ',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
       ),
     );
   }

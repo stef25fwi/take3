@@ -47,9 +47,9 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('Fiche réalisateur'), findsOneWidget);
+    expect(find.text('Plan de tournage Take60'), findsOneWidget);
 
-    await tester.tap(find.text('Démarrer l’enregistrement'));
+    await tester.tap(find.text('Démarrer la scène'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('take60_permission_denied_state')), findsOneWidget);
