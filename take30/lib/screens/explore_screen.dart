@@ -12,6 +12,7 @@ import '../providers/explorer_providers.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../services/location_region_service.dart';
+import '../services/take60_guided_scene_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -26,6 +27,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedCategory;
   String _query = '';
+  final Take60GuidedSceneService _guidedSceneService =
+      Take60GuidedSceneService.instance;
 
   @override
   void dispose() {
@@ -96,12 +99,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     const SizedBox(height: 18),
                     _NewScenariosSection(
                       palette: palette,
-                      onPlay: (id) => _openScene(id),
+                      onPlay: _openExplorerScene,
                     ),
                     const SizedBox(height: 18),
                     _TrendingScenesSection(
                       palette: palette,
-                      onPlay: (id) => _openScene(id),
+                      onPlay: _openExplorerScene,
                     ),
                     const SizedBox(height: 22),
                     _SectionTitle(label: 'Catégories', palette: palette),
@@ -253,6 +256,46 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
       return;
     }
     context.go(AppRouter.scenePath(sceneId));
+  }
+
+  Future<void> _openExplorerScene(ExplorerScene explorerScene) async {
+    final sceneId = explorerScene.id.trim();
+    if (sceneId.isEmpty) return;
+    final user = ref.read(authProvider).user ??
+        const UserModel(
+          id: 'guest',
+          username: 'guest',
+          displayName: 'Invité',
+          avatarUrl: '',
+        );
+    try {
+      final scenes = await _guidedSceneService.loadGuidedScenes(
+        fallbackAuthor: user,
+      );
+      if (!mounted) return;
+      final scene = scenes.where((item) => item.id == sceneId).firstOrNull;
+      if (scene != null) {
+        context.go(AppRouter.record, extra: scene);
+        return;
+      }
+      _showSceneUnavailable();
+    } catch (_) {
+      if (!mounted) return;
+      _showSceneUnavailable();
+    }
+  }
+
+  void _showSceneUnavailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Ce scénario n’est pas encore disponible.'),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Explorer',
+          onPressed: () => context.go(AppRouter.explore),
+        ),
+      ),
+    );
   }
 
   Future<void> _redetectLocation() async {
@@ -2108,7 +2151,7 @@ class _NewScenariosSection extends ConsumerWidget {
   const _NewScenariosSection({required this.palette, required this.onPlay});
 
   final _ExplorerPalette palette;
-  final ValueChanged<String> onPlay;
+  final ValueChanged<ExplorerScene> onPlay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2141,7 +2184,7 @@ class _NewScenariosSection extends ConsumerWidget {
                     palette: palette,
                     badge: 'Nouveau',
                     badgeColor: const Color(0xFFFFB800),
-                    onPlay: () => onPlay(scenes[i].id),
+                    onPlay: () => onPlay(scenes[i]),
                   ),
                   if (i != scenes.length - 1) const SizedBox(width: 12),
                 ],
@@ -2162,7 +2205,7 @@ class _TrendingScenesSection extends ConsumerWidget {
       {required this.palette, required this.onPlay});
 
   final _ExplorerPalette palette;
-  final ValueChanged<String> onPlay;
+  final ValueChanged<ExplorerScene> onPlay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2194,7 +2237,7 @@ class _TrendingScenesSection extends ConsumerWidget {
                     palette: palette,
                     badge: 'Tendance',
                     badgeColor: const Color(0xFFE95A74),
-                    onPlay: () => onPlay(scenes[i].id),
+                    onPlay: () => onPlay(scenes[i]),
                   ),
                   if (i != scenes.length - 1) const SizedBox(width: 12),
                 ],
