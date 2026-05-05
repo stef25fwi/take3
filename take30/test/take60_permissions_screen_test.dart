@@ -74,9 +74,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Impossible de verifier les permissions'), findsOneWidget);
+    expect(find.text('Impossible de vérifier les permissions'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Reessayer'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Réessayer'));
     await tester.pump();
     await tester.pumpAndSettle();
 

@@ -146,16 +146,16 @@ class _Take60PermissionsScreenState
           if (snapshot.hasError) {
             return _PermissionScreenMessage(
               icon: Icons.error_outline_rounded,
-              title: 'Impossible de verifier les permissions',
+              title: 'Impossible de vérifier les permissions',
               message:
-                  'Take60 n’a pas reussi a lire les autorisations de cet appareil. Reessaie ou ouvre les reglages systeme.',
-              primaryActionLabel: 'Reessayer',
+                  'Take60 n’a pas réussi à lire les autorisations de cet appareil. Réessaie ou ouvre les réglages système.',
+              primaryActionLabel: 'Réessayer',
               onPrimaryAction: () {
                 setState(() {
                   _statusesFuture = _refreshStatuses();
                 });
               },
-              secondaryActionLabel: 'Ouvrir les reglages systeme',
+              secondaryActionLabel: 'Ouvrir les réglages système',
               onSecondaryAction: _openingSettings ? null : _openSystemSettings,
             );
           }
