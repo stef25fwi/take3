@@ -207,8 +207,8 @@ class _Take60GuidedRecordScreenState
   }
 
   Future<void> _maybeOfferDraftResume(SceneModel scene) async {
-    final draft = await _service.loadDraft(sceneId: scene.id);
-    if (!mounted || draft == null || draft.recordings.isEmpty) return;
+    final resumeState = await _service.loadResumeState(scene: scene);
+    if (!mounted || resumeState == null) return;
     if (_scene?.id != scene.id) return;
     final resume = await showDialog<bool>(
       context: context,
@@ -220,7 +220,7 @@ class _Take60GuidedRecordScreenState
           style: GoogleFonts.dmSans(color: _primaryText(dialogContext)),
         ),
         content: Text(
-          'Tu as ${draft.recordings.length} plan(s) déjà enregistrés pour « ${draft.sceneTitle} ». '
+          'Tu as ${resumeState.recordings.length} plan(s) déjà enregistrés pour « ${resumeState.sceneTitle} ». '
           'Veux-tu reprendre où tu t\'étais arrêté ?',
           style: GoogleFonts.dmSans(color: _secondaryText(dialogContext)),
         ),
@@ -246,14 +246,21 @@ class _Take60GuidedRecordScreenState
     if (!mounted) return;
     if (resume == true) {
       _recordings.clear();
-      for (final rec in draft.recordings) {
+      for (final rec in resumeState.recordings) {
         _recordings[rec.markerId] = rec;
       }
-      final resumeIndex = draft.currentMarkerIndex
-          .clamp(0, _timeline.isEmpty ? 0 : _timeline.length - 1);
-      setState(() => _currentIndex = resumeIndex);
+      final resumeTimeline = resumeState.markers.isEmpty
+          ? _timeline
+          : resumeState.markers;
+      final resumeIndex = resumeState.currentMarkerIndex
+          .clamp(0, resumeTimeline.isEmpty ? 0 : resumeTimeline.length - 1);
+      setState(() {
+        _timeline = resumeTimeline;
+        _currentIndex = resumeIndex;
+        _publicationStatus = 'Brouillon repris.';
+      });
     } else {
-      await _service.clearDraft(scene.id);
+      await _service.discardResumeState(scene: scene);
     }
   }
 
@@ -750,12 +757,14 @@ class _Take60GuidedRecordScreenState
           recordings: _recordings.values.toList(),
           renderResult: renderResult,
           status: 'draft',
+          currentMarkerIndex: _currentIndex,
           battleContext: widget.battleContext,
         );
       } else {
         await _service.saveGuidedProjectDraft(
           projectId: projectId,
           scene: scene,
+          currentMarkerIndex: _currentIndex,
           markers: _timeline,
           recordings: _recordings.values.toList(),
           recordingStatus: SceneRecordingStatus.draftSaved,
@@ -800,6 +809,7 @@ class _Take60GuidedRecordScreenState
         recordings: _recordings.values.toList(),
         renderResult: renderResult,
         status: 'published',
+        currentMarkerIndex: _currentIndex,
         battleContext: widget.battleContext,
       );
       final battleContext = widget.battleContext;
@@ -853,6 +863,7 @@ class _Take60GuidedRecordScreenState
       await _service.saveGuidedProjectDraft(
         projectId: projectId,
         scene: _scene!,
+        currentMarkerIndex: _currentIndex,
         markers: _timeline,
         recordings: _recordings.values.toList(),
         recordingStatus: status,

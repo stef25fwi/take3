@@ -134,15 +134,75 @@ void main() {
   group('Take60RenderResult', () {
     test('reads failed status from backend status fallback', () {
       final result = Take60RenderResult.fromMap(const {
+        'renderId': 'render_1',
         'status': 'failed',
         'finalVideoUrl': '',
         'thumbnailUrl': '',
+        'videoStoragePath': 'take60_renders/u/render_1.mp4',
+        'thumbnailStoragePath': 'take60_renders/u/render_1.jpg',
         'durationSeconds': 0,
         'segments': [],
       });
 
+      expect(result.renderId, 'render_1');
       expect(result.renderStatus, 'failed');
       expect(result.finalVideoUrl, isEmpty);
+      expect(result.videoStoragePath, 'take60_renders/u/render_1.mp4');
+      expect(result.thumbnailStoragePath, 'take60_renders/u/render_1.jpg');
+    });
+  });
+
+  group('Take60GuidedResumeState', () {
+    test('reads remote project payload with timeline markers', () {
+      final state = Take60GuidedResumeState.fromProjectMap(
+        {
+          'sceneId': 'scene_42',
+          'sceneTitle': 'La rencontre',
+          'userId': 'user_abc',
+          'currentMarkerIndex': 1,
+          'recordingStatus': 'preview_user_plan',
+          'updatedAt': '2026-04-27T12:00:00.000Z',
+          'timelineMarkers': [
+            {
+              'id': 'ai_1',
+              'order': 1,
+              'type': 'ai_plan',
+              'startSeconds': 0,
+              'endSeconds': 10,
+              'durationSeconds': 10,
+              'source': 'ai_video',
+              'character': 'IA',
+              'dialogue': 'Intro',
+              'cameraPlan': 'wide',
+              'label': 'Plan IA',
+              'videoUrl': 'https://example.com/ai.mp4',
+            },
+          ],
+          'userRecordings': [
+            {
+              'recordingId': 'rec_1',
+              'projectId': 'project_42',
+              'sceneId': 'scene_42',
+              'userId': 'user_abc',
+              'markerId': 'user_1',
+              'startSecond': 10,
+              'endSecond': 20,
+              'localTempPath': '/tmp/a.mp4',
+              'durationSeconds': 10,
+              'status': 'validated',
+              'createdAt': '2026-04-27T10:00:00.000Z',
+              'updatedAt': '2026-04-27T11:00:00.000Z',
+            },
+          ],
+        },
+        fallbackMarkers: const [],
+      );
+
+      expect(state.sceneId, 'scene_42');
+      expect(state.currentMarkerIndex, 1);
+      expect(state.status, SceneRecordingStatus.previewUserPlan);
+      expect(state.markers, hasLength(1));
+      expect(state.recordings, hasLength(1));
     });
   });
 }

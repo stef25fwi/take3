@@ -21,6 +21,7 @@
  *
  * Output:
  *   { renderId, status, finalVideoUrl, thumbnailUrl,
+ *     videoStoragePath, thumbnailStoragePath,
  *     durationSeconds, segments[] }
  */
 
@@ -654,6 +655,8 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
   // Try the real FFmpeg render. Failure is explicit: no raw segment fallback.
   let finalVideoUrl = "";
   let thumbnailUrl = "";
+  let videoStoragePath = "";
+  let thumbnailStoragePath = "";
   let renderStatus: "preview_ready" | "failed" = "failed";
 
   if (!ffmpegLib) {
@@ -683,6 +686,8 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     const bucket = admin.storage().bucket();
     const videoRemote = `take60_renders/${auth.uid}/${renderId}.mp4`;
     const thumbRemote = `take60_renders/${auth.uid}/${renderId}.jpg`;
+    videoStoragePath = videoRemote;
+    thumbnailStoragePath = thumbRemote;
     await bucket.upload(videoPath, {
       destination: videoRemote,
       contentType: "video/mp4",
@@ -745,6 +750,8 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     {
       finalVideoUrl,
       thumbnailUrl,
+        videoStoragePath,
+        thumbnailStoragePath,
       status: renderStatus,
       renderStatus,
       durationSeconds: totalDuration,
@@ -758,6 +765,8 @@ export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
     status: renderStatus,
     finalVideoUrl,
     thumbnailUrl,
+    videoStoragePath,
+    thumbnailStoragePath,
     durationSeconds: totalDuration,
     segments: merged,
   };

@@ -568,22 +568,52 @@ class Take60PlaybackSegment {
 
 class Take60RenderResult {
   const Take60RenderResult({
+    required this.renderId,
     required this.finalVideoUrl,
     required this.thumbnailUrl,
     required this.durationSeconds,
     required this.renderStatus,
     required this.segments,
+    this.videoStoragePath,
+    this.thumbnailStoragePath,
   });
 
+  final String renderId;
   final String finalVideoUrl;
   final String thumbnailUrl;
   final int durationSeconds;
   final String renderStatus;
   final List<Take60PlaybackSegment> segments;
+  final String? videoStoragePath;
+  final String? thumbnailStoragePath;
+
+  Take60RenderResult copyWith({
+    String? renderId,
+    String? finalVideoUrl,
+    String? thumbnailUrl,
+    int? durationSeconds,
+    String? renderStatus,
+    List<Take60PlaybackSegment>? segments,
+    String? videoStoragePath,
+    String? thumbnailStoragePath,
+  }) {
+    return Take60RenderResult(
+      renderId: renderId ?? this.renderId,
+      finalVideoUrl: finalVideoUrl ?? this.finalVideoUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      renderStatus: renderStatus ?? this.renderStatus,
+      segments: segments ?? this.segments,
+      videoStoragePath: videoStoragePath ?? this.videoStoragePath,
+      thumbnailStoragePath:
+          thumbnailStoragePath ?? this.thumbnailStoragePath,
+    );
+  }
 
   factory Take60RenderResult.fromMap(Map<String, dynamic> json) {
     final rawSegments = json['segments'] as List<dynamic>? ?? const [];
     return Take60RenderResult(
+      renderId: json['renderId'] as String? ?? '',
       finalVideoUrl: json['finalVideoUrl'] as String? ?? '',
       thumbnailUrl: json['thumbnailUrl'] as String? ?? '',
       durationSeconds: (json['duration'] as num?)?.toInt() ??
@@ -600,17 +630,96 @@ class Take60RenderResult {
             ),
           )
           .toList(),
+      videoStoragePath: json['videoStoragePath'] as String? ??
+          json['finalVideoStoragePath'] as String?,
+      thumbnailStoragePath: json['thumbnailStoragePath'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'renderId': renderId,
       'finalVideoUrl': finalVideoUrl,
       'thumbnailUrl': thumbnailUrl,
       'duration': durationSeconds,
       'renderStatus': renderStatus,
       'segments': segments.map((segment) => segment.toMap()).toList(),
+      'videoStoragePath': videoStoragePath,
+      'thumbnailStoragePath': thumbnailStoragePath,
     };
+  }
+}
+
+class Take60GuidedResumeState {
+  const Take60GuidedResumeState({
+    required this.sceneId,
+    required this.sceneTitle,
+    required this.userId,
+    required this.currentMarkerIndex,
+    required this.status,
+    required this.recordings,
+    required this.markers,
+    required this.updatedAt,
+  });
+
+  final String sceneId;
+  final String sceneTitle;
+  final String userId;
+  final int currentMarkerIndex;
+  final SceneRecordingStatus status;
+  final List<Take60UserRecordingDraft> recordings;
+  final List<Take60SceneMarker> markers;
+  final DateTime updatedAt;
+
+  factory Take60GuidedResumeState.fromLocalDraft(
+    Take60GuidedFlowDraft draft, {
+    required List<Take60SceneMarker> markers,
+  }) {
+    return Take60GuidedResumeState(
+      sceneId: draft.sceneId,
+      sceneTitle: draft.sceneTitle,
+      userId: draft.userId,
+      currentMarkerIndex: draft.currentMarkerIndex,
+      status: draft.status,
+      recordings: draft.recordings,
+      markers: markers,
+      updatedAt: draft.updatedAt,
+    );
+  }
+
+  factory Take60GuidedResumeState.fromProjectMap(
+    Map<String, dynamic> json, {
+    required List<Take60SceneMarker> fallbackMarkers,
+  }) {
+    final rawMarkers = json['timelineMarkers'] as List<dynamic>? ?? const [];
+    final rawRecordings = (json['userRecordings'] as List<dynamic>? ??
+            json['recordings'] as List<dynamic>? ??
+            const [])
+        .whereType<Map>()
+        .map((recording) => Take60UserRecordingDraft.fromMap(
+              Map<String, dynamic>.from(recording),
+            ))
+        .toList();
+    final markers = rawMarkers
+        .whereType<Map>()
+        .map(
+          (marker) => Take60SceneMarker.fromMap(
+            Map<String, dynamic>.from(marker),
+          ),
+        )
+        .toList();
+    return Take60GuidedResumeState(
+      sceneId: json['sceneId'] as String? ?? '',
+      sceneTitle: json['sceneTitle'] as String? ?? '',
+      userId: json['userId'] as String? ?? 'guest',
+      currentMarkerIndex: (json['currentMarkerIndex'] as num?)?.toInt() ?? 0,
+      status: sceneRecordingStatusFromString(
+        json['recordingStatus'] as String? ?? json['status'] as String?,
+      ),
+      recordings: rawRecordings,
+      markers: markers.isEmpty ? fallbackMarkers : markers,
+      updatedAt: _readTake60Date(json['updatedAt']),
+    );
   }
 }
 

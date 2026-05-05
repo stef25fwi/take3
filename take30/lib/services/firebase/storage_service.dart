@@ -99,6 +99,10 @@ class StorageService {
     );
   }
 
+  Future<String> resolveDownloadUrl(String storagePath) {
+    return _pathRef(storagePath).getDownloadURL();
+  }
+
   Future<StorageUploadResult> mirrorRemoteVideo({
     required String sourceUrl,
     required String storagePath,

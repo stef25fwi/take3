@@ -13,6 +13,7 @@ void main() {
   SceneModel buildScene({
     required String? aiVideoUrl,
     String? globalAiAmbianceAudioUrl,
+    String status = 'published',
   }) {
     return SceneModel(
       id: 'scene_1',
@@ -23,6 +24,7 @@ void main() {
       author: author,
       createdAt: DateTime(2026, 5, 1),
       adminWorkflow: true,
+      status: status,
       globalAiAmbianceAudioUrl: globalAiAmbianceAudioUrl,
       markers: [
         Take60SceneMarker(
@@ -313,6 +315,27 @@ void main() {
       expect(audioBed['url'], 'https://example.com/ambiance.m4a');
       expect(audioBed['mode'], 'ai_ambiance_only');
       expect(audioBed['durationSeconds'], 60);
+    });
+
+    test('guided readiness rejects scenes without renderable AI video', () {
+      final scene = buildScene(aiVideoUrl: '');
+
+      expect(scene.isGuidedRecordingReady, isFalse);
+    });
+
+    test('guided readiness rejects unpublished scenes', () {
+      final scene = buildScene(
+        aiVideoUrl: 'https://example.com/ai.mp4',
+        status: 'draft',
+      );
+
+      expect(scene.isGuidedRecordingReady, isFalse);
+    });
+
+    test('guided readiness accepts published scenes with renderable AI timeline', () {
+      final scene = buildScene(aiVideoUrl: 'https://example.com/ai.mp4');
+
+      expect(scene.isGuidedRecordingReady, isTrue);
     });
 
     test('maps audio rules to backend controls', () {

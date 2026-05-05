@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 import 'take60_guided_flow.dart';
 
@@ -45,6 +46,45 @@ T _enumFromString<T>(List<T> values, String? name, T fallback) {
 }
 
 String _enumToString(Object e) => e.toString().split('.').last;
+
+const _take60DebugMockAiVideoUrl =
+    'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4';
+
+final _take60PrivateIpv4Pattern = RegExp(
+  r'^(10\.|127\.|0\.0\.0\.0|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)',
+);
+
+bool _looksLikeTake60RemoteMediaUrl(String? rawUrl) {
+  final url = rawUrl?.trim() ?? '';
+  if (url.isEmpty) {
+    return false;
+  }
+  if (kDebugMode && url == _take60DebugMockAiVideoUrl) {
+    return true;
+  }
+  if (url == _take60DebugMockAiVideoUrl ||
+      url.startsWith('assets/') ||
+      url.startsWith('/') ||
+      url.startsWith('file:') ||
+      url.startsWith('content:') ||
+      url.startsWith('blob:') ||
+      url.startsWith('data:')) {
+    return false;
+  }
+
+  final uri = Uri.tryParse(url);
+  if (uri == null ||
+      uri.host.trim().isEmpty ||
+      (!uri.isScheme('http') && !uri.isScheme('https'))) {
+    return false;
+  }
+
+  final host = uri.host.toLowerCase();
+  if (host == 'localhost' || _take60PrivateIpv4Pattern.hasMatch(host)) {
+    return false;
+  }
+  return true;
+}
 
 // ─── UserModel ───────────────────────────────────────────────────────────────
 class UserModel {
@@ -282,12 +322,37 @@ class SceneModel {
   String get authorId => author.id;
   int get userPlanCount =>
       markers.where((marker) => marker.requiresUserRecording).length;
+  bool get _hasRenderableAiTimeline {
+    if (markers.isEmpty) {
+      return false;
+    }
+    final aiMarkers = markers.where((marker) => !marker.requiresUserRecording);
+    if (aiMarkers.isEmpty) {
+      return false;
+    }
+    final fallbackAiUrl = videoUrl;
+    return aiMarkers.every((marker) {
+      final candidate = (marker.videoUrl?.trim().isNotEmpty ?? false)
+          ? marker.videoUrl
+          : fallbackAiUrl;
+      return _looksLikeTake60RemoteMediaUrl(candidate);
+    });
+  }
+
+  bool get _hasPlayableMetadataFallback {
+    return sceneType.trim().isNotEmpty &&
+        characterToPlay.trim().isNotEmpty &&
+        context.trim().isNotEmpty &&
+        _looksLikeTake60RemoteMediaUrl(videoUrl);
+  }
+
   bool get isGuidedRecordingReady =>
-      adminWorkflow ||
-      markers.isNotEmpty ||
-      sceneType.trim().isNotEmpty ||
-      characterToPlay.trim().isNotEmpty ||
-      context.trim().isNotEmpty;
+      adminWorkflow &&
+      status == 'published' &&
+      ((markers.isNotEmpty &&
+              markers.any((marker) => marker.requiresUserRecording) &&
+              _hasRenderableAiTimeline) ||
+          (markers.isEmpty && _hasPlayableMetadataFallback));
 
   SceneModel copyWith({
     bool? isLiked,
