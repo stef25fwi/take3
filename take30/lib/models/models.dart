@@ -86,6 +86,31 @@ bool _looksLikeTake60RemoteMediaUrl(String? rawUrl) {
   return true;
 }
 
+enum UserPlan {
+  free,
+  premium,
+}
+
+UserPlan userPlanFromString(String? value) {
+  switch ((value ?? '').trim().toLowerCase()) {
+    case 'premium':
+      return UserPlan.premium;
+    default:
+      return UserPlan.free;
+  }
+}
+
+extension UserPlanX on UserPlan {
+  String get value {
+    switch (this) {
+      case UserPlan.free:
+        return 'free';
+      case UserPlan.premium:
+        return 'premium';
+    }
+  }
+}
+
 // ─── UserModel ───────────────────────────────────────────────────────────────
 class UserModel {
   const UserModel({
@@ -105,6 +130,7 @@ class UserModel {
     this.badges = const [],
     this.isFollowing = false,
     this.isAdmin = false,
+    this.plan = UserPlan.free,
     this.createdAt,
     this.lastActiveAt,
     this.fcmTokens = const [],
@@ -126,6 +152,7 @@ class UserModel {
   final List<BadgeModel> badges;
   final bool isFollowing;
   final bool isAdmin;
+  final UserPlan plan;
   final DateTime? createdAt;
   final DateTime? lastActiveAt;
   final List<String> fcmTokens;
@@ -151,6 +178,7 @@ class UserModel {
       badges: badges,
       isFollowing: isFollowing ?? this.isFollowing,
       isAdmin: isAdmin,
+      plan: plan,
       createdAt: createdAt,
       lastActiveAt: lastActiveAt,
       fcmTokens: fcmTokens,
@@ -173,7 +201,8 @@ class UserModel {
       totalViews: (d['totalViews'] as num?)?.toInt() ?? 0,
       approvalRate: (d['approvalRate'] as num?)?.toDouble() ?? 0,
       sharesCount: (d['sharesCount'] as num?)?.toInt() ?? 0,
-        isAdmin: d['isAdmin'] as bool? ?? false,
+      isAdmin: d['isAdmin'] as bool? ?? false,
+      plan: userPlanFromString(d['plan'] as String?),
       createdAt: d['createdAt'] == null ? null : _readDate(d['createdAt']),
       lastActiveAt:
           d['lastActiveAt'] == null ? null : _readDate(d['lastActiveAt']),
@@ -197,6 +226,7 @@ class UserModel {
         'approvalRate': approvalRate,
         'sharesCount': sharesCount,
         'isAdmin': isAdmin,
+        'plan': plan.value,
         if (createdAt != null) 'createdAt': _writeDate(createdAt!),
         if (lastActiveAt != null) 'lastActiveAt': _writeDate(lastActiveAt!),
         'fcmTokens': fcmTokens,
@@ -276,6 +306,12 @@ class SceneModel {
     this.tags = const [],
     this.status = 'published',
     this.adminWorkflow = false,
+    this.take60VideoId,
+    this.videoProcessingStatus = 'ready',
+    this.hlsBaseUrl,
+    this.hlsPremiumUrl,
+    this.hlsMasterUrl,
+    this.isPremiumLocked = false,
     this.audioRules = const Take60AudioRules(),
     this.markers = const [],
     this.globalAiAmbianceAudioUrl,
@@ -315,6 +351,12 @@ class SceneModel {
   final List<String> tags;
   final String status;
   final bool adminWorkflow;
+  final String? take60VideoId;
+  final String videoProcessingStatus;
+  final String? hlsBaseUrl;
+  final String? hlsPremiumUrl;
+  final String? hlsMasterUrl;
+  final bool isPremiumLocked;
   final Take60AudioRules audioRules;
   final List<Take60SceneMarker> markers;
   final String? globalAiAmbianceAudioUrl;
@@ -393,6 +435,12 @@ class SceneModel {
       tags: tags,
       status: status,
       adminWorkflow: adminWorkflow,
+      take60VideoId: take60VideoId,
+      videoProcessingStatus: videoProcessingStatus,
+      hlsBaseUrl: hlsBaseUrl,
+      hlsPremiumUrl: hlsPremiumUrl,
+      hlsMasterUrl: hlsMasterUrl,
+      isPremiumLocked: isPremiumLocked,
       audioRules: audioRules,
       markers: markers,
       globalAiAmbianceAudioUrl: globalAiAmbianceAudioUrl,
@@ -425,8 +473,10 @@ class SceneModel {
           d['type'] as String? ??
           d['sceneType'] as String? ??
           (isAdminWorkflow ? rawCategory : ''),
-      videoUrl:
-        d['videoUrl'] as String? ?? aiIntroVideo['videoUrl'] as String?,
+      videoUrl: d['videoUrl'] as String? ??
+          d['hlsBaseUrl'] as String? ??
+          d['hlsMasterUrl'] as String? ??
+          aiIntroVideo['videoUrl'] as String?,
       description: d['description'] as String? ?? d['contextSummary'] as String? ?? '',
       dialogueText: d['dialogueText'] as String? ?? '',
       difficulty: d['difficulty'] as String? ?? d['level'] as String? ?? '',
@@ -480,6 +530,14 @@ class SceneModel {
           .toList(),
       status: d['status'] as String? ?? 'published',
       adminWorkflow: isAdminWorkflow,
+        take60VideoId: d['take60VideoId'] as String?,
+        videoProcessingStatus: d['videoProcessingStatus'] as String? ??
+          d['processingStatus'] as String? ??
+          'ready',
+        hlsBaseUrl: d['hlsBaseUrl'] as String?,
+        hlsPremiumUrl: d['hlsPremiumUrl'] as String?,
+        hlsMasterUrl: d['hlsMasterUrl'] as String?,
+        isPremiumLocked: d['isPremiumLocked'] as bool? ?? false,
       audioRules: Take60AudioRules.fromMap(_readMap(d['audioRules'])),
       markers: rawMarkers
           .map(Take60SceneMarker.fromMap)
@@ -523,11 +581,93 @@ class SceneModel {
         'tags': tags,
         'status': status,
         'adminWorkflow': adminWorkflow,
+        'take60VideoId': take60VideoId,
+        'videoProcessingStatus': videoProcessingStatus,
+        'hlsBaseUrl': hlsBaseUrl,
+        'hlsPremiumUrl': hlsPremiumUrl,
+        'hlsMasterUrl': hlsMasterUrl,
+        'isPremiumLocked': isPremiumLocked,
         'audioRules': audioRules.toMap(),
         'globalAiAmbianceAudioUrl': globalAiAmbianceAudioUrl,
         'markers': markers.map((marker) => marker.toMap()).toList(),
         'createdAt': _writeDate(createdAt),
         'updatedAt': _writeDate(updatedAt ?? createdAt),
+      };
+}
+
+class Take60VideoModel {
+  const Take60VideoModel({
+    required this.id,
+    required this.ownerId,
+    required this.status,
+    required this.qualityBase,
+    required this.premiumQuality,
+    required this.isPremiumLocked,
+    required this.durationSec,
+    required this.createdAt,
+    this.sceneId,
+    this.title = '',
+    this.hlsBaseUrl,
+    this.hlsPremiumUrl,
+    this.hlsMasterUrl,
+    this.rawStoragePath,
+    this.errorMessage,
+  });
+
+  final String id;
+  final String ownerId;
+  final String? sceneId;
+  final String title;
+  final String status;
+  final String qualityBase;
+  final String premiumQuality;
+  final String? hlsBaseUrl;
+  final String? hlsPremiumUrl;
+  final String? hlsMasterUrl;
+  final bool isPremiumLocked;
+  final int durationSec;
+  final DateTime createdAt;
+  final String? rawStoragePath;
+  final String? errorMessage;
+
+  factory Take60VideoModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final d = doc.data() ?? const <String, dynamic>{};
+    return Take60VideoModel(
+      id: doc.id,
+      ownerId: d['ownerId'] as String? ?? '',
+      sceneId: d['sceneId'] as String?,
+      title: d['title'] as String? ?? '',
+      status: d['status'] as String? ?? 'processing',
+      qualityBase: d['qualityBase'] as String? ?? '720p',
+      premiumQuality: d['premiumQuality'] as String? ?? '1080p',
+      hlsBaseUrl: d['hlsBaseUrl'] as String?,
+      hlsPremiumUrl: d['hlsPremiumUrl'] as String?,
+      hlsMasterUrl: d['hlsMasterUrl'] as String?,
+      isPremiumLocked: d['isPremiumLocked'] as bool? ?? true,
+      durationSec: (d['durationSec'] as num?)?.toInt() ?? 60,
+      createdAt: _readDate(d['createdAt']),
+      rawStoragePath: d['rawStoragePath'] as String?,
+      errorMessage: d['errorMessage'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toFirestore() => {
+        'ownerId': ownerId,
+        'sceneId': sceneId,
+        'title': title,
+        'status': status,
+        'qualityBase': qualityBase,
+        'premiumQuality': premiumQuality,
+        'hlsBaseUrl': hlsBaseUrl,
+        'hlsPremiumUrl': hlsPremiumUrl,
+        'hlsMasterUrl': hlsMasterUrl,
+        'isPremiumLocked': isPremiumLocked,
+        'durationSec': durationSec,
+        'createdAt': _writeDate(createdAt),
+        'rawStoragePath': rawStoragePath,
+        'errorMessage': errorMessage,
       };
 }
 

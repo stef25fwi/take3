@@ -13,6 +13,11 @@ import { onDocumentCreated, onDocumentDeleted, onDocumentWritten } from "firebas
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { setGlobalOptions, logger } from "firebase-functions/v2";
 import { buildBattleScorePatch } from "./battleScoring";
+import {
+  getTake60PlayableUrl,
+  onTake60RawUploadCreated,
+  requestTake60VideoTranscode,
+} from "./take60Video";
 
 import { checkVeoSceneGeneration } from "./veo/checkVeoSceneGeneration";
 import { startVeoSceneGeneration } from "./veo/startVeoSceneGeneration";
@@ -466,6 +471,11 @@ export {
   generateFeedCandidates,
   getPersonalizedFeed,
 } from "./aiFeed";
+export {
+  getTake60PlayableUrl,
+  onTake60RawUploadCreated,
+  requestTake60VideoTranscode,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)

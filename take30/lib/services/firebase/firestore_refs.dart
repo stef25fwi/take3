@@ -17,6 +17,14 @@ class FirestoreRefs {
       );
   DocumentReference<UserModel> userDoc(String uid) => users.doc(uid);
 
+  CollectionReference<Take60VideoModel> get take60Videos =>
+      _db.collection('take60_videos').withConverter(
+            fromFirestore: (snap, _) => Take60VideoModel.fromFirestore(snap),
+            toFirestore: (video, _) => video.toFirestore(),
+          );
+  DocumentReference<Take60VideoModel> take60VideoDoc(String videoId) =>
+      take60Videos.doc(videoId);
+
   CollectionReference<Map<String, dynamic>> userFollowers(String uid) =>
       _db.collection('users').doc(uid).collection('followers');
   CollectionReference<Map<String, dynamic>> userFollowing(String uid) =>

@@ -12,6 +12,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../router/router.dart';
 import '../theme/app_theme.dart';
+import '../utils/video_player_controller_factory.dart';
 import '../widgets/shared_widgets.dart';
 
 class AiVerticalFeedScreen extends ConsumerStatefulWidget {
@@ -57,9 +58,12 @@ class _AiVerticalFeedScreenState extends ConsumerState<AiVerticalFeedScreen>
 
   Future<void> _ensureController(int index, List<PersonalizedFeedItem> items) async {
     if (index < 0 || index >= items.length || _controllers.containsKey(index)) return;
-    final url = items[index].scene.videoUrl;
+    final url = await ref.read(take60VideoPlaybackServiceProvider).resolveScenePlaybackUrl(
+          items[index].scene,
+          user: ref.read(authProvider).user,
+        );
     if (url == null || url.trim().isEmpty) return;
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    final controller = buildVideoPlayerController(url);
     _controllers[index] = controller;
     await controller.initialize();
     controller

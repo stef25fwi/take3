@@ -49,6 +49,17 @@ class StorageService {
     return 'battles/$battleId/$uid/${participantRole}_$projectId.mp4';
   }
 
+  static String buildTake60RawUploadPath({
+    required String uid,
+    required String videoId,
+  }) {
+    return 'take60/raw_uploads/$uid/$videoId.mp4';
+  }
+
+  static String buildTake60ProcessedDirectory(String videoId) {
+    return 'take60/processed/$videoId';
+  }
+
   Future<String> uploadVideo({
     required String uid,
     required String sceneId,
@@ -79,6 +90,22 @@ class StorageService {
   }) async {
     final ref = _pathRef(storagePath);
     final metadata = SettableMetadata(contentType: 'video/mp4');
+    await ref.putFile(file, metadata);
+    return StorageUploadResult(
+      storagePath: storagePath,
+      downloadUrl: await ref.getDownloadURL(),
+    );
+  }
+
+  Future<StorageUploadResult> uploadTake60RawVideo({
+    required String storagePath,
+    required File file,
+  }) async {
+    final ref = _pathRef(storagePath);
+    final metadata = SettableMetadata(
+      contentType: 'video/mp4',
+      customMetadata: const {'pipeline': 'take60-hls'},
+    );
     await ref.putFile(file, metadata);
     return StorageUploadResult(
       storagePath: storagePath,

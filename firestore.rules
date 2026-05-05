@@ -46,6 +46,35 @@ service cloud.firestore {
       }
     }
 
+    match /take60_videos/{videoId} {
+      allow read: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid ||
+        resource.data.status == 'ready'
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status in ['processing', 'ready', 'failed'];
+      allow update: if isSignedIn()
+        && resource.data.ownerId == request.auth.uid
+        && writesNoCounters([
+          'sceneId',
+          'title',
+          'status',
+          'qualityBase',
+          'premiumQuality',
+          'hlsBaseUrl',
+          'hlsPremiumUrl',
+          'hlsMasterUrl',
+          'isPremiumLocked',
+          'durationSec',
+          'rawStoragePath',
+          'errorMessage',
+          'updatedAt',
+          'processingRequestedAt'
+        ]);
+      allow delete: if false;
+    }
+
     // ─── scenes ─────────────────────────────────────────────────────────────
     match /scenes/{sceneId} {
       allow read: if resource == null || resource.data.status == 'published' || isAuthor();
@@ -57,7 +86,7 @@ service cloud.firestore {
         && request.resource.data.sharesCount == 0
         && request.resource.data.status in ['draft', 'published'];
       allow update: if isAuthor()
-        && writesNoCounters(['title', 'category', 'thumbnailUrl', 'videoUrl', 'tags', 'status', 'updatedAt']);
+        && writesNoCounters(['title', 'category', 'thumbnailUrl', 'videoUrl', 'tags', 'status', 'updatedAt', 'take60VideoId', 'videoProcessingStatus', 'hlsBaseUrl', 'hlsPremiumUrl', 'hlsMasterUrl', 'isPremiumLocked']);
       allow delete: if isAuthor();
 
       // Commentaires : lecture publique, CRUD par l'auteur du commentaire.

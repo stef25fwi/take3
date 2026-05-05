@@ -16,6 +16,7 @@ import '../services/haptics_service.dart';
 import '../services/notification_service.dart';
 import '../services/permission_service.dart';
 import '../services/share_service.dart';
+import '../services/take60_video_service.dart';
 import '../services/upload_service.dart';
 import '../utils/assets.dart';
 
@@ -33,6 +34,9 @@ final aiFeedServiceProvider = Provider<AiFeedService>((ref) => AiFeedService());
 final hapticsProvider = Provider<HapticsService>((ref) => HapticsService());
 final connectivityProvider = ChangeNotifierProvider<ConnectivityService>((ref) => ConnectivityService());
 final permissionProvider = Provider<PermissionService>((ref) => PermissionService());
+final take60VideoPlaybackServiceProvider = Provider<Take60VideoPlaybackService>(
+  (ref) => Take60VideoPlaybackService(ref.read(apiServiceProvider)),
+);
 final profileActivityHistoryServiceProvider =
     Provider<ProfileActivityHistoryService>(
   (ref) => ProfileActivityHistoryService(ref.read(sharedPreferencesProvider)),

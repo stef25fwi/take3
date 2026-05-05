@@ -126,6 +126,41 @@ class ApiService {
   Future<DailyChallengeModel?> getDailyChallenge() =>
       dailyChallenge.getToday();
 
+  Future<Take60VideoModel?> getTake60Video(String videoId) async {
+    final snap = await refs.take60VideoDoc(videoId).get();
+    return snap.exists ? snap.data() : null;
+  }
+
+  Future<String> getTake60PlayableUrl({required String videoId}) async {
+    try {
+      final result = await _functions
+          .httpsCallable('getTake60PlayableUrl')
+          .call({'videoId': videoId});
+      final data = result.data;
+      if (data is Map && data['playableUrl'] is String) {
+        return data['playableUrl'] as String;
+      }
+    } on FirebaseFunctionsException {
+      rethrow;
+    }
+
+    final video = await getTake60Video(videoId);
+    if (video == null) {
+      throw StateError('Vidéo Take60 introuvable: $videoId');
+    }
+    final user = _currentUser ?? (currentUid == null ? null : await users.getById(currentUid!));
+    if (user?.plan == UserPlan.premium) {
+      return video.hlsMasterUrl ?? video.hlsPremiumUrl ?? video.hlsBaseUrl ?? '';
+    }
+    return video.hlsBaseUrl ?? video.hlsMasterUrl ?? video.hlsPremiumUrl ?? '';
+  }
+
+  Future<void> requestTake60VideoTranscode({required String videoId}) async {
+    await _functions.httpsCallable('requestTake60VideoTranscode').call({
+      'videoId': videoId,
+    });
+  }
+
   /// Upload vidéo + création doc `scenes/{id}`.
   /// Les compteurs sont tenus côté Cloud Function `onSceneCreate`.
   Future<SceneModel?> uploadScene({
@@ -141,22 +176,45 @@ class ApiService {
     if (user == null) return null;
 
     final sceneId = refs.scenes.doc().id;
-    final videoUrl = await storage.uploadVideo(
-      uid: uid,
-      sceneId: sceneId,
+    final videoId = refs.take60Videos.doc().id;
+    final rawUpload = await storage.uploadTake60RawVideo(
+      storagePath: StorageService.buildTake60RawUploadPath(
+        uid: uid,
+        videoId: videoId,
+      ),
       file: File(videoPath),
     );
+
+    final createdAt = DateTime.now();
+    final take60Video = Take60VideoModel(
+      id: videoId,
+      ownerId: uid,
+      sceneId: sceneId,
+      title: title,
+      status: 'processing',
+      qualityBase: '720p',
+      premiumQuality: '1080p',
+      isPremiumLocked: true,
+      durationSec: durationSeconds,
+      createdAt: createdAt,
+      rawStoragePath: rawUpload.storagePath,
+    );
+
+    await refs.take60VideoDoc(videoId).set(take60Video);
 
     final scene = SceneModel(
       id: sceneId,
       title: title,
       category: category,
       thumbnailUrl: '',
-      videoUrl: videoUrl,
+      videoUrl: rawUpload.downloadUrl,
       durationSeconds: durationSeconds,
       author: user,
-      createdAt: DateTime.now(),
+      createdAt: createdAt,
       tags: tags,
+      take60VideoId: videoId,
+      videoProcessingStatus: 'processing',
+      isPremiumLocked: true,
     );
 
     await scenes.create(scene);

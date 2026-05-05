@@ -55,6 +55,19 @@ service firebase.storage {
         && request.resource.contentType.matches('video/.*');
     }
 
+    match /take60/raw_uploads/{userId}/{fileName} {
+      allow read: if isSelf(userId) || isAdmin();
+      allow write: if isSelf(userId)
+        && fileName.matches('.*\.mp4$')
+        && request.resource.size < 300 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*');
+    }
+
+    match /take60/processed/{videoId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Copies finales dédiées aux Battles.
     // Nouveau chemin additif ; l'ancien flux take60_renders reste supporté.
     match /battles/{battleId}/{userId}/{fileName} {
