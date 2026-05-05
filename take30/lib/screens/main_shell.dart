@@ -14,7 +14,10 @@ class MainShell extends ConsumerWidget {
 
   int _indexForLocation(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith(AppRouter.home)) return 0;
+    if (location.startsWith(AppRouter.home) ||
+        location.startsWith(AppRouter.aiFeed)) {
+      return 0;
+    }
     if (location.startsWith(AppRouter.explore)) return 1;
     if (location.startsWith(AppRouter.record)) return 2;
     if (location.startsWith(AppRouter.battle)) return 3;

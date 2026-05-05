@@ -203,6 +203,22 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── Feed IA vertical : écritures via Cloud Functions uniquement ───────
+    match /feedEvents/{eventId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /userFeedProfiles/{uid} {
+      allow read: if isSelf(uid);
+      allow create, update, delete: if false;
+    }
+
+    match /feedCandidates/{postId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if false;
+    }
+
     // Tout le reste est refusé par défaut.
 
     // ======================================================

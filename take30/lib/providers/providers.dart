@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../features/profile/services/profile_activity_history_service.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/ai_feed_service.dart';
 import '../services/camera_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/haptics_service.dart';
@@ -28,6 +29,7 @@ final uploadServiceProvider = ChangeNotifierProvider<VideoUploadService>((ref) =
 final notifServiceProvider = Provider<NotificationService>((ref) => NotificationService());
 final notificationServiceProvider = notifServiceProvider;
 final shareServiceProvider = Provider<ShareService>((ref) => ShareService());
+final aiFeedServiceProvider = Provider<AiFeedService>((ref) => AiFeedService());
 final hapticsProvider = Provider<HapticsService>((ref) => HapticsService());
 final connectivityProvider = ChangeNotifierProvider<ConnectivityService>((ref) => ConnectivityService());
 final permissionProvider = Provider<PermissionService>((ref) => PermissionService());
@@ -858,6 +860,67 @@ final feedProvider = StateNotifierProvider<FeedNotifier, FeedState>(
     ref.read(demoPublishedScenesStoreProvider),
     ref.read(demoSceneInteractionsStoreProvider),
   ),
+);
+
+class AiVerticalFeedNotifier extends StateNotifier<AiVerticalFeedState> {
+  AiVerticalFeedNotifier(this._service) : super(const AiVerticalFeedState()) {
+    load();
+  }
+
+  final AiFeedService _service;
+
+  Future<void> load({bool refresh = false}) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final items = await _service.getPersonalizedFeed(limit: 30);
+      state = state.copyWith(isLoading: false, items: items, error: null);
+    } catch (error) {
+      state = state.copyWith(isLoading: false, error: error.toString());
+    }
+  }
+
+  Future<void> recordEvent({
+    required String postId,
+    required FeedEventType eventType,
+    int watchTimeMs = 0,
+  }) async {
+    try {
+      await _service.recordEvent(
+        postId: postId,
+        eventType: eventType,
+        watchTimeMs: watchTimeMs,
+      );
+    } catch (_) {}
+  }
+}
+
+class AiVerticalFeedState {
+  const AiVerticalFeedState({
+    this.isLoading = false,
+    this.items = const [],
+    this.error,
+  });
+
+  final bool isLoading;
+  final List<PersonalizedFeedItem> items;
+  final String? error;
+
+  AiVerticalFeedState copyWith({
+    bool? isLoading,
+    List<PersonalizedFeedItem>? items,
+    String? error,
+  }) {
+    return AiVerticalFeedState(
+      isLoading: isLoading ?? this.isLoading,
+      items: items ?? this.items,
+      error: error,
+    );
+  }
+}
+
+final aiVerticalFeedProvider =
+    StateNotifierProvider<AiVerticalFeedNotifier, AiVerticalFeedState>(
+  (ref) => AiVerticalFeedNotifier(ref.read(aiFeedServiceProvider)),
 );
 
 List<SceneModel> _buildDemoSceneCatalog(

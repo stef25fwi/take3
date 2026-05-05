@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'take60_guided_flow.dart';
 
 export 'battle_model.dart';
+export 'ai_feed_models.dart';
 export 'battle_follower_model.dart';
 export 'battle_prediction_model.dart';
 export 'battle_rivalry_model.dart';

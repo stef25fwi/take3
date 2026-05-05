@@ -102,7 +102,7 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 18),
                     _HomeHeroCard(
                       user: currentUser,
-                      onPrimaryTap: () => context.go(AppRouter.record),
+                      onPrimaryTap: () => context.go(AppRouter.aiFeed),
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
                     const SizedBox(height: 20),

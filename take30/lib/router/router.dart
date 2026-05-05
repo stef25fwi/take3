@@ -10,6 +10,7 @@ import '../features/profile/screens/take60_placeholder_screen.dart';
 import '../features/profile/screens/take60_simple_settings_screen.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../screens/ai_vertical_feed_screen.dart';
 import '../screens/auth_screen.dart';
 import '../screens/badges_stats_screen.dart';
 import '../screens/battle/battle_detail_screen.dart';
@@ -38,6 +39,7 @@ class AppRouter {
   static const auth = '/auth';
   static const adminAccess = '/admin-access';
   static const home = '/home';
+  static const aiFeed = '/feed';
   static const explore = '/explore';
   static const record = '/record';
   static const profile = '/profile';
@@ -147,6 +149,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRouter.home,
             builder: (_, __) => const HomeScreen(),
+          ),
+          GoRoute(
+            path: AppRouter.aiFeed,
+            builder: (_, __) => const AiVerticalFeedScreen(),
           ),
           GoRoute(
             path: AppRouter.explore,

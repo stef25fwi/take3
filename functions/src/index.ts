@@ -460,6 +460,12 @@ export {
   setBattleFeatured,
 } from "./battle";
 export { expireBattleDeadlines, endVotingBattles, sendBattleReminders } from "./battleScheduler";
+export {
+  recordFeedEvent,
+  computeFeedProfile,
+  generateFeedCandidates,
+  getPersonalizedFeed,
+} from "./aiFeed";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // veoStatus — diagnostic HTTP endpoint (onRequest, pas de host check)
