@@ -134,7 +134,7 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               ),
                               if (index != featuredScenes.length - 1)
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 8),
                             ],
                           ],
                         ),
@@ -235,7 +235,7 @@ class _HomeBattleStrip extends StatelessWidget {
                           onTapOpponent: () => context.go(AppRouter.profilePath(visible[index].opponentId)),
                         ),
                 ),
-                if (index != visible.length - 1) const SizedBox(width: 12),
+                if (index != visible.length - 1) const SizedBox(width: 8),
               ],
             ],
           ),
@@ -682,7 +682,7 @@ class _LiveTrendingSection extends StatelessWidget {
       builder: (context, outerConstraints) {
         final compact = outerConstraints.maxWidth < 600;
         final medium = outerConstraints.maxWidth < 1024;
-        final sectionPadding = compact ? 16.0 : (medium ? 24.0 : 32.0);
+        final sectionPadding = compact ? 10.0 : (medium ? 12.0 : 14.0);
         final isDark = AppThemeTokens.isDark(context);
 
         return Container(
@@ -712,13 +712,16 @@ class _LiveTrendingSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _LiveTrendingHeader(onSeeAll: onSeeAll),
-              SizedBox(height: compact ? 16 : 24),
+              SizedBox(height: compact ? 12 : 16),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final gap = width < 600 ? 10.0 : (width < 1024 ? 14.0 : 16.0);
-                  final cardHeight = width < 600 ? 248.0 : (width < 1024 ? 300.0 : 332.0);
-                  final cardWidth = width < 600 ? width * 0.82 : (width < 1024 ? 258.0 : 286.0);
+                  final visibleTiles = width < 600 ? 3 : 8;
+                  final gap = width < 600 ? 8.0 : 6.0;
+                  final cardWidth =
+                      (width - (gap * (visibleTiles - 1))) / visibleTiles;
+                  final cardHeight = width < 600 ? 196.0 : 208.0;
+                  const compactCards = true;
 
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -732,7 +735,7 @@ class _LiveTrendingSection extends StatelessWidget {
                               data: _items[index],
                               maxDuels: 2400,
                               height: cardHeight,
-                              compact: width < 600,
+                              compact: compactCards,
                               onTap: onOpenTrend,
                             ),
                           ),
@@ -979,8 +982,8 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
                       ),
                     ),
                     Positioned(
-                      top: 12,
-                      left: 12,
+                      top: 0,
+                      left: 0,
                       child: _LiveTrendRankBadge(
                         data: data,
                         compact: widget.compact,
@@ -1038,7 +1041,29 @@ class _LiveTrendRankBadge extends StatelessWidget {
           style: TextStyle(
             fontSize: compact ? 13 : 14,
             fontWeight: FontWeight.w700,
-            color: data.badgeTextColor,
+            color: const Color(0xFF000000),
+            shadows: const [
+              Shadow(
+                color: Color(0xFFFFFFFF),
+                blurRadius: 0,
+                offset: Offset(-1.2, -1.2),
+              ),
+              Shadow(
+                color: Color(0xFFFFFFFF),
+                blurRadius: 0,
+                offset: Offset(1.2, -1.2),
+              ),
+              Shadow(
+                color: Color(0xFFFFFFFF),
+                blurRadius: 0,
+                offset: Offset(-1.2, 1.2),
+              ),
+              Shadow(
+                color: Color(0xFFFFFFFF),
+                blurRadius: 0,
+                offset: Offset(1.2, 1.2),
+              ),
+            ],
           ),
         ),
       ),
@@ -1086,21 +1111,30 @@ class _LiveTrendPlayButtonState extends State<_LiveTrendPlayButton> {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: Color.fromRGBO(255, 255, 255, _hovered ? 1 : 0.9),
+          color: Color.fromRGBO(0, 0, 0, _hovered ? 0.46 : 0.34),
           shape: BoxShape.circle,
           boxShadow: const [
             BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.10),
-              blurRadius: 25,
-              offset: Offset(0, 10),
+              color: Color.fromRGBO(0, 0, 0, 0.18),
+              blurRadius: 18,
+              offset: Offset(0, 8),
             ),
           ],
-          border: Border.all(color: widget.accent.withValues(alpha: 0.12)),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: _hovered ? 0.26 : 0.18),
+          ),
         ),
         child: const Icon(
           Icons.play_arrow_rounded,
           size: 18,
           color: Color(0xFFFFFFFF),
+          shadows: [
+            Shadow(
+              color: Color.fromRGBO(0, 0, 0, 0.35),
+              blurRadius: 6,
+              offset: Offset(0, 1),
+            ),
+          ],
         ),
       ),
     );
@@ -1195,13 +1229,10 @@ class _LiveTrendBottomContent extends StatelessWidget {
                     borderRadius: BorderRadius.circular(9999),
                     gradient: LinearGradient(
                       colors: const [
-                        Color(0xFFEF4444),
-                        Color(0xFFF97316),
                         Color(0xFFFACC15),
-                        Color(0xFF22C55E),
-                        Color(0xFF06B6D4),
-                        Color(0xFF3B82F6),
-                        Color(0xFFA855F7),
+                        Color(0xFFF97316),
+                        Color(0xFFEF4444),
+                        Color(0xFFFF2DF1),
                       ],
                     ),
                   ),
