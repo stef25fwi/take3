@@ -87,6 +87,32 @@ Future<void> _goToAdminStep(
 
 void main() {
   testWidgets(
+    'la tuile Import rapide de scénario affiche les actions industrielles',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AddScenePage(),
+        ),
+      );
+
+      expect(find.text('Import rapide de scénario'), findsOneWidget);
+      expect(find.text('Télécharger un scénario'), findsOneWidget);
+      expect(find.text('Télécharger le modèle'), findsOneWidget);
+      expect(find.text('Prévisualiser'), findsOneWidget);
+      expect(find.text('Créer en brouillon'), findsOneWidget);
+      expect(
+        find.textContaining('Format conseillé : modèle Take60 officiel'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'step 15 generates then validates intro video and reveals detailed preview',
     (tester) async {
       tester.view.physicalSize = const Size(1440, 2800);

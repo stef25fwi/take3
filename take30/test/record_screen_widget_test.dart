@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:take30/models/models.dart';
@@ -14,17 +13,12 @@ void main() {
     tester,
   ) async {
     TestWidgetsFlutterBinding.ensureInitialized();
+    tester.view.physicalSize = const Size(1200, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues(const {});
     final prefs = await SharedPreferences.getInstance();
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: 'test-api-key',
-        appId: '1:1234567890:web:testapp',
-        messagingSenderId: '1234567890',
-        projectId: 'take30-test',
-        storageBucket: 'take30-test.appspot.com',
-      ),
-    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -34,6 +28,8 @@ void main() {
         child: MaterialApp(
           home: Take60GuidedRecordScreen(
             initialScene: _scene(),
+            skipInitialLibraryLoad: true,
+            skipPersistenceForTesting: true,
             onInitCameraOverride: (_) async => const CameraInitResult.denied(
               needsSettings: false,
               missingPermissions: [
@@ -49,6 +45,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Plan de tournage Take60'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Démarrer la scène'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Démarrer la scène'));
     await tester.pump(const Duration(milliseconds: 200));
 

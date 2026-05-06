@@ -13,6 +13,9 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../models/veo_generation_job.dart';
 import '../services/location_region_service.dart';
 import '../services/veo_scene_generation_service.dart';
+import 'import/take60_scene_import_controller.dart';
+import 'import/take60_scene_import_model.dart';
+import 'import/take60_scene_import_preview.dart';
 import 'models/ai_generated_video.dart';
 import 'services/veo_video_generation_service.dart';
 import 'widgets/admin_video_preview.dart';
@@ -2886,6 +2889,7 @@ class _AddScenePageState extends State<AddScenePage> {
   final _timelineSectionKey = GlobalKey();
   final _step15SectionKey = GlobalKey();
   final _step16SectionKey = GlobalKey();
+  late final Take60SceneImportController _sceneImportController;
 
   late final String _sceneDraftId;
   late final DateTime _sceneCreatedAt;
@@ -3248,6 +3252,10 @@ class _AddScenePageState extends State<AddScenePage> {
   @override
   void initState() {
     super.initState();
+    _sceneImportController = Take60SceneImportController(
+      importedByProvider: _currentCreatorId,
+      injector: _injectImportedScenarioIntoForm,
+    )..addListener(_handleSceneImportStateChanged);
     _veoVideoGenerationService = widget.veoVideoGenerationService ??
         VeoVideoGenerationServiceFactory.createDefault();
     _veoSceneGenerationService =
@@ -3377,6 +3385,9 @@ class _AddScenePageState extends State<AddScenePage> {
 
   @override
   void dispose() {
+    _sceneImportController
+      ..removeListener(_handleSceneImportStateChanged)
+      ..dispose();
     _veoElapsedTimer?.cancel();
     _speechToText.cancel();
     _scrollController.dispose();
@@ -3798,6 +3809,470 @@ class _AddScenePageState extends State<AddScenePage> {
     return !_isVeoPromptLocked && !_hasValidatedVeoPreview;
   }
 
+  void _handleSceneImportStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool _hasCurrentSceneFormData() {
+    return [
+      projectTitleCtrl,
+      sceneNameCtrl,
+      sceneNumberCtrl,
+      shootDateCtrl,
+      locationCtrl,
+      directorCtrl,
+      characterNameCtrl,
+      apparentAgeCtrl,
+      characterGenderCtrl,
+      profileRoleCtrl,
+      relationshipCtrl,
+      initialStateCtrl,
+      characterSummaryCtrl,
+      previousMomentCtrl,
+      whereAreWeCtrl,
+      withWhoCtrl,
+      whyImportantCtrl,
+      contextSummaryCtrl,
+      mainObstacleCtrl,
+      stakesCtrl,
+      actingDirectionCtrl,
+      referencesCtrl,
+      dialogueTextCtrl,
+      veoPromptCtrl,
+      markersJsonCtrl,
+    ].any((controller) {
+      final value = controller.text.trim();
+      return value.isNotEmpty &&
+          value != _kDefaultVeoPrompt.trim() &&
+          value != '[]' &&
+          value != '1 minute maximum';
+    });
+  }
+
+  Future<bool> _confirmReplaceImportIfNeeded() async {
+    if (!_hasCurrentSceneFormData()) {
+      return true;
+    }
+    final replace = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remplacer le scénario en cours ?'),
+        content: const Text(
+          'Un scénario est déjà en cours d’édition. Voulez-vous remplacer les champs actuels par le fichier importé ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Remplacer'),
+          ),
+        ],
+      ),
+    );
+    return replace ?? false;
+  }
+
+  Future<void> _injectImportedScenarioIntoForm(
+    Take60SceneImportDraft draft,
+    ImportValidationResult validation,
+  ) async {
+    final shouldReplace = await _confirmReplaceImportIfNeeded();
+    if (!shouldReplace || !mounted) {
+      return;
+    }
+
+    final general = draft.sceneGeneral;
+    final primaryCharacter = draft.characters.isNotEmpty
+        ? draft.characters.first
+        : const CharacterImportData();
+    final primaryDialogue = draft.dialogues.isNotEmpty
+        ? draft.dialogues.first
+        : const DialogueImportData();
+    final importedTags = <String>{
+      ...general.tags,
+      ...draft.publication.tags,
+    }.where((tag) => tag.trim().isNotEmpty).toList();
+    final combinedVeoPrompt = _combinedImportedVeoPrompt(draft);
+    final timeline = _timelineMarkersFromImport(draft);
+
+    setState(() {
+      _clearImportedSceneTargetFields();
+      _selectedPublicationTarget = SceneStatus.draft;
+      _lastPromptImportSummary = _PromptImportSummary(
+        detectedFieldCount: validation.normalizedFields.length +
+            validation.summary.timelineMarkerCount +
+            validation.summary.dialogueCount +
+            validation.summary.veoIntroSegmentCount +
+            8,
+        hasTimeline: draft.guidedTimeline.isNotEmpty,
+        hasVeoPrompt: combinedVeoPrompt.trim().isNotEmpty,
+        hasDialogue: draft.dialogues.isNotEmpty,
+      );
+
+      _setControllerText(sceneNameCtrl, general.title);
+      _setControllerText(projectTitleCtrl, general.title);
+      _setControllerText(sceneNumberCtrl, general.subtitle);
+      _setControllerText(categoryCtrl, general.category);
+      _setControllerText(genreCtrl, general.genre);
+      _setControllerText(
+        targetDurationCtrl,
+        general.targetDurationSeconds > 0
+            ? '${general.targetDurationSeconds} secondes'
+            : '',
+      );
+      _setControllerText(locationCtrl, [general.country, general.region]
+          .where((value) => value.trim().isNotEmpty)
+          .join(' / '));
+      _setControllerText(contextSummaryCtrl, general.synopsis);
+      _setControllerText(whyImportantCtrl, general.actorObjective);
+      _setControllerText(directorFinalNoteCtrl, general.directorIntention);
+      _setControllerText(referencesCtrl, [
+        if (general.sceneType.isNotEmpty) 'Type de scène: ${general.sceneType}',
+        if (general.visualStyle.isNotEmpty) 'Style visuel: ${general.visualStyle}',
+        if (general.soundMood.isNotEmpty) 'Ambiance sonore: ${general.soundMood}',
+        if (draft.publication.createdByFreelanceName.isNotEmpty)
+          'Freelance: ${draft.publication.createdByFreelanceName}',
+        if (draft.publication.batchId.isNotEmpty) 'Batch: ${draft.publication.batchId}',
+      ].join('\n'));
+
+      final mappedLevel = _mapDifficultyToRecommendedLevel(general.difficulty);
+      if (mappedLevel != null) {
+        selectedRecommendedLevel = mappedLevel;
+      }
+      final mappedObjective = _mapImportedObjective(general.actorObjective);
+      if (mappedObjective != null) {
+        selectedMainObjective = mappedObjective;
+      }
+      final mappedMood = _matchOption(general.mood, emotionOptions);
+      if (mappedMood != null) {
+        selectedDominantEmotion = mappedMood;
+      }
+
+      _setControllerText(characterNameCtrl, primaryCharacter.name);
+      _setControllerText(profileRoleCtrl, primaryCharacter.role);
+      _setControllerText(initialStateCtrl, primaryCharacter.emotionalState);
+      _setControllerText(characterSummaryCtrl, [
+        primaryCharacter.description,
+        if (primaryCharacter.costume.isNotEmpty) 'Costume: ${primaryCharacter.costume}',
+        if (primaryCharacter.notes.isNotEmpty) 'Notes: ${primaryCharacter.notes}',
+      ].where((value) => value.trim().isNotEmpty).join('\n'));
+
+      _setControllerText(dialogueTextCtrl, primaryDialogue.expectedDialogue);
+      _setControllerText(actingDirectionCtrl, primaryDialogue.actingInstruction);
+      _setControllerText(idealTextDurationCtrl,
+          primaryDialogue.estimatedDurationSeconds > 0 ? '${primaryDialogue.estimatedDurationSeconds} secondes' : '');
+      final dialogueEmotion = _matchOption(primaryDialogue.emotion, emotionOptions);
+      if (dialogueEmotion != null) {
+        selectedSecondaryEmotion = dialogueEmotion;
+      }
+      final dialogueIntensity = _matchOption(primaryDialogue.intensity, intensityOptions);
+      if (dialogueIntensity != null) {
+        selectedIntensity = dialogueIntensity;
+      }
+
+      _setControllerText(silencesCtrl, draft.directorNotes.rhythm);
+      _setControllerText(technicalConstraintsCtrl, draft.directorNotes.technicalAnchors);
+      _setControllerText(spectatorFeelingCtrl, draft.directorNotes.spectatorFeeling);
+      _appendLabeledText(directorFinalNoteCtrl, 'Note finale', draft.directorNotes.finalNote);
+      _appendLabeledText(technicalConstraintsCtrl, 'Sécurité', draft.directorNotes.safetyNotes);
+      _appendLabeledText(actingDirectionCtrl, 'Conseils performance', draft.directorNotes.performanceTips);
+
+      if (combinedVeoPrompt.trim().isNotEmpty) {
+        if (_canImportVeoPrompt()) {
+          veoPromptCtrl.text = combinedVeoPrompt.trim();
+          _isVeoPromptLocked = false;
+          _generatedPreviewVideo = null;
+          _validatedPreviewVideo = null;
+          _veoStatusValue = 'none';
+          _veoOperationId = null;
+          _veoGenerationStatus = null;
+          _veoGenerationError = null;
+        } else {
+          _appendLabeledText(referencesCtrl, 'Prompt VEO importé', combinedVeoPrompt);
+        }
+      }
+      _testedPrompts = draft.veoIntroSegments
+          .map((segment) => segment.prompt.trim())
+          .where((prompt) => prompt.isNotEmpty)
+          .toList();
+
+      if (timeline.isNotEmpty) {
+        markersJsonCtrl.text = const JsonEncoder.withIndent('  ').convert(timeline);
+      }
+
+      selectedStyles
+        ..clear()
+        ..addAll(['cinéma', 'intense']);
+      for (final tag in importedTags) {
+        final matched = _matchOption(tag, styleOptions);
+        if (matched != null && !selectedStyles.contains(matched)) {
+          selectedStyles.add(matched);
+        }
+      }
+      _selectedPublicationTarget = SceneStatus.draft;
+      _currentStepIndex = 0;
+    });
+
+    _showAdminMessage(
+      'Scénario importé en brouillon. Vérifiez puis enregistrez.',
+      backgroundColor: const Color(0xFF0F766E),
+    );
+  }
+
+  void _clearImportedSceneTargetFields() {
+    for (final controller in [
+      projectTitleCtrl,
+      sceneNameCtrl,
+      sceneNumberCtrl,
+      shootDateCtrl,
+      locationCtrl,
+      directorCtrl,
+      targetDurationCtrl,
+      characterNameCtrl,
+      apparentAgeCtrl,
+      characterGenderCtrl,
+      profileRoleCtrl,
+      relationshipCtrl,
+      initialStateCtrl,
+      characterSummaryCtrl,
+      previousMomentCtrl,
+      whereAreWeCtrl,
+      withWhoCtrl,
+      whyImportantCtrl,
+      contextSummaryCtrl,
+      mainObstacleCtrl,
+      stakesCtrl,
+      evolutionStartCtrl,
+      evolutionMiddleCtrl,
+      evolutionEndCtrl,
+      emotionalNuanceCtrl,
+      actingDirectionCtrl,
+      referencesCtrl,
+      dialogueTextCtrl,
+      emphasizedWordsCtrl,
+      keyPhraseCtrl,
+      block1IntentionCtrl,
+      block1EnergyCtrl,
+      block1LookCtrl,
+      block1RhythmCtrl,
+      block2IntentionCtrl,
+      block2EnergyCtrl,
+      block2LookCtrl,
+      block2RhythmCtrl,
+      block3IntentionCtrl,
+      block3EnergyCtrl,
+      block3LookCtrl,
+      block3RhythmCtrl,
+      startPositionCtrl,
+      plannedMovementCtrl,
+      expectedGesturesCtrl,
+      usedObjectsCtrl,
+      keyActionMomentCtrl,
+      bodyDirectionCtrl,
+      gazePointCtrl,
+      faceDirectionCtrl,
+      silencesCtrl,
+      dramaticRiseCtrl,
+      floorMarkCtrl,
+      startCueCtrl,
+      movementCueCtrl,
+      exactEndCtrl,
+      idealTextDurationCtrl,
+      technicalConstraintsCtrl,
+      spectatorFeelingCtrl,
+      directorFinalNoteCtrl,
+      visualTransitionPointCtrl,
+      emotionalTransitionPointCtrl,
+      firstActorActionCtrl,
+      firstExpectedEmotionCtrl,
+      lastAiFrameDescriptionCtrl,
+      markersJsonCtrl,
+    ]) {
+      controller.clear();
+    }
+    targetDurationCtrl.text = '1 minute maximum';
+    markersJsonCtrl.text = '[]';
+  }
+
+  String _combinedImportedVeoPrompt(Take60SceneImportDraft draft) {
+    final segments = draft.veoIntroSegments
+        .where((segment) => segment.prompt.trim().isNotEmpty)
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+    if (segments.isEmpty) {
+      return '';
+    }
+    return segments.map((segment) {
+      final title = segment.title.trim().isEmpty ? segment.segmentId : segment.title;
+      return [
+        'Segment ${segment.order} — $title (${segment.desiredDurationSeconds}s)',
+        segment.prompt,
+        if (segment.visualStyle.trim().isNotEmpty) 'Style: ${segment.visualStyle}',
+        if (segment.soundAmbience.trim().isNotEmpty) 'Son: ${segment.soundAmbience}',
+        if (segment.transitionOut.trim().isNotEmpty) 'Transition: ${segment.transitionOut}',
+        if (segment.cameraDirection.trim().isNotEmpty) 'Caméra: ${segment.cameraDirection}',
+        if (segment.negativePrompt.trim().isNotEmpty) 'Negative prompt: ${segment.negativePrompt}',
+      ].where((value) => value.trim().isNotEmpty).join('\n');
+    }).join('\n\n');
+  }
+
+  List<Map<String, dynamic>> _timelineMarkersFromImport(
+    Take60SceneImportDraft draft,
+  ) {
+    final markers = <Map<String, dynamic>>[];
+    var cursor = 0;
+    final introSegments = [...draft.veoIntroSegments]
+      ..sort((a, b) => a.order.compareTo(b.order));
+    for (final segment in introSegments) {
+      final duration = segment.desiredDurationSeconds <= 0
+          ? _kDefaultVeoIntroDurationSeconds
+          : segment.desiredDurationSeconds;
+      markers.add({
+        'id': segment.segmentId.trim().isEmpty
+            ? 'intro_${segment.order}'
+            : segment.segmentId.trim(),
+        'type': 'intro_ai_video',
+        'role': 'ai',
+        'source': 'ai',
+        'startSecond': cursor,
+        'endSecond': cursor + duration,
+        'durationSeconds': duration,
+        'label': segment.title.trim().isEmpty
+            ? 'Intro IA ${segment.order}'
+            : segment.title.trim(),
+        'dialogue': '',
+        'cameraPlan': segment.cameraDirection,
+        'direction': segment.prompt,
+        'aiAudioOnly': true,
+        'userAudioEnabled': false,
+      });
+      cursor += duration;
+    }
+
+    final importedTimeline = [...draft.guidedTimeline]
+      ..sort((a, b) => a.order.compareTo(b.order));
+    for (final marker in importedTimeline) {
+      markers.add({
+        'id': marker.markerId.trim().isEmpty ? 'm${marker.order}' : marker.markerId,
+        'type': marker.sequenceType.trim().isEmpty
+            ? (marker.isUserSequence ? 'user_dialogue' : 'ai_sequence')
+            : marker.sequenceType,
+        'role': marker.isUserSequence ? 'user' : 'ai',
+        'source': marker.source.trim().isEmpty
+            ? (marker.isUserSequence ? 'user' : 'ai')
+            : marker.source,
+        'startSecond': marker.startSecond,
+        'endSecond': marker.endSecond,
+        'durationSeconds': marker.durationSeconds,
+        'label': marker.framing.trim().isEmpty
+            ? 'Plan ${marker.order}'
+            : marker.framing,
+        'dialogue': marker.expectedDialogue,
+        'cameraPlan': marker.cameraPlan,
+        'movement': marker.movement,
+        'transition': marker.transition,
+        'direction': marker.montageNote,
+        'userMustRecord': marker.userMustRecord,
+        'aiAudioOnly': marker.aiAudioOnly,
+        'userAudioEnabled': marker.userAudioEnabled,
+      });
+    }
+    return markers;
+  }
+
+  void _showImportPreviewDialog() {
+    final draft = _sceneImportController.importedDraft;
+    final validation = _sceneImportController.validationResult;
+    if (draft == null || validation == null) {
+      _showAdminMessage(
+        'Téléchargez d’abord un scénario à prévisualiser.',
+        backgroundColor: const Color(0xFF92400E),
+      );
+      return;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (context) => Take60SceneImportPreview(
+        draft: draft,
+        validation: validation,
+        onInject: validation.isValid
+            ? () async {
+                Navigator.of(context).maybePop();
+                await _sceneImportController.injectIntoCurrentSceneForm();
+              }
+            : null,
+      ),
+    );
+  }
+
+  Future<void> _pickAndImportScenarioFromTile() async {
+    await _sceneImportController.pickAndImportScenario();
+    final message = _sceneImportController.statusMessage;
+    if (message != null && mounted) {
+      _showAdminMessage(
+        message,
+        backgroundColor: _sceneImportController.hasBlockingErrors ||
+                _sceneImportController.technicalError != null
+            ? const Color(0xFFB91C1C)
+            : const Color(0xFF0F766E),
+      );
+    }
+  }
+
+  Future<void> _chooseAndDownloadImportTemplate() async {
+    final format = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Télécharger le modèle Take60',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              const Text('JSON officiel recommandé. CSV disponible pour tableur simple.'),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.data_object_rounded),
+                title: const Text('Modèle JSON officiel'),
+                subtitle: const Text('Recommandé pour l’import complet.'),
+                onTap: () => Navigator.of(context).pop('json'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_chart_rounded),
+                title: const Text('Modèle CSV'),
+                subtitle: const Text('Fallback remplissable dans un tableur.'),
+                onTap: () => Navigator.of(context).pop('csv'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (format != null) {
+      await _sceneImportController.downloadTemplate(format: format);
+      final message = _sceneImportController.statusMessage;
+      if (message != null && mounted) {
+        _showAdminMessage(
+          message,
+          backgroundColor: _sceneImportController.technicalError == null
+              ? const Color(0xFF0F766E)
+              : const Color(0xFFB91C1C),
+        );
+      }
+    }
+  }
+
   @visibleForTesting
   void debugApplyPromptImport() {
     _applyPromptImport();
@@ -4051,7 +4526,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Vous avez déjà un scénario complet ? Collez-le ici pour préremplir automatiquement la fiche.',
+                        'Importe un scénario préparé hors application et pré-remplis automatiquement toutes les étapes de création.',
                         style: TextStyle(
                           color: Color(0xFFCBD5E1),
                           height: 1.45,
@@ -4075,6 +4550,178 @@ class _AddScenePageState extends State<AddScenePage> {
                   tooltip: 'Coller un prompt complet',
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            AnimatedBuilder(
+              animation: _sceneImportController,
+              builder: (context, _) {
+                final isBusy = _sceneImportController.isPickingFile ||
+                    _sceneImportController.isParsing ||
+                    _sceneImportController.isValidating ||
+                    _sceneImportController.isInjecting;
+                final validation = _sceneImportController.validationResult;
+                final statusMessage = _sceneImportController.statusMessage;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: isBusy
+                              ? null
+                              : _pickAndImportScenarioFromTile,
+                          icon: isBusy
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.upload_file_rounded),
+                          label: const Text('Télécharger un scénario'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFFBBF24),
+                            foregroundColor: const Color(0xFF111827),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: isBusy ? null : _chooseAndDownloadImportTemplate,
+                          icon: const Icon(Icons.download_rounded),
+                          label: const Text('Télécharger le modèle'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: const Color(0xFFFBBF24).withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _sceneImportController.canPreview
+                              ? _showImportPreviewDialog
+                              : null,
+                          icon: const Icon(Icons.visibility_rounded),
+                          label: const Text('Prévisualiser'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(
+                              color: const Color(0xFF60A5FA).withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _sceneImportController.canInject
+                              ? _sceneImportController.injectIntoCurrentSceneForm
+                              : null,
+                          icon: const Icon(Icons.drafts_rounded),
+                          label: const Text('Créer en brouillon'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Format conseillé : modèle Take60 officiel. Les scènes importées restent en brouillon jusqu’à validation admin.',
+                      style: TextStyle(
+                        color: Color(0xFFFDE68A),
+                        fontWeight: FontWeight.w700,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Chip(
+                          avatar: Icon(
+                            _sceneImportController.selectedFileName == null
+                                ? Icons.info_outline_rounded
+                                : Icons.insert_drive_file_rounded,
+                            size: 18,
+                          ),
+                          label: Text(
+                            _sceneImportController.selectedFileName == null
+                                ? 'Aucun fichier sélectionné'
+                                : 'Fichier : ${_sceneImportController.selectedFileName}',
+                          ),
+                        ),
+                        if (isBusy)
+                          const Chip(
+                            avatar: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            label: Text('Lecture / validation en cours'),
+                          ),
+                        if (validation != null && validation.isValid)
+                          const Chip(
+                            avatar: Icon(Icons.check_circle_rounded, size: 18),
+                            label: Text('Import prêt à être injecté'),
+                          ),
+                        if (validation != null && !validation.isValid)
+                          Chip(
+                            avatar: const Icon(Icons.error_rounded, size: 18),
+                            label: Text('${validation.blockingErrors.length} erreur(s) bloquante(s)'),
+                          ),
+                        if (validation != null && validation.warnings.isNotEmpty)
+                          Chip(
+                            avatar: const Icon(Icons.warning_amber_rounded, size: 18),
+                            label: Text('${validation.warnings.length} warning(s)'),
+                          ),
+                        if (_sceneImportController.draftCreated)
+                          const Chip(
+                            avatar: Icon(Icons.drafts_rounded, size: 18),
+                            label: Text('Brouillon créé dans le formulaire'),
+                          ),
+                      ],
+                    ),
+                    if (statusMessage != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        statusMessage,
+                        style: TextStyle(
+                          color: _sceneImportController.hasBlockingErrors ||
+                                  _sceneImportController.technicalError != null
+                              ? const Color(0xFFFCA5A5)
+                              : const Color(0xFFA7F3D0),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    if (validation != null && validation.blockingErrors.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      ...validation.blockingErrors.take(4).map(
+                            (error) => Text(
+                              '• $error',
+                              style: const TextStyle(color: Color(0xFFFCA5A5)),
+                            ),
+                          ),
+                    ],
+                    if (validation != null && validation.unknownFields.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Champs inconnus ignorés : ${validation.unknownFields.take(5).join(', ')}',
+                        style: const TextStyle(color: Color(0xFFCBD5E1)),
+                      ),
+                    ],
+                    if (_sceneImportController.canPreview ||
+                        _sceneImportController.technicalError != null) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _sceneImportController.resetImport,
+                        icon: const Icon(Icons.restart_alt_rounded),
+                        label: const Text('Réinitialiser l’import'),
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(

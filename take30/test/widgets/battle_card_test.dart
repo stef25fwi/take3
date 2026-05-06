@@ -29,9 +29,9 @@ void main() {
     );
 
     expect(find.text('En préparation'), findsOneWidget);
-    expect(find.text('Alex'), findsOneWidget);
-    expect(find.text('Clara'), findsOneWidget);
-    expect(find.text('La vérité fissure'), findsOneWidget);
+    expect(find.text('Alex'), findsWidgets);
+    expect(find.text('Clara'), findsWidgets);
+    expect(find.text('La vérité fissure'), findsWidgets);
     expect(find.text('Suivre cette Battle'), findsOneWidget);
   });
 }

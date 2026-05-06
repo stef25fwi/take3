@@ -35,6 +35,8 @@ class Take60GuidedRecordScreen extends ConsumerStatefulWidget {
     this.initialScene,
     this.battleContext,
     this.onInitCameraOverride,
+    this.skipInitialLibraryLoad = false,
+    this.skipPersistenceForTesting = false,
   });
 
   final SceneModel? initialScene;
@@ -42,6 +44,10 @@ class Take60GuidedRecordScreen extends ConsumerStatefulWidget {
   @visibleForTesting
   final Future<CameraInitResult> Function(BuildContext context)?
       onInitCameraOverride;
+  @visibleForTesting
+  final bool skipInitialLibraryLoad;
+  @visibleForTesting
+  final bool skipPersistenceForTesting;
 
   @override
   ConsumerState<Take60GuidedRecordScreen> createState() =>
@@ -66,7 +72,7 @@ class _Take60GuidedRecordScreenState
   static const _accent2 = Color(0xFF00D4FF);
   static const _danger = Color(0xFFFF4757);
 
-  final Take60GuidedSceneService _service = Take60GuidedSceneService.instance;
+  Take60GuidedSceneService? _service;
 
   _Stage _stage = _Stage.library;
   bool _loadingLibrary = true;
@@ -113,12 +119,15 @@ class _Take60GuidedRecordScreenState
     if (scene == null) {
       return null;
     }
-    return _service.projectIdForScene(scene);
+    return _service?.projectIdForScene(scene);
   }
 
   @override
   void initState() {
     super.initState();
+    if (!(widget.skipInitialLibraryLoad && widget.skipPersistenceForTesting)) {
+      _service = Take60GuidedSceneService.instance;
+    }
     if (widget.initialScene != null) {
       _scene = widget.initialScene;
     }
@@ -126,7 +135,11 @@ class _Take60GuidedRecordScreenState
       if (widget.initialScene != null) {
         _enterDirectorSheet(widget.initialScene!);
       }
-      _loadLibrary();
+      if (!widget.skipInitialLibraryLoad) {
+        _loadLibrary();
+      } else {
+        setState(() => _loadingLibrary = false);
+      }
     });
   }
 
@@ -142,6 +155,11 @@ class _Take60GuidedRecordScreenState
 
   // ── Library ─────────────────────────────────────────────────────────────
   Future<void> _loadLibrary() async {
+    final service = _service;
+    if (service == null) {
+      setState(() => _loadingLibrary = false);
+      return;
+    }
     setState(() => _loadingLibrary = true);
     final user = ref.read(authProvider).user ??
         const UserModel(
@@ -151,7 +169,7 @@ class _Take60GuidedRecordScreenState
           avatarUrl: '',
         );
     try {
-      final scenes = await _service.loadGuidedScenes(fallbackAuthor: user);
+      final scenes = await service.loadGuidedScenes(fallbackAuthor: user);
       if (!mounted) return;
       setState(() {
         _scenes = scenes;
@@ -191,7 +209,7 @@ class _Take60GuidedRecordScreenState
 
   // ── Director sheet ──────────────────────────────────────────────────────
   void _enterDirectorSheet(SceneModel scene) {
-    final timeline = _service.buildTimeline(scene);
+    final timeline = _buildTimelineForScene(scene);
     setState(() {
       _scene = scene;
       _timeline = timeline;
@@ -201,13 +219,17 @@ class _Take60GuidedRecordScreenState
     });
     _persistDraftWithStatus(SceneRecordingStatus.directorSheetViewed);
     // Propose la reprise du brouillon si l'utilisateur en a un en cours.
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _maybeOfferDraftResume(scene),
-    );
+    if (!widget.skipPersistenceForTesting) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _maybeOfferDraftResume(scene),
+      );
+    }
   }
 
   Future<void> _maybeOfferDraftResume(SceneModel scene) async {
-    final resumeState = await _service.loadResumeState(scene: scene);
+    final service = _service;
+    if (service == null) return;
+    final resumeState = await service.loadResumeState(scene: scene);
     if (!mounted || resumeState == null) return;
     if (_scene?.id != scene.id) return;
     final resume = await showDialog<bool>(
@@ -260,8 +282,20 @@ class _Take60GuidedRecordScreenState
         _publicationStatus = 'Brouillon repris.';
       });
     } else {
-      await _service.discardResumeState(scene: scene);
+      await service.discardResumeState(scene: scene);
     }
+  }
+
+  List<Take60SceneMarker> _buildTimelineForScene(SceneModel scene) {
+    final service = _service;
+    if (service != null) {
+      return service.buildTimeline(scene);
+    }
+    if (scene.markers.isNotEmpty) {
+      return [...scene.markers]
+        ..sort((left, right) => left.order.compareTo(right.order));
+    }
+    return const [];
   }
 
   void _backToLibrary() {
@@ -506,10 +540,10 @@ class _Take60GuidedRecordScreenState
     final marker = _currentMarker;
     final scene = _scene;
     final projectId = _projectId;
-    if (marker == null || scene == null || projectId == null) return;
+    final service = _service;
+    if (marker == null || scene == null || projectId == null || service == null) return;
     _waitingForRecordingResult = false;
-    _service
-        .persistRecording(
+    service.persistRecording(
       projectId: projectId,
       scene: scene,
       marker: marker,
@@ -694,7 +728,7 @@ class _Take60GuidedRecordScreenState
     await _persistDraftWithStatus(SceneRecordingStatus.renderingFinalVideo);
     debugPrint('[RECORD] render start');
     try {
-      final result = await _service.renderTake60GuidedScene(
+      final result = await _service!.renderTake60GuidedScene(
         projectId: projectId,
         scene: scene,
         recordings: _recordings.values.toList(),
@@ -751,7 +785,7 @@ class _Take60GuidedRecordScreenState
     });
     try {
       if (renderResult != null && renderResult.finalVideoUrl.isNotEmpty) {
-        await _service.saveRenderedProject(
+        await _service!.saveRenderedProject(
           projectId: projectId,
           scene: scene,
           recordings: _recordings.values.toList(),
@@ -761,7 +795,7 @@ class _Take60GuidedRecordScreenState
           battleContext: widget.battleContext,
         );
       } else {
-        await _service.saveGuidedProjectDraft(
+        await _service!.saveGuidedProjectDraft(
           projectId: projectId,
           scene: scene,
           currentMarkerIndex: _currentIndex,
@@ -803,7 +837,7 @@ class _Take60GuidedRecordScreenState
       _publicationStatus = 'Publication en cours…';
     });
     try {
-      await _service.saveRenderedProject(
+      await _service!.saveRenderedProject(
         projectId: projectId,
         scene: scene,
         recordings: _recordings.values.toList(),
@@ -814,7 +848,7 @@ class _Take60GuidedRecordScreenState
       );
       final battleContext = widget.battleContext;
       if (battleContext != null && battleContext.battleId.isNotEmpty) {
-        final mirroredBattleAsset = await _service.prepareBattleSubmissionAsset(
+        final mirroredBattleAsset = await _service!.prepareBattleSubmissionAsset(
           projectId: projectId,
           finalVideoUrl: renderResult.finalVideoUrl,
           battleContext: battleContext,
@@ -843,7 +877,7 @@ class _Take60GuidedRecordScreenState
             : 'Ta performance Battle est envoyée.',
       );
       await _persistDraftWithStatus(SceneRecordingStatus.published);
-      await _service.clearDraft(scene.id);
+      await _service!.clearDraft(scene.id);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -859,8 +893,9 @@ class _Take60GuidedRecordScreenState
   }
 
   Future<void> _persistDraftWithStatus(SceneRecordingStatus status) async {
+    if (widget.skipPersistenceForTesting) return;
     if (_scene == null) return;
-    await _service.saveDraft(
+    await _service!.saveDraft(
       scene: _scene!,
       currentMarkerIndex: _currentIndex,
       status: status,
@@ -868,7 +903,7 @@ class _Take60GuidedRecordScreenState
     );
     final projectId = _projectId;
     if (projectId != null) {
-      await _service.saveGuidedProjectDraft(
+      await _service!.saveGuidedProjectDraft(
         projectId: projectId,
         scene: _scene!,
         currentMarkerIndex: _currentIndex,
