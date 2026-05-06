@@ -700,9 +700,9 @@ class _LiveTrendingSection extends StatelessWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final columns = width < 1024 ? 2 : 4;
+                  final columns = width < 600 ? 1 : (width < 1024 ? 2 : 3);
                   final gap = width < 600 ? 10.0 : (width < 1024 ? 14.0 : 16.0);
-                  final cardHeight = width < 600 ? 232.0 : (width < 1024 ? 286.0 : 320.0);
+                  final cardHeight = width < 600 ? 248.0 : (width < 1024 ? 300.0 : 332.0);
                   final cardWidth = (width - (gap * (columns - 1))) / columns;
 
                   return Wrap(
@@ -896,23 +896,29 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
             curve: Curves.easeInOut,
             child: Container(
               height: widget.height,
-              padding: const EdgeInsets.all(2),
+              padding: const EdgeInsets.all(1.2),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    data.borderColor,
-                    const Color(0xFFFACC15),
-                    const Color(0xFF06B6D4),
-                    const Color(0xFFA855F7),
-                    data.borderColor,
-                  ],
+                color: const Color(0x1AFFFFFF),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: _hovered ? 0.34 : 0.22),
+                  width: 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFFFFF).withValues(alpha: 0.06),
+                    blurRadius: 18,
+                    spreadRadius: 0.5,
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.22),
+                    blurRadius: 16,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(3),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -945,10 +951,19 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
                         ),
                       ),
                     ),
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+                      child: Container(
+                        color: Colors.white.withValues(alpha: 0.03),
+                      ),
+                    ),
                     Positioned(
-                      top: 16,
-                      left: 16,
-                      child: _LiveTrendRankBadge(data: data),
+                      top: 12,
+                      left: 12,
+                      child: _LiveTrendRankBadge(
+                        data: data,
+                        compact: widget.compact,
+                      ),
                     ),
                     Center(child: _LiveTrendPlayButton(accent: data.borderColor)),
                     Positioned(
@@ -973,30 +988,58 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
 }
 
 class _LiveTrendRankBadge extends StatelessWidget {
-  const _LiveTrendRankBadge({required this.data});
+  const _LiveTrendRankBadge({required this.data, required this.compact});
 
   final _LiveTrendData data;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: data.badgeColor,
-        shape: BoxShape.circle,
-      ),
-      child: Text(
-        '${data.rank}',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: data.badgeTextColor,
+    return ClipPath(
+      clipper: _PennantClipper(),
+      child: Container(
+        width: compact ? 32 : 38,
+        height: compact ? 42 : 48,
+        padding: EdgeInsets.only(bottom: compact ? 8 : 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: data.badgeColor,
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.18),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          '${data.rank}',
+          style: TextStyle(
+            fontSize: compact ? 13 : 14,
+            fontWeight: FontWeight.w700,
+            color: data.badgeTextColor,
+          ),
         ),
       ),
     );
   }
+}
+
+class _PennantClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height - (size.width * 0.34))
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(0, size.height - (size.width * 0.34))
+      ..close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 class _LiveTrendPlayButton extends StatefulWidget {
@@ -1019,8 +1062,8 @@ class _LiveTrendPlayButtonState extends State<_LiveTrendPlayButton> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 56,
-        height: 56,
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
           color: Color.fromRGBO(255, 255, 255, _hovered ? 1 : 0.9),
           shape: BoxShape.circle,
@@ -1035,7 +1078,7 @@ class _LiveTrendPlayButtonState extends State<_LiveTrendPlayButton> {
         ),
         child: const Icon(
           Icons.play_arrow_rounded,
-          size: 24,
+          size: 18,
           color: Color(0xFFFFFFFF),
         ),
       ),
