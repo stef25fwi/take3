@@ -678,70 +678,56 @@ class _LiveTrendingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: const Color(0xFF000000).withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _LiveTrendingHeader(onSeeAll: onSeeAll),
-          const SizedBox(height: 24),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              if (width < 768) {
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
+    return LayoutBuilder(
+      builder: (context, outerConstraints) {
+        final compact = outerConstraints.maxWidth < 600;
+        final medium = outerConstraints.maxWidth < 1024;
+        final sectionPadding = compact ? 16.0 : (medium ? 24.0 : 32.0);
+
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(sectionPadding),
+          decoration: BoxDecoration(
+            color: const Color(0xFF000000).withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LiveTrendingHeader(onSeeAll: onSeeAll),
+              SizedBox(height: compact ? 16 : 24),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth;
+                  final columns = width < 1024 ? 2 : 4;
+                  final gap = width < 600 ? 10.0 : (width < 1024 ? 14.0 : 16.0);
+                  final cardHeight = width < 600 ? 232.0 : (width < 1024 ? 286.0 : 320.0);
+                  final cardWidth = (width - (gap * (columns - 1))) / columns;
+
+                  return Wrap(
+                    spacing: gap,
+                    runSpacing: gap,
                     children: [
-                      for (var index = 0; index < _items.length; index++) ...[
+                      for (final item in _items)
                         SizedBox(
-                          width: 260,
+                          width: cardWidth,
                           child: _LiveTrendCard(
-                            data: _items[index],
+                            data: item,
                             maxDuels: 2400,
-                            height: 360,
+                            height: cardHeight,
+                            compact: width < 600,
                             onTap: onOpenTrend,
                           ),
                         ),
-                        if (index != _items.length - 1)
-                          const SizedBox(width: 12),
-                      ],
                     ],
-                  ),
-                );
-              }
-
-              final columns = width < 1024 ? 2 : 4;
-              const gap = 16.0;
-              final cardWidth = (width - (gap * (columns - 1))) / columns;
-              return Wrap(
-                spacing: gap,
-                runSpacing: width < 1024 ? 14 : 16,
-                children: [
-                  for (final item in _items)
-                    SizedBox(
-                      width: cardWidth,
-                      child: _LiveTrendCard(
-                        data: item,
-                        maxDuels: 2400,
-                        height: 384,
-                        onTap: onOpenTrend,
-                      ),
-                    ),
-                ],
-              );
-            },
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -873,12 +859,14 @@ class _LiveTrendCard extends StatefulWidget {
     required this.data,
     required this.maxDuels,
     required this.height,
+    required this.compact,
     required this.onTap,
   });
 
   final _LiveTrendData data;
   final int maxDuels;
   final double height;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
@@ -908,59 +896,73 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
             curve: Curves.easeInOut,
             child: Container(
               height: widget.height,
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: data.borderColor, width: 2),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    data.borderColor,
+                    const Color(0xFFFACC15),
+                    const Color(0xFF06B6D4),
+                    const Color(0xFFA855F7),
+                    data.borderColor,
+                  ],
+                ),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    data.imageAsset,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (_, __, ___) => DecoratedBox(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      data.imageAsset,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      errorBuilder: (_, __, ___) => DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              data.borderColor.withValues(alpha: 0.55),
+                              const Color(0xFF000000),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            data.borderColor.withValues(alpha: 0.55),
-                            const Color(0xFF000000),
+                            const Color(0xFF000000).withValues(alpha: 0.4),
+                            const Color(0xFF000000).withValues(alpha: 0.2),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFF000000).withValues(alpha: 0.4),
-                          const Color(0xFF000000).withValues(alpha: 0.2),
-                        ],
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      child: _LiveTrendRankBadge(data: data),
+                    ),
+                    Center(child: _LiveTrendPlayButton(accent: data.borderColor)),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: _LiveTrendBottomContent(
+                        data: data,
+                        progress: progress,
+                        compact: widget.compact,
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: _LiveTrendRankBadge(data: data),
-                  ),
-                  Center(child: _LiveTrendPlayButton(accent: data.borderColor)),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: _LiveTrendBottomContent(
-                      data: data,
-                      progress: progress,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1042,15 +1044,20 @@ class _LiveTrendPlayButtonState extends State<_LiveTrendPlayButton> {
 }
 
 class _LiveTrendBottomContent extends StatelessWidget {
-  const _LiveTrendBottomContent({required this.data, required this.progress});
+  const _LiveTrendBottomContent({
+    required this.data,
+    required this.progress,
+    required this.compact,
+  });
 
   final _LiveTrendData data;
   final double progress;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 10 : 16),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
@@ -1072,43 +1079,43 @@ class _LiveTrendBottomContent extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.dmSans(
-              fontSize: 18,
+              fontSize: compact ? 14 : 18,
               fontWeight: FontWeight.w700,
               color: const Color(0xFFFFFFFF),
               height: 1.25,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 2 : 4),
           Text(
             data.subtitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.dmSans(
-              fontSize: 14,
+              fontSize: compact ? 11.5 : 14,
               fontWeight: FontWeight.w400,
               color: const Color(0xFFD1D5DB),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: compact ? 8 : 12),
           Row(
             children: [
               const Icon(
                 Icons.local_fire_department_rounded,
                 size: 16,
-                color: Color(0xFFFACC15),
+                color: Color(0xFFF97316),
               ),
               const SizedBox(width: 8),
               Text(
                 '${data.duelsLabel} duels',
                 style: GoogleFonts.dmSans(
-                  fontSize: 14,
+                  fontSize: compact ? 11.5 : 14,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFFFFFFF),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 6 : 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(9999),
             child: Container(
@@ -1123,7 +1130,15 @@ class _LiveTrendBottomContent extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(9999),
                     gradient: LinearGradient(
-                      colors: [data.progressStart, data.progressEnd],
+                      colors: const [
+                        Color(0xFFEF4444),
+                        Color(0xFFF97316),
+                        Color(0xFFFACC15),
+                        Color(0xFF22C55E),
+                        Color(0xFF06B6D4),
+                        Color(0xFF3B82F6),
+                        Color(0xFFA855F7),
+                      ],
                     ),
                   ),
                 ),
