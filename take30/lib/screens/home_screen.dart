@@ -1021,8 +1021,15 @@ class _LiveTrendRankBadge extends StatelessWidget {
   final _LiveTrendData data;
   final bool compact;
 
+  Color _mix(Color a, Color b, double t) {
+    return Color.lerp(a, b, t) ?? a;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final topColor = _mix(data.badgeColor, Colors.white, 0.18);
+    final bottomColor = _mix(data.borderColor, Colors.black, 0.12);
+
     return ClipPath(
       clipper: _PennantClipper(),
       child: Container(
@@ -1031,12 +1038,21 @@ class _LiveTrendRankBadge extends StatelessWidget {
         padding: EdgeInsets.only(bottom: compact ? 8 : 10),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: data.badgeColor,
-          boxShadow: const [
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              topColor,
+              data.badgeColor,
+              bottomColor,
+            ],
+            stops: const [0, 0.42, 1],
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Color.fromRGBO(0, 0, 0, 0.18),
+              color: bottomColor.withValues(alpha: 0.38),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -1045,7 +1061,7 @@ class _LiveTrendRankBadge extends StatelessWidget {
           style: TextStyle(
             fontSize: compact ? 13 : 14,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF000000),
+            color: data.badgeTextColor,
             shadows: const [
               Shadow(
                 color: Color(0xFFFFFFFF),
@@ -1232,7 +1248,7 @@ class _LiveTrendBottomContent extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(9999),
                     gradient: const LinearGradient(
-                      colors: const [
+                      colors: [
                         Color(0xFFFACC15),
                         Color(0xFFF97316),
                         Color(0xFFEF4444),
@@ -1289,73 +1305,62 @@ class _BattleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    final horizontalPadding = compact ? 20.0 : 32.0;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(horizontalPadding, 32, horizontalPadding, 32),
-      decoration: BoxDecoration(
-        color: const Color(0xFF05070B),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(text: '⚔️ '),
-                    TextSpan(
-                      text: 'Battles en cours',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: '⚔️ '),
+                  TextSpan(
+                    text: 'Battles en cours',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Semantics(
-                button: true,
-                label: 'Voir toutes les battles en cours',
-                child: InkWell(
-                  onTap: onSeeAll,
-                  borderRadius: BorderRadius.circular(999),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Voir tout',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.72),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18,
+            ),
+            Semantics(
+              button: true,
+              label: 'Voir toutes les battles en cours',
+              child: InkWell(
+                onTap: onSeeAll,
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Voir tout',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white.withValues(alpha: 0.72),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: Colors.white.withValues(alpha: 0.72),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _BattleCard(onVoteNow: onVoteNow),
-        ],
-      ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _BattleCard(onVoteNow: onVoteNow),
+      ],
     );
   }
 }
@@ -1392,7 +1397,7 @@ class _BattleCardState extends State<_BattleCard>
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
     final cardHeight = compact ? 168.0 : 148.0;
-    const innerRadius = 14.0;
+    const cardRadius = 16.0;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -1401,19 +1406,8 @@ class _BattleCardState extends State<_BattleCard>
         return Container(
           width: double.infinity,
           height: cardHeight,
-          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                Color(0xFF0094FF),
-                Color(0xFF111827),
-                Color(0xFF111827),
-                Color(0xFFFF4B2B),
-              ],
-            ),
+            borderRadius: BorderRadius.circular(cardRadius),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF0094FF).withValues(alpha: 0.18 + (pulse * 0.12)),
@@ -1428,20 +1422,23 @@ class _BattleCardState extends State<_BattleCard>
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(innerRadius),
+            borderRadius: BorderRadius.circular(cardRadius),
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const DecoratedBox(
+                Image.asset(
+                  'assets/IMG_1467.png',
+                  fit: BoxFit.cover,
+                ),
+                DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                       colors: [
-                        Color.fromARGB(50, 0, 148, 255),
-                        Color(0xF205070B),
-                        Color(0xF205070B),
-                        Color.fromARGB(45, 255, 75, 43),
+                        Colors.white.withValues(alpha: 0.04),
+                        const Color(0xFF02040A).withValues(alpha: 0.18),
+                        const Color(0xFF02040A).withValues(alpha: 0.38),
                       ],
                     ),
                   ),
@@ -1460,28 +1457,6 @@ class _BattleCardState extends State<_BattleCard>
                   child: _BattleAura(
                     color: const Color(0xFFFF7A1A).withValues(alpha: 0.20 + (pulse * 0.14)),
                     size: compact ? 118 : 132,
-                  ),
-                ),
-                Positioned(
-                  top: compact ? 24 : 20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: compact ? 94 : 116,
-                      height: compact ? 94 : 116,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFB300)
-                                .withValues(alpha: 0.18 + (pulse * 0.12)),
-                            blurRadius: compact ? 34 : 44,
-                            spreadRadius: compact ? 4 : 6,
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ),
                 const Positioned.fill(child: _BattleGrain()),
@@ -1652,66 +1627,9 @@ class _VsCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vsSize = compact ? 54.0 : 78.0;
-
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Expanded(
-          child: Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Transform.rotate(
-                  angle: -0.14,
-                  child: Container(
-                    width: compact ? 8 : 10,
-                    height: compact ? 72 : 96,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFFFFE27A), Color(0xFFFF8A00)],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF8A00).withValues(alpha: 0.68),
-                          blurRadius: 28,
-                          spreadRadius: 3,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Text(
-                  'VS',
-                  style: GoogleFonts.dmSans(
-                    fontSize: vsSize,
-                    fontWeight: FontWeight.w900,
-                    fontStyle: FontStyle.italic,
-                    color: Colors.white,
-                    height: 1,
-                    shadows: [
-                      Shadow(
-                        color: Colors.white.withValues(alpha: 0.26 + (pulse * 0.12)),
-                        blurRadius: 16,
-                      ),
-                      Shadow(
-                        color: const Color(0xFFFFD84A).withValues(alpha: 0.26 + (pulse * 0.20)),
-                        blurRadius: 24,
-                      ),
-                      Shadow(
-                        color: const Color(0xFFFF5A00).withValues(alpha: 0.52 + (pulse * 0.20)),
-                        blurRadius: 40,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
         Padding(
           padding: EdgeInsets.only(bottom: compact ? 12 : 14),
           child: Row(
