@@ -1231,7 +1231,7 @@ class _LiveTrendBottomContent extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(9999),
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: const [
                         Color(0xFFFACC15),
                         Color(0xFFF97316),
@@ -1392,7 +1392,7 @@ class _BattleCardState extends State<_BattleCard>
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
     final cardHeight = compact ? 168.0 : 148.0;
-    final innerRadius = 14.0;
+    const innerRadius = 14.0;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -1693,18 +1693,18 @@ class _VsCenter extends StatelessWidget {
                     color: Colors.white,
                     height: 1,
                     shadows: [
-                      BoxShadow(
+                      Shadow(
                         color: Colors.white.withValues(alpha: 0.26 + (pulse * 0.12)),
                         blurRadius: 16,
-                      ).toShadow(),
-                      BoxShadow(
+                      ),
+                      Shadow(
                         color: const Color(0xFFFFD84A).withValues(alpha: 0.26 + (pulse * 0.20)),
                         blurRadius: 24,
-                      ).toShadow(),
-                      BoxShadow(
+                      ),
+                      Shadow(
                         color: const Color(0xFFFF5A00).withValues(alpha: 0.52 + (pulse * 0.20)),
                         blurRadius: 40,
-                      ).toShadow(),
+                      ),
                     ],
                   ),
                 ),
@@ -1771,7 +1771,7 @@ class _VoteButtonState extends State<_VoteButton>
 
   @override
   Widget build(BuildContext context) {
-    final height = 28.0;
+    const height = 28.0;
     final width = widget.compact ? 102.0 : 128.0;
 
     return GestureDetector(
