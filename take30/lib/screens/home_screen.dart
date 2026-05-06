@@ -683,14 +683,30 @@ class _LiveTrendingSection extends StatelessWidget {
         final compact = outerConstraints.maxWidth < 600;
         final medium = outerConstraints.maxWidth < 1024;
         final sectionPadding = compact ? 16.0 : (medium ? 24.0 : 32.0);
+        final isDark = AppThemeTokens.isDark(context);
 
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(sectionPadding),
           decoration: BoxDecoration(
-            color: const Color(0xFF000000).withValues(alpha: 0.92),
+            color: isDark
+                ? const Color(0xFF000000).withValues(alpha: 0.92)
+                : const Color(0xFFF7F8FC),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : const Color(0xFFDCE2EE),
+            ),
+            boxShadow: isDark
+                ? null
+                : const [
+                    BoxShadow(
+                      color: Color.fromRGBO(15, 23, 42, 0.06),
+                      blurRadius: 18,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,27 +716,31 @@ class _LiveTrendingSection extends StatelessWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
-                  final columns = width < 600 ? 1 : (width < 1024 ? 2 : 3);
                   final gap = width < 600 ? 10.0 : (width < 1024 ? 14.0 : 16.0);
                   final cardHeight = width < 600 ? 248.0 : (width < 1024 ? 300.0 : 332.0);
-                  final cardWidth = (width - (gap * (columns - 1))) / columns;
+                  final cardWidth = width < 600 ? width * 0.82 : (width < 1024 ? 258.0 : 286.0);
 
-                  return Wrap(
-                    spacing: gap,
-                    runSpacing: gap,
-                    children: [
-                      for (final item in _items)
-                        SizedBox(
-                          width: cardWidth,
-                          child: _LiveTrendCard(
-                            data: item,
-                            maxDuels: 2400,
-                            height: cardHeight,
-                            compact: width < 600,
-                            onTap: onOpenTrend,
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: [
+                        for (var index = 0; index < _items.length; index++) ...[
+                          SizedBox(
+                            width: cardWidth,
+                            child: _LiveTrendCard(
+                              data: _items[index],
+                              maxDuels: 2400,
+                              height: cardHeight,
+                              compact: width < 600,
+                              onTap: onOpenTrend,
+                            ),
                           ),
-                        ),
-                    ],
+                          if (index != _items.length - 1)
+                            SizedBox(width: gap),
+                        ],
+                      ],
+                    ),
                   );
                 },
               ),
@@ -739,15 +759,16 @@ class _LiveTrendingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Flexible(
+        Flexible(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('⚔️', style: TextStyle(fontSize: 24)),
-              SizedBox(width: 8),
+              const Text('⚔️', style: TextStyle(fontSize: 24)),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   'Tendances Live',
@@ -756,12 +777,12 @@ class _LiveTrendingHeader extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFFFFFFF),
+                    color: primaryText,
                   ),
                 ),
               ),
-              SizedBox(width: 8),
-              _LiveBadge(),
+              const SizedBox(width: 8),
+              const _LiveBadge(),
             ],
           ),
         ),
@@ -782,14 +803,14 @@ class _LiveTrendingHeader extends StatelessWidget {
                     style: GoogleFonts.dmSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFFFFFFFF),
+                      color: primaryText,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: Color(0xFFFFFFFF),
+                    color: primaryText,
                   ),
                 ],
               ),
