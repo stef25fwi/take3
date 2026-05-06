@@ -90,7 +90,7 @@ class _Take60HeroSectionState extends State<Take60HeroSection>
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF000000).withValues(alpha: 0.55),
+                            color: const Color(0xFF000000).withOpacity(0.55),
                             blurRadius: 30,
                             spreadRadius: 0,
                             offset: const Offset(0, 16),
@@ -133,7 +133,7 @@ class _Take60HeroSectionState extends State<Take60HeroSection>
                                       begin: Alignment.centerLeft,
                                       end: Alignment.centerRight,
                                       colors: [
-                                        const Color(0xFF050816).withValues(alpha: 0.92),
+                                        const Color(0xFF050816).withOpacity(0.92),
                                         Colors.transparent,
                                       ],
                                     ),
@@ -235,7 +235,7 @@ class _BokehLights extends StatelessWidget {
             top: compact ? 34 : 54,
             child: _BlurCircle(
               size: compact ? 112 : 150,
-              color: const Color(0xFFFFC56B).withValues(alpha: 0.12),
+              color: const Color(0xFFFFC56B).withOpacity(0.12),
               blur: compact ? 42 : 54,
             ),
           ),
@@ -244,7 +244,7 @@ class _BokehLights extends StatelessWidget {
             top: compact ? 62 : 86,
             child: _BlurCircle(
               size: compact ? 88 : 120,
-              color: const Color(0xFFFFA726).withValues(alpha: 0.18),
+              color: const Color(0xFFFFA726).withOpacity(0.18),
               blur: compact ? 36 : 48,
             ),
           ),
@@ -253,7 +253,7 @@ class _BokehLights extends StatelessWidget {
             top: compact ? 102 : 138,
             child: _BlurCircle(
               size: compact ? 68 : 96,
-              color: const Color(0xFFFFE0A3).withValues(alpha: 0.22),
+              color: const Color(0xFFFFE0A3).withOpacity(0.22),
               blur: compact ? 30 : 42,
             ),
           ),
@@ -373,7 +373,7 @@ class _HeroCopy extends StatelessWidget {
                     fontSize: subtitleSize,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
-                    color: Colors.white.withValues(alpha: 0.92),
+                    color: Colors.white.withOpacity(0.92),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -465,7 +465,7 @@ class _HeroButton extends StatelessWidget {
                   ? null
                   : [
                       BoxShadow(
-                        color: shadowColor!.withValues(alpha: 0.38),
+                        color: shadowColor!.withOpacity(0.38),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -542,7 +542,7 @@ class _StatCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xCC111111),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
