@@ -106,6 +106,11 @@ class HomeScreen extends ConsumerWidget {
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
                     const SizedBox(height: 20),
+                    _LiveTrendingSection(
+                      onSeeAll: () => context.go(AppRouter.battleLeaderboard),
+                      onOpenTrend: () => context.go(AppRouter.aiFeed),
+                    ),
+                    const SizedBox(height: 20),
                     const _SectionTitle('À la une'),
                     const SizedBox(height: 12),
                     if (feedState.isLoading)
@@ -605,6 +610,558 @@ class _SectionTitle extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LiveTrendingSection extends StatelessWidget {
+  const _LiveTrendingSection({
+    required this.onSeeAll,
+    required this.onOpenTrend,
+  });
+
+  final VoidCallback onSeeAll;
+  final VoidCallback onOpenTrend;
+
+  static const _items = [
+    _LiveTrendData(
+      rank: 1,
+      title: 'Interrogatoire',
+      subtitle: 'Police Station',
+      duelsLabel: '2.4K',
+      duelsValue: 2400,
+      badgeColor: Color(0xFFFBBF24),
+      badgeTextColor: Color(0xFF000000),
+      borderColor: Color(0xFFF59E0B),
+      progressStart: Color(0xFFFBBF24),
+      progressEnd: Color(0xFFD97706),
+      imageAsset: 'assets/scenes/battle_player_a.png',
+    ),
+    _LiveTrendData(
+      rank: 2,
+      title: 'Trahison',
+      subtitle: 'Entre amis',
+      duelsLabel: '1.8K',
+      duelsValue: 1800,
+      badgeColor: Color(0xFF3B82F6),
+      badgeTextColor: Color(0xFFFFFFFF),
+      borderColor: Color(0xFF3B82F6),
+      progressStart: Color(0xFF60A5FA),
+      progressEnd: Color(0xFF2563EB),
+      imageAsset: 'assets/scenes/battle_player_b.png',
+    ),
+    _LiveTrendData(
+      rank: 3,
+      title: 'Dernière chance',
+      subtitle: 'Avant le départ',
+      duelsLabel: '1.2K',
+      duelsValue: 1200,
+      badgeColor: Color(0xFFF97316),
+      badgeTextColor: Color(0xFFFFFFFF),
+      borderColor: Color(0xFFF97316),
+      progressStart: Color(0xFFFB923C),
+      progressEnd: Color(0xFFEA580C),
+      imageAsset: 'assets/scenes/battle_player_a.png',
+    ),
+    _LiveTrendData(
+      rank: 4,
+      title: 'Règlements',
+      subtitle: 'de comptes',
+      duelsLabel: '998',
+      duelsValue: 998,
+      badgeColor: Color(0xFFEF4444),
+      badgeTextColor: Color(0xFFFFFFFF),
+      borderColor: Color(0xFFEF4444),
+      progressStart: Color(0xFFF87171),
+      progressEnd: Color(0xFFDC2626),
+      imageAsset: 'assets/scenes/battle_player_b.png',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: const Color(0xFF000000).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _LiveTrendingHeader(onSeeAll: onSeeAll),
+          const SizedBox(height: 24),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              if (width < 768) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      for (var index = 0; index < _items.length; index++) ...[
+                        SizedBox(
+                          width: 260,
+                          child: _LiveTrendCard(
+                            data: _items[index],
+                            maxDuels: 2400,
+                            height: 360,
+                            onTap: onOpenTrend,
+                          ),
+                        ),
+                        if (index != _items.length - 1)
+                          const SizedBox(width: 12),
+                      ],
+                    ],
+                  ),
+                );
+              }
+
+              final columns = width < 1024 ? 2 : 4;
+              const gap = 16.0;
+              final cardWidth = (width - (gap * (columns - 1))) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: width < 1024 ? 14 : 16,
+                children: [
+                  for (final item in _items)
+                    SizedBox(
+                      width: cardWidth,
+                      child: _LiveTrendCard(
+                        data: item,
+                        maxDuels: 2400,
+                        height: 384,
+                        onTap: onOpenTrend,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveTrendingHeader extends StatelessWidget {
+  const _LiveTrendingHeader({required this.onSeeAll});
+
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('⚔️', style: TextStyle(fontSize: 24)),
+              SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Tendances Live',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFFFFFFF),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8),
+              _LiveBadge(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Semantics(
+          button: true,
+          label: 'Voir toutes les tendances live',
+          child: InkWell(
+            onTap: onSeeAll,
+            borderRadius: BorderRadius.circular(999),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Voir tout',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFFFFFFF),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: Color(0xFFFFFFFF),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveBadge extends StatefulWidget {
+  const _LiveBadge();
+
+  @override
+  State<_LiveBadge> createState() => _LiveBadgeState();
+}
+
+class _LiveBadgeState extends State<_LiveBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.7, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDC2626),
+          borderRadius: BorderRadius.circular(9999),
+        ),
+        child: const Text(
+          'LIVE',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFFFFFFFF),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveTrendCard extends StatefulWidget {
+  const _LiveTrendCard({
+    required this.data,
+    required this.maxDuels,
+    required this.height,
+    required this.onTap,
+  });
+
+  final _LiveTrendData data;
+  final int maxDuels;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  State<_LiveTrendCard> createState() => _LiveTrendCardState();
+}
+
+class _LiveTrendCardState extends State<_LiveTrendCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
+    final progress = (data.duelsValue / widget.maxDuels).clamp(0.0, 1.0);
+
+    return Semantics(
+      button: true,
+      label: 'Tendance live ${data.rank}, ${data.title}, ${data.duelsLabel} duels',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedOpacity(
+            opacity: _hovered ? 0.9 : 1,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+            child: Container(
+              height: widget.height,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: data.borderColor, width: 2),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    data.imageAsset,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            data.borderColor.withValues(alpha: 0.55),
+                            const Color(0xFF000000),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFF000000).withValues(alpha: 0.4),
+                          const Color(0xFF000000).withValues(alpha: 0.2),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: _LiveTrendRankBadge(data: data),
+                  ),
+                  Center(child: _LiveTrendPlayButton(accent: data.borderColor)),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: _LiveTrendBottomContent(
+                      data: data,
+                      progress: progress,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveTrendRankBadge extends StatelessWidget {
+  const _LiveTrendRankBadge({required this.data});
+
+  final _LiveTrendData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: data.badgeColor,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '${data.rank}',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: data.badgeTextColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveTrendPlayButton extends StatefulWidget {
+  const _LiveTrendPlayButton({required this.accent});
+
+  final Color accent;
+
+  @override
+  State<_LiveTrendPlayButton> createState() => _LiveTrendPlayButtonState();
+}
+
+class _LiveTrendPlayButtonState extends State<_LiveTrendPlayButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Color.fromRGBO(255, 255, 255, _hovered ? 1 : 0.9),
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(0, 0, 0, 0.10),
+              blurRadius: 25,
+              offset: Offset(0, 10),
+            ),
+          ],
+          border: Border.all(color: widget.accent.withValues(alpha: 0.12)),
+        ),
+        child: const Icon(
+          Icons.play_arrow_rounded,
+          size: 24,
+          color: Color(0xFFFFFFFF),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveTrendBottomContent extends StatelessWidget {
+  const _LiveTrendBottomContent({required this.data, required this.progress});
+
+  final _LiveTrendData data;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Color(0xFF000000),
+            Color(0xCC000000),
+            Color(0x00000000),
+          ],
+          stops: [0, 0.5, 1],
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            data.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.dmSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFFFFFFFF),
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            data.subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFFD1D5DB),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(
+                Icons.local_fire_department_rounded,
+                size: 16,
+                color: Color(0xFFFACC15),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${data.duelsLabel} duels',
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFFFFFFF),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(9999),
+            child: Container(
+              height: 6,
+              color: const Color(0xFF374151),
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: progress,
+                heightFactor: 1,
+                alignment: Alignment.centerLeft,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(9999),
+                    gradient: LinearGradient(
+                      colors: [data.progressStart, data.progressEnd],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveTrendData {
+  const _LiveTrendData({
+    required this.rank,
+    required this.title,
+    required this.subtitle,
+    required this.duelsLabel,
+    required this.duelsValue,
+    required this.badgeColor,
+    required this.badgeTextColor,
+    required this.borderColor,
+    required this.progressStart,
+    required this.progressEnd,
+    required this.imageAsset,
+  });
+
+  final int rank;
+  final String title;
+  final String subtitle;
+  final String duelsLabel;
+  final int duelsValue;
+  final Color badgeColor;
+  final Color badgeTextColor;
+  final Color borderColor;
+  final Color progressStart;
+  final Color progressEnd;
+  final String imageAsset;
 }
 
 class _FeaturedTakeCard extends StatelessWidget {
