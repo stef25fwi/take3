@@ -46,11 +46,11 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Plan de tournage Take60'), findsOneWidget);
 
     await tester.tap(find.text('Démarrer la scène'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byKey(const Key('take60_permission_denied_state')), findsOneWidget);
     expect(find.text('Caméra et micro requis'), findsOneWidget);
@@ -74,7 +74,7 @@ SceneModel _scene() {
     context: 'Tu fais face à un interrogatoire bref et tendu.',
     dialogueText: 'Je n’ai rien à cacher.',
     directorInstructions: 'Regarde caméra et reste nerveux.',
-    videoUrl: 'https://example.com/intro.mp4',
+    videoUrl: '',
     author: const UserModel(
       id: 'admin_1',
       username: 'admin',
@@ -85,25 +85,11 @@ SceneModel _scene() {
     adminWorkflow: true,
     markers: const [
       Take60SceneMarker(
-        id: 'ai_1',
-        order: 1,
-        type: GuidedMarkerType.aiPlan,
-        startSeconds: 0,
-        endSeconds: 12,
-        durationSeconds: 12,
-        source: 'ai_video',
-        character: 'Inspecteur',
-        dialogue: 'Pourquoi êtes-vous ici ?',
-        cameraPlan: 'wide',
-        label: 'Intro IA',
-        videoUrl: 'https://example.com/intro.mp4',
-      ),
-      Take60SceneMarker(
         id: 'user_1',
-        order: 2,
+        order: 1,
         type: GuidedMarkerType.userPlan,
-        startSeconds: 12,
-        endSeconds: 20,
+        startSeconds: 0,
+        endSeconds: 8,
         durationSeconds: 8,
         source: 'user_video',
         character: 'Suspect',

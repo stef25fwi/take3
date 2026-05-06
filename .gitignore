@@ -23,3 +23,6 @@ scripts/seed/serviceAccountKey.json
 # Local rule backups
 backups/
 take30/backups/
+
+# Generated audit reports
+take30/audit_*.txt

@@ -14,6 +14,16 @@ const firestore = new Firestore();
 const storage = new Storage();
 
 const BASE_DESTINATION_PREFIX = 'take60/processed';
+const HLS_PLAYLIST_CACHE_CONTROL = 'public, max-age=60';
+const HLS_SEGMENT_CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+function cdnUrlForDestination(destination) {
+  if (!env.take60CdnBaseUrl) {
+    return null;
+  }
+
+  return `${env.take60CdnBaseUrl.replace(/\/+$/, '')}/${destination.replace(/^\/+/, '')}`;
+}
 
 function ensureBucketName() {
   if (!env.take60StorageBucket) {
@@ -80,27 +90,29 @@ async function transcodeVariant({ inputPath, outputDir, variant }) {
   return { playlistName, playlistPath };
 }
 
-async function uploadWithFirebaseUrl(bucket, localPath, destination, contentType) {
+async function uploadWithFirebaseUrl(bucket, localPath, destination, contentType, cacheControl) {
   const downloadToken = crypto.randomUUID();
   await bucket.upload(localPath, {
     destination,
     metadata: {
       contentType,
+      cacheControl,
       metadata: {
         firebaseStorageDownloadTokens: downloadToken,
       },
     },
   });
 
-  const encoded = encodeURIComponent(destination).replace(/%2F/g, '%2F');
-  return `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encoded}?alt=media&token=${downloadToken}`;
+  const encoded = encodeURIComponent(destination);
+  return cdnUrlForDestination(destination) ||
+    `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encoded}?alt=media&token=${downloadToken}`;
 }
 
-async function saveStringWithFirebaseUrl(bucket, content, destination, contentType) {
+async function saveStringWithFirebaseUrl(bucket, content, destination, contentType, cacheControl) {
   const tempPath = path.join(os.tmpdir(), `${crypto.randomUUID()}-${path.basename(destination)}`);
   await fs.writeFile(tempPath, content, 'utf8');
   try {
-    return await uploadWithFirebaseUrl(bucket, tempPath, destination, contentType);
+    return await uploadWithFirebaseUrl(bucket, tempPath, destination, contentType, cacheControl);
   } finally {
     await fs.rm(tempPath, { force: true });
   }
@@ -129,7 +141,8 @@ async function uploadVariantOutputs(bucket, { videoId, variant, outputDir, playl
       bucket,
       path.join(outputDir, segmentFile),
       `${BASE_DESTINATION_PREFIX}/${videoId}/${variant}/${segmentFile}`,
-      'video/mp2t'
+      'video/mp2t',
+      HLS_SEGMENT_CACHE_CONTROL
     );
     replacements.set(segmentFile, segmentUrl);
   }
@@ -140,7 +153,8 @@ async function uploadVariantOutputs(bucket, { videoId, variant, outputDir, playl
     bucket,
     rewrittenPlaylist,
     `${BASE_DESTINATION_PREFIX}/${videoId}/${variant}/${variant}.m3u8`,
-    'application/vnd.apple.mpegurl'
+    'application/vnd.apple.mpegurl',
+    HLS_PLAYLIST_CACHE_CONTROL
   );
 
   return playlistUrl;
@@ -210,7 +224,8 @@ export async function transcodeTake60Video(videoId) {
       bucket,
       buildMasterPlaylist({ playlist720Url, playlist1080Url }),
       `${BASE_DESTINATION_PREFIX}/${videoId}/master.m3u8`,
-      'application/vnd.apple.mpegurl'
+      'application/vnd.apple.mpegurl',
+      HLS_PLAYLIST_CACHE_CONTROL
     );
 
     await videoRef.set(
