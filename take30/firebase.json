@@ -27,6 +27,7 @@
     "rules": "storage.rules"
   },
   "hosting": {
+    "site": "take60",
     "public": "build/web",
     "ignore": [
       "firebase.json",
