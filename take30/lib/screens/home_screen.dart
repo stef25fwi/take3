@@ -722,7 +722,7 @@ class _LiveTrendingSection extends StatelessWidget {
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   final visibleTiles = width < 600 ? 3 : 8;
-                  final gap = width < 600 ? 6.0 : 4.0;
+                  final gap = width < 600 ? 4.0 : 2.0;
                   final cardWidth =
                       (width - (gap * (visibleTiles - 1))) / visibleTiles;
                   final cardHeight = width < 600 ? 196.0 : 208.0;
@@ -932,18 +932,6 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
                   color: Colors.white.withValues(alpha: _hovered ? 0.34 : 0.22),
                   width: 1,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFFFFF).withValues(alpha: 0.06),
-                    blurRadius: 18,
-                    spreadRadius: 0.5,
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF000000).withValues(alpha: 0.22),
-                    blurRadius: 16,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(19),
@@ -1029,6 +1017,10 @@ class _LiveTrendRankBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final topColor = _mix(data.badgeColor, Colors.white, 0.18);
     final bottomColor = _mix(data.borderColor, Colors.black, 0.12);
+    final outlinePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = compact ? 2.2 : 2.5
+      ..color = const Color(0xFFFFFFFF);
 
     return ClipPath(
       clipper: _PennantClipper(),
@@ -1056,35 +1048,25 @@ class _LiveTrendRankBadge extends StatelessWidget {
             ),
           ],
         ),
-        child: Text(
-          '${data.rank}',
-          style: TextStyle(
-            fontSize: compact ? 13 : 14,
-            fontWeight: FontWeight.w700,
-            color: data.badgeTextColor,
-            shadows: const [
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(-1.2, -1.2),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Text(
+              '${data.rank}',
+              style: TextStyle(
+                fontSize: compact ? 13 : 14,
+                fontWeight: FontWeight.w800,
+                foreground: outlinePaint,
               ),
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(1.2, -1.2),
-              ),
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(-1.2, 1.2),
-              ),
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(1.2, 1.2),
-              ),
-            ],
-          ),
+            ),
+            Text(
+              '${data.rank}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF000000),
+              ).copyWith(fontSize: compact ? 13 : 14),
+            ),
+          ],
         ),
       ),
     );
@@ -1305,25 +1287,20 @@ class _BattleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleColor = AppThemeTokens.primaryText(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(text: '⚔️ '),
-                  TextSpan(
-                    text: 'Battles en cours',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+            Text(
+              'Battles en cours',
+              style: GoogleFonts.dmSans(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
               ),
             ),
             Semantics(
@@ -1429,19 +1406,6 @@ class _BattleCardState extends State<_BattleCard>
                 Image.asset(
                   'assets/IMG_1467.png',
                   fit: BoxFit.cover,
-                ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.04),
-                        const Color(0xFF02040A).withValues(alpha: 0.18),
-                        const Color(0xFF02040A).withValues(alpha: 0.38),
-                      ],
-                    ),
-                  ),
                 ),
                 Positioned(
                   left: -28,
