@@ -14,6 +14,7 @@ import '../widgets/battle/battle_preparing_card.dart';
 import '../widgets/battle/battle_published_card.dart';
 import '../widgets/shared_widgets.dart';
 import '../widgets/take30_logo.dart';
+import '../widgets/take60_hero_section.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -77,6 +78,11 @@ class HomeScreen extends ConsumerWidget {
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
                     const SizedBox(height: 18),
+                    Take60HeroSection(
+                      onNewVideoTap: () => context.go(AppRouter.record),
+                      onChallengeTap: () => context.go(AppRouter.challenge),
+                    ),
+                    const SizedBox(height: 16),
                     _HomeHeroCard(
                       user: currentUser,
                       onPrimaryTap: () => context.go(AppRouter.aiFeed),
