@@ -86,7 +86,7 @@ class HomeScreen extends ConsumerWidget {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
                   AppThemeTokens.pageHorizontalPadding,
-                  12,
+                  6,
                   AppThemeTokens.pageHorizontalPadding,
                   110,
                 ),
@@ -99,7 +99,7 @@ class HomeScreen extends ConsumerWidget {
                       onAdminTap: () => context.push(AppRouter.admin),
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 10),
                     _HomeHeroCard(
                       user: currentUser,
                       onPrimaryTap: () => context.go(AppRouter.aiFeed),
@@ -109,6 +109,11 @@ class HomeScreen extends ConsumerWidget {
                     _LiveTrendingSection(
                       onSeeAll: () => context.go(AppRouter.battleLeaderboard),
                       onOpenTrend: () => context.go(AppRouter.aiFeed),
+                    ),
+                    const SizedBox(height: 20),
+                    _BattleSection(
+                      onSeeAll: () => context.go(AppRouter.battles),
+                      onVoteNow: () => context.go(AppRouter.battles),
                     ),
                     const SizedBox(height: 20),
                     const _SectionTitle('À la une'),
@@ -717,7 +722,7 @@ class _LiveTrendingSection extends StatelessWidget {
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   final visibleTiles = width < 600 ? 3 : 8;
-                  final gap = width < 600 ? 8.0 : 6.0;
+                  final gap = width < 600 ? 6.0 : 4.0;
                   final cardWidth =
                       (width - (gap * (visibleTiles - 1))) / visibleTiles;
                   final cardHeight = width < 600 ? 196.0 : 208.0;
@@ -770,17 +775,16 @@ class _LiveTrendingHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('⚔️', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   'Tendances Live',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 19,
                     fontWeight: FontWeight.w700,
                     color: primaryText,
+                    letterSpacing: -0.35,
                   ),
                 ),
               ),
@@ -923,7 +927,7 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
               padding: const EdgeInsets.all(1.2),
               decoration: BoxDecoration(
                 color: const Color(0x1AFFFFFF),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: _hovered ? 0.34 : 0.22),
                   width: 1,
@@ -942,7 +946,7 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(19),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1272,6 +1276,648 @@ class _LiveTrendData {
   final Color progressStart;
   final Color progressEnd;
   final String imageAsset;
+}
+
+class _BattleSection extends StatelessWidget {
+  const _BattleSection({
+    required this.onSeeAll,
+    required this.onVoteNow,
+  });
+
+  final VoidCallback onSeeAll;
+  final VoidCallback onVoteNow;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final horizontalPadding = compact ? 20.0 : 32.0;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(horizontalPadding, 32, horizontalPadding, 32),
+      decoration: BoxDecoration(
+        color: const Color(0xFF05070B),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text.rich(
+                TextSpan(
+                  children: [
+                    const TextSpan(text: '⚔️ '),
+                    TextSpan(
+                      text: 'Battles en cours',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Semantics(
+                button: true,
+                label: 'Voir toutes les battles en cours',
+                child: InkWell(
+                  onTap: onSeeAll,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Voir tout',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.72),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: Colors.white.withValues(alpha: 0.72),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _BattleCard(onVoteNow: onVoteNow),
+        ],
+      ),
+    );
+  }
+}
+
+class _BattleCard extends StatefulWidget {
+  const _BattleCard({required this.onVoteNow});
+
+  final VoidCallback onVoteNow;
+
+  @override
+  State<_BattleCard> createState() => _BattleCardState();
+}
+
+class _BattleCardState extends State<_BattleCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final cardHeight = compact ? 168.0 : 148.0;
+    final innerRadius = 14.0;
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final pulse = Curves.easeInOut.transform(_controller.value);
+        return Container(
+          width: double.infinity,
+          height: cardHeight,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Color(0xFF0094FF),
+                Color(0xFF111827),
+                Color(0xFF111827),
+                Color(0xFFFF4B2B),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0094FF).withValues(alpha: 0.18 + (pulse * 0.12)),
+                blurRadius: 24,
+                spreadRadius: 1,
+              ),
+              BoxShadow(
+                color: const Color(0xFFFF4B2B).withValues(alpha: 0.16 + (pulse * 0.14)),
+                blurRadius: 24,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(innerRadius),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color.fromARGB(50, 0, 148, 255),
+                        Color(0xF205070B),
+                        Color(0xF205070B),
+                        Color.fromARGB(45, 255, 75, 43),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -28,
+                  top: 16,
+                  child: _BattleAura(
+                    color: const Color(0xFF0094FF).withValues(alpha: 0.22 + (pulse * 0.12)),
+                    size: compact ? 118 : 132,
+                  ),
+                ),
+                Positioned(
+                  right: -30,
+                  top: 18,
+                  child: _BattleAura(
+                    color: const Color(0xFFFF7A1A).withValues(alpha: 0.20 + (pulse * 0.14)),
+                    size: compact ? 118 : 132,
+                  ),
+                ),
+                Positioned(
+                  top: compact ? 24 : 20,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      width: compact ? 94 : 116,
+                      height: compact ? 94 : 116,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300)
+                                .withValues(alpha: 0.18 + (pulse * 0.12)),
+                            blurRadius: compact ? 34 : 44,
+                            spreadRadius: compact ? 4 : 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Positioned.fill(child: _BattleGrain()),
+                Positioned(
+                  left: compact ? 16 : 24,
+                  top: compact ? 16 : 18,
+                  child: _BattlePlayer(
+                    avatarAsset: 'assets/scenes/battle_player_a.png',
+                    name: 'Luna Scene',
+                    badge: 'Actrice',
+                    score: '62%',
+                    likes: '❤️ 1.2K',
+                    accent: const Color(0xFF0094FF),
+                    scoreColor: const Color(0xFF2F9BFF),
+                    compact: compact,
+                    alignRight: false,
+                  ),
+                ),
+                Positioned(
+                  right: compact ? 16 : 24,
+                  top: compact ? 16 : 18,
+                  child: _BattlePlayer(
+                    avatarAsset: 'assets/scenes/battle_player_b.png',
+                    name: 'Max Shot',
+                    badge: 'Acteur',
+                    score: '38%',
+                    likes: '983 ❤️',
+                    accent: const Color(0xFFFF7A1A),
+                    scoreColor: const Color(0xFFFF5A36),
+                    compact: compact,
+                    alignRight: true,
+                  ),
+                ),
+                Positioned.fill(
+                  child: _VsCenter(
+                    compact: compact,
+                    pulse: pulse,
+                    onVoteNow: widget.onVoteNow,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BattlePlayer extends StatelessWidget {
+  const _BattlePlayer({
+    required this.avatarAsset,
+    required this.name,
+    required this.badge,
+    required this.score,
+    required this.likes,
+    required this.accent,
+    required this.scoreColor,
+    required this.compact,
+    required this.alignRight,
+  });
+
+  final String avatarAsset;
+  final String name;
+  final String badge;
+  final String score;
+  final String likes;
+  final Color accent;
+  final Color scoreColor;
+  final bool compact;
+  final bool alignRight;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarSize = compact ? 58.0 : 76.0;
+    final textAlign = alignRight ? TextAlign.right : TextAlign.left;
+    final crossAxis = alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+
+    return SizedBox(
+      width: compact ? 96 : 132,
+      child: Column(
+        crossAxisAlignment: crossAxis,
+        children: [
+          Container(
+            width: avatarSize,
+            height: avatarSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: accent, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.32),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(avatarAsset, fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: textAlign,
+            style: GoogleFonts.dmSans(
+              fontSize: compact ? 14 : 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            ),
+            child: Text(
+              badge,
+              style: GoogleFonts.dmSans(
+                fontSize: compact ? 10 : 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            score,
+            textAlign: textAlign,
+            style: GoogleFonts.dmSans(
+              fontSize: compact ? 26 : 32,
+              fontWeight: FontWeight.w800,
+              color: scoreColor,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            likes,
+            textAlign: textAlign,
+            style: GoogleFonts.dmSans(
+              fontSize: compact ? 11 : 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white.withValues(alpha: 0.84),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VsCenter extends StatelessWidget {
+  const _VsCenter({
+    required this.compact,
+    required this.pulse,
+    required this.onVoteNow,
+  });
+
+  final bool compact;
+  final double pulse;
+  final VoidCallback onVoteNow;
+
+  @override
+  Widget build(BuildContext context) {
+    final vsSize = compact ? 54.0 : 78.0;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Transform.rotate(
+                  angle: -0.14,
+                  child: Container(
+                    width: compact ? 8 : 10,
+                    height: compact ? 72 : 96,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFFFFE27A), Color(0xFFFF8A00)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF8A00).withValues(alpha: 0.68),
+                          blurRadius: 28,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Text(
+                  'VS',
+                  style: GoogleFonts.dmSans(
+                    fontSize: vsSize,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white,
+                    height: 1,
+                    shadows: [
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.26 + (pulse * 0.12)),
+                        blurRadius: 16,
+                      ).toShadow(),
+                      BoxShadow(
+                        color: const Color(0xFFFFD84A).withValues(alpha: 0.26 + (pulse * 0.20)),
+                        blurRadius: 24,
+                      ).toShadow(),
+                      BoxShadow(
+                        color: const Color(0xFFFF5A00).withValues(alpha: 0.52 + (pulse * 0.20)),
+                        blurRadius: 40,
+                      ).toShadow(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.only(bottom: compact ? 12 : 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Fin dans 02:45:18',
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withValues(alpha: 0.74),
+                ),
+              ),
+              const SizedBox(width: 10),
+              _VoteButton(onTap: onVoteNow, compact: compact, pulse: pulse),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VoteButton extends StatefulWidget {
+  const _VoteButton({
+    required this.onTap,
+    required this.compact,
+    required this.pulse,
+  });
+
+  final VoidCallback onTap;
+  final bool compact;
+  final double pulse;
+
+  @override
+  State<_VoteButton> createState() => _VoteButtonState();
+}
+
+class _VoteButtonState extends State<_VoteButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = 28.0;
+    final width = widget.compact ? 102.0 : 128.0;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(999),
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [Color(0xFFFFD84A), Color(0xFFFFB300)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD84A).withValues(alpha: 0.28 + (widget.pulse * 0.16)),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Align(
+                    alignment: Alignment(-1 + (_controller.value * 2), 0),
+                    child: Container(
+                      width: 36,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withValues(alpha: 0),
+                            Colors.white.withValues(alpha: 0.24),
+                            Colors.white.withValues(alpha: 0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color.fromRGBO(255, 255, 255, 0.35),
+                          blurRadius: 0,
+                          offset: Offset(0, -1),
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Voter maintenant',
+                      style: GoogleFonts.dmSans(
+                        fontSize: widget.compact ? 10.5 : 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF111111),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BattleAura extends StatelessWidget {
+  const _BattleAura({required this.color, required this.size});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: color,
+              blurRadius: size * 0.45,
+              spreadRadius: size * 0.06,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BattleGrain extends StatelessWidget {
+  const _BattleGrain();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _BattleGrainPainter(),
+    );
+  }
+}
+
+class _BattleGrainPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final grainPaint = Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: 0.035);
+    final particlesPaint = Paint()..color = const Color(0xFFFFD84A).withValues(alpha: 0.12);
+
+    final grainPoints = <Offset>[
+      Offset(size.width * 0.08, size.height * 0.18),
+      Offset(size.width * 0.17, size.height * 0.62),
+      Offset(size.width * 0.34, size.height * 0.28),
+      Offset(size.width * 0.41, size.height * 0.76),
+      Offset(size.width * 0.56, size.height * 0.16),
+      Offset(size.width * 0.63, size.height * 0.68),
+      Offset(size.width * 0.78, size.height * 0.34),
+      Offset(size.width * 0.88, size.height * 0.74),
+    ];
+    for (final point in grainPoints) {
+      canvas.drawCircle(point, 1.2, grainPaint);
+    }
+
+    final particlePoints = <Offset>[
+      Offset(size.width * 0.47, size.height * 0.22),
+      Offset(size.width * 0.52, size.height * 0.64),
+      Offset(size.width * 0.49, size.height * 0.82),
+    ];
+    for (final point in particlePoints) {
+      canvas.drawCircle(point, 2.2, particlesPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _FeaturedTakeCard extends StatelessWidget {
