@@ -1,0 +1,3 @@
+Take60 Excel template placeholder.
+
+This file path is intentionally declared as a Flutter asset for the admin creation-form download workflow. The runtime downloader validates XLSX bytes and falls back to the bundled workbook template at lib/admin/scene_import/templates/modele_formulaire_scenario_take60.xlsx when available.

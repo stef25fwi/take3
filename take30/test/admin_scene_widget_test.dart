@@ -102,13 +102,41 @@ void main() {
 
       expect(find.text('Import rapide de scénario'), findsOneWidget);
       expect(find.text('Télécharger un scénario'), findsOneWidget);
-      expect(find.text('Télécharger le modèle'), findsOneWidget);
+      expect(find.text('Formulaire de création'), findsOneWidget);
       expect(find.text('Prévisualiser'), findsOneWidget);
       expect(find.text('Créer en brouillon'), findsOneWidget);
       expect(
         find.textContaining('Format conseillé : modèle Take60 officiel'),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'le bouton Formulaire de création ouvre le téléchargement sans créer de brouillon',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: AddScenePage(),
+        ),
+      );
+
+      expect(find.text('Télécharger un scénario'), findsOneWidget);
+      expect(find.text('Formulaire de création'), findsOneWidget);
+
+      await tester.tap(find.text('Formulaire de création'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Formulaire de création Take60'), findsOneWidget);
+      expect(find.text('Télécharger Excel'), findsOneWidget);
+      expect(find.text('Télécharger JSON'), findsOneWidget);
+      expect(find.text('Télécharger un scénario'), findsOneWidget);
+      expect(find.text('Brouillon créé dans le formulaire'), findsNothing);
     },
   );
 

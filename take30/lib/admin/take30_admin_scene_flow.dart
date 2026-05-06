@@ -13,6 +13,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../models/veo_generation_job.dart';
 import '../services/location_region_service.dart';
 import '../services/veo_scene_generation_service.dart';
+import 'import/take60_creation_form_download_dialog.dart';
 import 'import/take60_scene_import_controller.dart';
 import 'import/take60_scene_import_model.dart';
 import 'import/take60_scene_import_preview.dart';
@@ -4224,53 +4225,11 @@ class _AddScenePageState extends State<AddScenePage> {
     }
   }
 
-  Future<void> _chooseAndDownloadImportTemplate() async {
-    final format = await showModalBottomSheet<String>(
+  void _showCreationFormDownloadDialog() {
+    showDialog<void>(
       context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Télécharger le modèle Take60',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              const Text('JSON officiel recommandé. CSV disponible pour tableur simple.'),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.data_object_rounded),
-                title: const Text('Modèle JSON officiel'),
-                subtitle: const Text('Recommandé pour l’import complet.'),
-                onTap: () => Navigator.of(context).pop('json'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.table_chart_rounded),
-                title: const Text('Modèle CSV'),
-                subtitle: const Text('Fallback remplissable dans un tableur.'),
-                onTap: () => Navigator.of(context).pop('csv'),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (context) => const Take60CreationFormDownloadDialog(),
     );
-    if (format != null) {
-      await _sceneImportController.downloadTemplate(format: format);
-      final message = _sceneImportController.statusMessage;
-      if (message != null && mounted) {
-        _showAdminMessage(
-          message,
-          backgroundColor: _sceneImportController.technicalError == null
-              ? const Color(0xFF0F766E)
-              : const Color(0xFFB91C1C),
-        );
-      }
-    }
   }
 
   @visibleForTesting
@@ -4587,9 +4546,9 @@ class _AddScenePageState extends State<AddScenePage> {
                           ),
                         ),
                         OutlinedButton.icon(
-                          onPressed: isBusy ? null : _chooseAndDownloadImportTemplate,
-                          icon: const Icon(Icons.download_rounded),
-                          label: const Text('Télécharger le modèle'),
+                          onPressed: isBusy ? null : _showCreationFormDownloadDialog,
+                          icon: const Icon(Icons.description_outlined),
+                          label: const Text('Formulaire de création'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(

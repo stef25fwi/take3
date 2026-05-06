@@ -55,6 +55,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/admin/scene_import/templates/modele_formulaire_scenario_take60.xlsx
+    - assets/admin/scene_import/templates/modele_scenario_take60.json
+    - lib/admin/scene_import/templates/modele_formulaire_scenario_take60.xlsx
     - assets/
     - assets/avatars/
     - assets/scenes/
