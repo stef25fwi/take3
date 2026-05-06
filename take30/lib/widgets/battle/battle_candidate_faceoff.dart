@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/models.dart';
+import 'battle_outlined_text.dart';
 
 class BattleCandidateFaceoff extends StatelessWidget {
   const BattleCandidateFaceoff({
@@ -16,6 +17,7 @@ class BattleCandidateFaceoff extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
     return Row(
       children: [
         Expanded(
@@ -24,6 +26,7 @@ class BattleCandidateFaceoff extends StatelessWidget {
             photoUrl: battle.challengerPhotoUrl,
             alignment: CrossAxisAlignment.start,
             onTap: onTapChallenger,
+            outlinedText: isLight,
           ),
         ),
         Container(
@@ -48,6 +51,7 @@ class BattleCandidateFaceoff extends StatelessWidget {
             photoUrl: battle.opponentPhotoUrl,
             alignment: CrossAxisAlignment.end,
             onTap: onTapOpponent,
+            outlinedText: isLight,
           ),
         ),
       ],
@@ -61,36 +65,73 @@ class _Candidate extends StatelessWidget {
     required this.photoUrl,
     required this.alignment,
     required this.onTap,
+    required this.outlinedText,
   });
 
   final String name;
   final String? photoUrl;
   final CrossAxisAlignment alignment;
   final VoidCallback? onTap;
+  final bool outlinedText;
 
   @override
   Widget build(BuildContext context) {
+    final label = name.isEmpty ? 'Candidat' : name;
+    final labelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+        ) ??
+        const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 14,
+        );
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Column(
         crossAxisAlignment: alignment,
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundImage: (photoUrl != null && photoUrl!.isNotEmpty)
-                ? NetworkImage(photoUrl!)
-                : null,
-            child: photoUrl == null || photoUrl!.isEmpty
-                ? Text(name.isEmpty ? '?' : name.characters.first.toUpperCase())
-                : null,
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.88),
+                width: 2,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.18),
+                  blurRadius: 12,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 31,
+              backgroundImage: (photoUrl != null && photoUrl!.isNotEmpty)
+                  ? NetworkImage(photoUrl!)
+                  : null,
+              child: photoUrl == null || photoUrl!.isEmpty
+                  ? Text(name.isEmpty ? '?' : name.characters.first.toUpperCase())
+                  : null,
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            name.isEmpty ? 'Candidat' : name,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
+          outlinedText
+              ? BattleOutlinedText(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: labelStyle,
+                  fillColor: Colors.white,
+                  strokeColor: Colors.black,
+                  strokeWidth: 2.4,
+                )
+              : Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: labelStyle,
+                ),
         ],
       ),
     );

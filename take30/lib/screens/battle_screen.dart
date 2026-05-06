@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../theme/app_theme.dart';
+import '../widgets/battle/battle_outlined_text.dart';
 import '../widgets/shared_widgets.dart';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -566,14 +567,16 @@ class _BattleCompactCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          BattleOutlinedText(
             scoreLabel,
             style: GoogleFonts.dmSans(
-              color: Colors.white,
               fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
             ),
+            fillColor: accentColor,
+            strokeColor: Colors.white,
+            strokeWidth: 3,
           ),
           const SizedBox(height: 4),
           Text(
