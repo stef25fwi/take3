@@ -1,8 +1,31 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class Take60HeroSection extends StatefulWidget {
+class Take60CinematicHero extends StatefulWidget {
+  const Take60CinematicHero({
+    super.key,
+    this.heroImageProvider,
+    this.onNewVideoTap,
+    this.onChallengeTap,
+    this.formatValue = '60s',
+    this.scenesValue = '0',
+    this.likesValue = '0',
+  });
+
+  final ImageProvider? heroImageProvider;
+  final VoidCallback? onNewVideoTap;
+  final VoidCallback? onChallengeTap;
+  final String formatValue;
+  final String scenesValue;
+  final String likesValue;
+
+  @override
+  State<Take60CinematicHero> createState() => _Take60CinematicHeroState();
+}
+
+class Take60HeroSection extends StatelessWidget {
   const Take60HeroSection({
     super.key,
     this.heroImageProvider,
@@ -21,13 +44,22 @@ class Take60HeroSection extends StatefulWidget {
   final String likesValue;
 
   @override
-  State<Take60HeroSection> createState() => _Take60HeroSectionState();
+  Widget build(BuildContext context) {
+    return Take60CinematicHero(
+      heroImageProvider: heroImageProvider,
+      onNewVideoTap: onNewVideoTap,
+      onChallengeTap: onChallengeTap,
+      formatValue: formatValue,
+      scenesValue: scenesValue,
+      likesValue: likesValue,
+    );
+  }
 }
 
-class _Take60HeroSectionState extends State<Take60HeroSection>
+class _Take60CinematicHeroState extends State<Take60CinematicHero>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _opacity;
+  late final Animation<double> _fade;
   late final Animation<Offset> _slide;
 
   @override
@@ -35,17 +67,17 @@ class _Take60HeroSectionState extends State<Take60HeroSection>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 560),
     );
-    final curved = CurvedAnimation(
+    final curve = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutCubic,
     );
-    _opacity = Tween<double>(begin: 0, end: 1).animate(curved);
+    _fade = Tween<double>(begin: 0, end: 1).animate(curve);
     _slide = Tween<Offset>(
-      begin: const Offset(0, 12),
+      begin: const Offset(0, 0.055),
       end: Offset.zero,
-    ).animate(curved);
+    ).animate(curve);
     _controller.forward();
   }
 
@@ -57,356 +89,383 @@ class _Take60HeroSectionState extends State<Take60HeroSection>
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1280),
-            child: FadeTransition(
-              opacity: _opacity,
-              child: AnimatedBuilder(
-                animation: _slide,
-                builder: (context, child) {
-                  return Transform.translate(
-                    offset: _slide.value,
-                    child: child,
-                  );
-                },
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final heroWidth = constraints.maxWidth;
-                    final metrics = _ResponsiveHeroMetrics.fromWidth(heroWidth);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final metrics = _HeroMetrics.fromWidth(constraints.maxWidth);
 
-                    return Container(
-                      width: double.infinity,
-                      height: metrics.height,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(metrics.radius),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.045),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.58),
-                            blurRadius: 34,
-                            spreadRadius: 0,
-                            offset: const Offset(0, 18),
-                          ),
-                        ],
+        return FadeTransition(
+          opacity: _fade,
+          child: SlideTransition(
+            position: _slide,
+            child: Container(
+              height: metrics.height,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(metrics.radius),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.05),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.42),
+                    blurRadius: 34,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(metrics.radius),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const _HeroBackdrop(),
+                    const _HeroAtmosphere(),
+                    Positioned.fill(
+                      child: _HeroImageLayer(
+                        imageProvider: widget.heroImageProvider,
+                        metrics: metrics,
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(metrics.radius),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            const DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFF0B1020),
-                                    Color(0xFF060914),
-                                    Color(0xFF020308),
-                                  ],
-                                  stops: [0.0, 0.48, 1.0],
-                                ),
-                              ),
-                            ),
-                            const _HeroGlow(),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              bottom: 0,
-                              width: heroWidth * 0.56,
-                              child: _HeroImagePane(
-                                imageProvider: widget.heroImageProvider,
-                                radius: metrics.radius,
-                              ),
-                            ),
-                            const Positioned.fill(child: _HeroOverlays()),
-                            Positioned(
-                              left: metrics.copyLeft,
-                              top: metrics.copyTop,
-                              bottom: metrics.copyBottom,
-                              right: metrics.copyRight(heroWidth),
-                              child: _HeroCopy(
-                                metrics: metrics,
-                                onNewVideoTap: widget.onNewVideoTap,
-                                onChallengeTap: widget.onChallengeTap,
-                              ),
-                            ),
-                            Positioned(
-                              right: metrics.statsRight,
-                              top: metrics.statsTop,
-                              child: _HeroStatsColumn(
-                                formatValue: widget.formatValue,
-                                scenesValue: widget.scenesValue,
-                                likesValue: widget.likesValue,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ),
+                    Positioned.fill(
+                      child: _HeroGradientMask(metrics: metrics),
+                    ),
+                    Positioned(
+                      left: metrics.contentLeft,
+                      top: metrics.contentTop,
+                      bottom: metrics.contentBottom,
+                      right: metrics.contentRight,
+                      child: _HeroContent(
+                        metrics: metrics,
+                        onNewVideoTap: widget.onNewVideoTap,
+                        onChallengeTap: widget.onChallengeTap,
                       ),
-                    );
-                  },
+                    ),
+                    Positioned(
+                      top: metrics.statsTop,
+                      right: metrics.statsRight,
+                      child: _HeroStatsColumn(
+                        metrics: metrics,
+                        formatValue: widget.formatValue,
+                        scenesValue: widget.scenesValue,
+                        likesValue: widget.likesValue,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
-class _ResponsiveHeroMetrics {
-  const _ResponsiveHeroMetrics._({
+class _HeroMetrics {
+  const _HeroMetrics({
     required this.isMobile,
     required this.height,
     required this.radius,
+    required this.contentLeft,
+    required this.contentTop,
+    required this.contentBottom,
+    required this.contentRight,
     required this.titleSize,
     required this.subtitleSize,
-    required this.copyLeft,
-    required this.copyTop,
-    required this.copyBottom,
-    required this.mobileCopyRight,
-    required this.desktopCopyRightFactor,
-    required this.statsRight,
-    required this.statsTop,
+    required this.buttonHeight,
     required this.primaryButtonWidth,
     required this.secondaryButtonWidth,
-    required this.buttonHeight,
+    required this.statsTop,
+    required this.statsRight,
+    required this.statsWidth,
+    required this.imageWidthFactor,
   });
 
-  factory _ResponsiveHeroMetrics.fromWidth(double width) {
-    final isMobile = width < 600;
-    final isTablet = width >= 600 && width <= 1024;
-    final basePrimary = isMobile ? 190.0 : 204.0;
-    final baseSecondary = isMobile ? 145.0 : 154.0;
-    final copyWidth = isMobile ? width - 22 - 118 : width * 0.62 - 28;
-    final availableButtonWidth = (copyWidth - 12).clamp(304.0, 9999.0);
-    final buttonScale = (availableButtonWidth / (basePrimary + baseSecondary))
-        .clamp(0.0, 1.0);
-
-    return _ResponsiveHeroMetrics._(
+  factory _HeroMetrics.fromWidth(double width) {
+    final isMobile = width < 640;
+    final isTablet = width >= 640 && width < 1024;
+    return _HeroMetrics(
       isMobile: isMobile,
-      height: isMobile ? 252 : (isTablet ? 280 : 320),
-      radius: isMobile ? 24 : (isTablet ? 28 : 30),
-      titleSize: isMobile ? 30 : (isTablet ? 34 : 38),
-      subtitleSize: isMobile ? 15 : (isTablet ? 16 : 17),
-      copyLeft: isMobile ? 22 : 28,
-      copyTop: isMobile ? 28 : 34,
-      copyBottom: isMobile ? 24 : 26,
-      mobileCopyRight: 118,
-      desktopCopyRightFactor: 0.38,
-      statsRight: isMobile ? 22 : 30,
-      statsTop: isMobile ? 18 : 20,
-      primaryButtonWidth: (basePrimary * buttonScale).clamp(172.0, basePrimary),
-      secondaryButtonWidth:
-          (baseSecondary * buttonScale).clamp(132.0, baseSecondary),
-      buttonHeight: isMobile ? 48 : 50,
+      height: isMobile ? 292 : (isTablet ? 316 : 340),
+      radius: isMobile ? 28 : 32,
+      contentLeft: isMobile ? 24 : 32,
+      contentTop: isMobile ? 28 : 34,
+      contentBottom: isMobile ? 24 : 28,
+      contentRight: isMobile ? 126 : (isTablet ? 268 : 360),
+      titleSize: isMobile ? 30 : (isTablet ? 36 : 40),
+      subtitleSize: isMobile ? 15 : 16,
+      buttonHeight: isMobile ? 48 : 52,
+      primaryButtonWidth: isMobile ? 188 : 208,
+      secondaryButtonWidth: isMobile ? 146 : 158,
+      statsTop: isMobile ? 18 : 24,
+      statsRight: isMobile ? 18 : 24,
+      statsWidth: isMobile ? 76 : 82,
+      imageWidthFactor: isMobile ? 0.58 : 0.55,
     );
   }
 
   final bool isMobile;
   final double height;
   final double radius;
+  final double contentLeft;
+  final double contentTop;
+  final double contentBottom;
+  final double contentRight;
   final double titleSize;
   final double subtitleSize;
-  final double copyLeft;
-  final double copyTop;
-  final double copyBottom;
-  final double mobileCopyRight;
-  final double desktopCopyRightFactor;
-  final double statsRight;
-  final double statsTop;
+  final double buttonHeight;
   final double primaryButtonWidth;
   final double secondaryButtonWidth;
-  final double buttonHeight;
-
-  double copyRight(double heroWidth) {
-    return isMobile ? mobileCopyRight : heroWidth * desktopCopyRightFactor;
-  }
+  final double statsTop;
+  final double statsRight;
+  final double statsWidth;
+  final double imageWidthFactor;
 }
 
-class _HeroImagePane extends StatelessWidget {
-  const _HeroImagePane({
-    required this.imageProvider,
-    required this.radius,
-  });
-
-  final ImageProvider? imageProvider;
-  final double radius;
+class _HeroBackdrop extends StatelessWidget {
+  const _HeroBackdrop();
 
   @override
   Widget build(BuildContext context) {
-    final image = imageProvider;
-    return ClipRRect(
-      borderRadius: BorderRadius.only(
-        topRight: Radius.circular(radius),
-        bottomRight: Radius.circular(radius),
-      ),
-      child: image == null
-          ? const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1A120E),
-                    Color(0xFF3D210E),
-                    Color(0xFF100A10),
-                    Color(0xFF030409),
-                  ],
-                  stops: [0.0, 0.36, 0.72, 1.0],
-                ),
-              ),
-            )
-          : Image(
-              image: image,
-              fit: BoxFit.cover,
-              alignment: Alignment.centerRight,
-            ),
-    );
-  }
-}
-
-class _HeroOverlays extends StatelessWidget {
-  const _HeroOverlays();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        fit: StackFit.expand,
-        children: const [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  Color(0xFF070B16),
-                  Color(0xE6070B16),
-                  Color(0x66070B16),
-                  Color(0x00070B16),
-                ],
-                stops: [0.0, 0.38, 0.62, 1.0],
-              ),
-            ),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Color(0x99000000),
-                ],
-                stops: [0.45, 1.0],
-              ),
-            ),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerRight,
-                end: Alignment.centerLeft,
-                colors: [
-                  Color(0x22000000),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroGlow extends StatelessWidget {
-  const _HeroGlow();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Stack(
-        children: [
-          Positioned(
-            top: -20,
-            right: 190,
-            width: 120,
-            height: 120,
-            child: _GlowCircle(
-              color: const Color(0xFFFFD18A).withOpacity(0.18),
-              blurRadius: 70,
-            ),
-          ),
-          Positioned(
-            top: 26,
-            right: 128,
-            width: 90,
-            height: 90,
-            child: _GlowCircle(
-              color: const Color(0xFFFFA726).withOpacity(0.20),
-              blurRadius: 60,
-            ),
-          ),
-          Positioned(
-            top: 76,
-            right: 72,
-            width: 150,
-            height: 150,
-            child: _GlowCircle(
-              color: const Color(0xFFFF7A18).withOpacity(0.10),
-              blurRadius: 90,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlowCircle extends StatelessWidget {
-  const _GlowCircle({
-    required this.color,
-    required this.blurRadius,
-  });
-
-  final Color color;
-  final double blurRadius;
-
-  @override
-  Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: blurRadius, sigmaY: blurRadius),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0A0F1B),
+            Color(0xFF070B14),
+            Color(0xFF020304),
+          ],
+          stops: [0, 0.45, 1],
         ),
       ),
     );
   }
 }
 
-class _HeroCopy extends StatelessWidget {
-  const _HeroCopy({
+class _HeroAtmosphere extends StatelessWidget {
+  const _HeroAtmosphere();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -30,
+            right: 150,
+            child: _GlowOrb(
+              size: 124,
+              color: Color(0x2EFFE0A8),
+              blur: 50,
+            ),
+          ),
+          Positioned(
+            top: 32,
+            right: 104,
+            child: _GlowOrb(
+              size: 94,
+              color: Color(0x40FFB347),
+              blur: 42,
+            ),
+          ),
+          Positioned(
+            top: 88,
+            right: 48,
+            child: _GlowOrb(
+              size: 150,
+              color: Color(0x2CFF7A18),
+              blur: 74,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlowOrb extends StatelessWidget {
+  const _GlowOrb({
+    required this.size,
+    required this.color,
+    required this.blur,
+  });
+
+  final double size;
+  final Color color;
+  final double blur;
+
+  @override
+  Widget build(BuildContext context) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroImageLayer extends StatelessWidget {
+  const _HeroImageLayer({
+    required this.imageProvider,
+    required this.metrics,
+  });
+
+  final ImageProvider? imageProvider;
+  final _HeroMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: FractionallySizedBox(
+        widthFactor: metrics.imageWidthFactor,
+        alignment: Alignment.centerRight,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imageProvider != null)
+              Image(
+                image: imageProvider!,
+                fit: BoxFit.cover,
+                alignment: const Alignment(0.22, 0),
+              )
+            else
+              const _HeroFallbackArtwork(),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Color(0x0D000000),
+                    Color(0x40000000),
+                    Color(0x7A000000),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroFallbackArtwork extends StatelessWidget {
+  const _HeroFallbackArtwork();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF1A120C),
+            Color(0xFF26170F),
+            Color(0xFF0C0A0D),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          const Positioned(
+            top: 0,
+            bottom: 0,
+            left: 16,
+            width: 2,
+            child: ColoredBox(color: Color(0x14FFFFFF)),
+          ),
+          const Positioned(
+            top: 0,
+            bottom: 0,
+            left: 30,
+            width: 2,
+            child: ColoredBox(color: Color(0x0DFFFFFF)),
+          ),
+          Positioned(
+            right: 38,
+            bottom: -24,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(140),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFF2B15B),
+                    Color(0xFF4D2813),
+                    Color(0xFF09080B),
+                  ],
+                  stops: [0.0, 0.38, 1.0],
+                ),
+              ),
+              child: const SizedBox(width: 240, height: 280),
+            ),
+          ),
+          Positioned(
+            right: 86,
+            bottom: 14,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(84),
+                color: const Color(0x57000000),
+              ),
+              child: const SizedBox(width: 132, height: 168),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroGradientMask extends StatelessWidget {
+  const _HeroGradientMask({required this.metrics});
+
+  final _HeroMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: const <Color>[
+              Color(0xFF060912),
+              Color(0xF3060912),
+              Color(0xBA060912),
+              Color(0x5A060912),
+              Colors.transparent,
+            ],
+            stops: [0.0, metrics.isMobile ? 0.34 : 0.38, 0.54, 0.72, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroContent extends StatelessWidget {
+  const _HeroContent({
     required this.metrics,
     required this.onNewVideoTap,
     required this.onChallengeTap,
   });
 
-  final _ResponsiveHeroMetrics metrics;
+  final _HeroMetrics metrics;
   final VoidCallback? onNewVideoTap;
   final VoidCallback? onChallengeTap;
 
@@ -414,24 +473,24 @@ class _HeroCopy extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final titleSize = constraints.maxWidth < 305
+        final titleSize = constraints.maxWidth < 210
             ? metrics.titleSize.clamp(27.0, metrics.titleSize).toDouble()
             : metrics.titleSize;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            const Spacer(),
             Text(
               'Deviens',
               maxLines: 1,
-              overflow: TextOverflow.visible,
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
+                color: Colors.white,
                 fontSize: titleSize,
                 fontWeight: FontWeight.w800,
-                height: 0.98,
-                letterSpacing: -1.2,
-                color: Colors.white,
+                height: 0.95,
+                letterSpacing: -1.5,
               ),
             ),
             FittedBox(
@@ -439,26 +498,27 @@ class _HeroCopy extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: RichText(
                 maxLines: 1,
+                overflow: TextOverflow.visible,
                 text: TextSpan(
                   children: [
                     TextSpan(
                       text: 'l’',
-                      style: TextStyle(
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFFFFB11A),
                         fontSize: titleSize,
                         fontWeight: FontWeight.w800,
-                        height: 0.98,
-                        letterSpacing: -1.3,
-                        color: const Color(0xFFFFB300),
+                        height: 0.95,
+                        letterSpacing: -1.5,
                       ),
                     ),
                     TextSpan(
                       text: 'acteur principal',
-                      style: TextStyle(
+                      style: GoogleFonts.dmSans(
+                        color: Colors.white,
                         fontSize: titleSize,
                         fontWeight: FontWeight.w800,
-                        height: 0.98,
-                        letterSpacing: -1.3,
-                        color: Colors.white,
+                        height: 0.95,
+                        letterSpacing: -1.5,
                       ),
                     ),
                   ],
@@ -466,29 +526,33 @@ class _HeroCopy extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Joue. Publie. Affronte. Deviens une légende.',
-              maxLines: 2,
-              overflow: TextOverflow.clip,
-              style: TextStyle(
-                fontSize: metrics.subtitleSize,
-                fontWeight: FontWeight.w600,
-                height: 1.25,
-                letterSpacing: -0.1,
-                color: Colors.white.withOpacity(0.92),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: metrics.isMobile ? 225 : 360),
+              child: Text(
+                'Joue. Publie. Affronte. Deviens une légende.',
+                maxLines: 2,
+                style: GoogleFonts.dmSans(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  fontSize: metrics.subtitleSize,
+                  fontWeight: FontWeight.w500,
+                  height: 1.28,
+                  letterSpacing: -0.1,
+                ),
               ),
             ),
-            const SizedBox(height: 25),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            const SizedBox(height: 22),
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
               children: [
-                _HeroActionButton.primary(
+                _HeroButton.primary(
+                  label: 'Nouvelle vidéo',
                   width: metrics.primaryButtonWidth,
                   height: metrics.buttonHeight,
                   onTap: onNewVideoTap,
                 ),
-                const SizedBox(width: 12),
-                _HeroActionButton.secondary(
+                _HeroButton.secondary(
+                  label: 'Voir le défi',
                   width: metrics.secondaryButtonWidth,
                   height: metrics.buttonHeight,
                   onTap: onChallengeTap,
@@ -502,113 +566,95 @@ class _HeroCopy extends StatelessWidget {
   }
 }
 
-class _HeroActionButton extends StatelessWidget {
-  const _HeroActionButton.primary({
+class _HeroButton extends StatelessWidget {
+  const _HeroButton.primary({
+    required this.label,
     required this.width,
     required this.height,
     required this.onTap,
-  })  : label = 'Nouvelle vidéo',
-        icon = Icons.videocam_rounded,
-        iconSize = 20,
-        iconColor = const Color(0xFF050505),
-        textColor = const Color(0xFF050505),
-        fontWeight = FontWeight.w800,
-        backgroundColor = null,
-        borderColor = null,
-        gradient = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            Color(0xFFFFC21A),
-            Color(0xFFFFA000),
-          ],
-        ),
-        shadowColor = const Color(0xFFFFB000);
+  })  : isPrimary = true,
+        icon = Icons.videocam_rounded;
 
-  const _HeroActionButton.secondary({
+  const _HeroButton.secondary({
+    required this.label,
     required this.width,
     required this.height,
     required this.onTap,
-  })  : label = 'Voir le défi',
-        icon = Icons.bolt_rounded,
-        iconSize = 19,
-        iconColor = const Color(0xFFEDEDED),
-        textColor = Colors.white,
-        fontWeight = FontWeight.w700,
-        backgroundColor = const Color(0xE0151922),
-        borderColor = const Color(0x1AFFFFFF),
-        gradient = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0x22FFFFFF),
-            Color(0x00111111),
-          ],
-        ),
-        shadowColor = null;
+  })  : isPrimary = false,
+        icon = Icons.bolt_rounded;
 
+  final String label;
   final double width;
   final double height;
   final VoidCallback? onTap;
-  final String label;
+  final bool isPrimary;
   final IconData icon;
-  final double iconSize;
-  final Color iconColor;
-  final Color textColor;
-  final FontWeight fontWeight;
-  final Color? backgroundColor;
-  final Color? borderColor;
-  final Gradient? gradient;
-  final Color? shadowColor;
 
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(999);
     return SizedBox(
       width: width,
       height: height,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: shadowColor == null
-              ? null
-              : [
+          borderRadius: borderRadius,
+          boxShadow: isPrimary
+              ? [
                   BoxShadow(
-                    color: shadowColor!.withOpacity(0.32),
+                    color: const Color(0xFFFFB547).withValues(alpha: 0.26),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
-                ],
+                ]
+              : null,
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: borderRadius,
             child: Ink(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: backgroundColor,
-                gradient: gradient,
-                borderRadius: BorderRadius.circular(28),
-                border: borderColor == null
+                borderRadius: borderRadius,
+                gradient: isPrimary
+                    ? const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFFFFC640),
+                          Color(0xFFFFA81F),
+                        ],
+                      )
+                    : null,
+                color: isPrimary ? null : const Color(0x29141922),
+                border: isPrimary
                     ? null
-                    : Border.all(color: borderColor!, width: 1),
+                    : Border.all(color: Colors.white.withValues(alpha: 0.11)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: iconSize, color: iconColor),
+                  Icon(
+                    icon,
+                    size: 19,
+                    color: isPrimary ? const Color(0xFF0B0B0B) : Colors.white,
+                  ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      softWrap: false,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        color:
+                            isPrimary ? const Color(0xFF0B0B0B) : Colors.white,
                         fontSize: 15,
-                        fontWeight: fontWeight,
-                        letterSpacing: -0.1,
-                        color: textColor,
+                        fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w600,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -624,11 +670,13 @@ class _HeroActionButton extends StatelessWidget {
 
 class _HeroStatsColumn extends StatelessWidget {
   const _HeroStatsColumn({
+    required this.metrics,
     required this.formatValue,
     required this.scenesValue,
     required this.likesValue,
   });
 
+  final _HeroMetrics metrics;
   final String formatValue;
   final String scenesValue;
   final String likesValue;
@@ -638,66 +686,66 @@ class _HeroStatsColumn extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _HeroStatCard(label: 'Format', value: formatValue),
+        _HeroStatCard(metrics: metrics, label: 'Format', value: formatValue),
         const SizedBox(height: 10),
-        _HeroStatCard(label: 'Scènes', value: scenesValue),
+        _HeroStatCard(metrics: metrics, label: 'Scènes', value: scenesValue),
         const SizedBox(height: 10),
-        _HeroStatCard(label: 'Likes', value: likesValue),
+        _HeroStatCard(metrics: metrics, label: 'Likes', value: likesValue),
       ],
     );
   }
 }
 
 class _HeroStatCard extends StatelessWidget {
-  const _HeroStatCard({required this.label, required this.value});
+  const _HeroStatCard({
+    required this.metrics,
+    required this.label,
+    required this.value,
+  });
 
+  final _HeroMetrics metrics;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
-          width: 74,
-          height: 65,
-          padding: const EdgeInsets.fromLTRB(14, 10, 10, 8),
+          width: metrics.statsWidth,
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           decoration: BoxDecoration(
-            color: const Color(0xCC141414),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.075),
-              width: 1,
-            ),
+            color: const Color(0xAA111111),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
+                style: GoogleFonts.dmSans(
+                  color: Colors.white.withValues(alpha: 0.62),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  height: 1.0,
-                  color: Colors.white.withOpacity(0.66),
+                  height: 1,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 5),
               Text(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  height: 1.05,
-                  letterSpacing: -0.5,
+                style: GoogleFonts.dmSans(
                   color: Colors.white,
+                  fontSize: metrics.isMobile ? 23 : 25,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  letterSpacing: -0.6,
                 ),
               ),
             ],

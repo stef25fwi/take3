@@ -78,7 +78,7 @@ class HomeScreen extends ConsumerWidget {
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
                     const SizedBox(height: 18),
-                    Take60HeroSection(
+                    Take60CinematicHero(
                       onNewVideoTap: () => context.go(AppRouter.record),
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
