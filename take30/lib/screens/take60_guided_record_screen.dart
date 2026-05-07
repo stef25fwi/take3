@@ -1038,6 +1038,13 @@ class _Take60GuidedRecordScreenState
 
   // ─── Stage: Library ──────────────────────────────────────────────────
   Widget _buildLibrary() {
+    final currentUser = ref.watch(authProvider).user ??
+        const UserModel(
+          id: 'anonymous',
+          username: 'guest',
+          displayName: 'Créateur',
+          avatarUrl: '',
+        );
     final categories = _scenes.map((s) => s.category).toSet().toList()..sort();
     final types = _scenes
         .map((s) => s.sceneType)
@@ -1079,7 +1086,9 @@ class _Take60GuidedRecordScreenState
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 14),
+                _recordEntryHero(user: currentUser),
+                const SizedBox(height: 16),
                 Text(
                   'Choisis une scène, regarde les plans IA, puis joue tes séquences.',
                   style: GoogleFonts.dmSans(
@@ -1209,6 +1218,147 @@ class _Take60GuidedRecordScreenState
           onChanged: onChanged,
         ),
       ),
+    );
+  }
+
+  String _formatCompact(int value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return value.toString();
+  }
+
+  Widget _recordEntryHero({required UserModel user}) {
+    final isDark = AppThemeTokens.isDark(context);
+    final primaryText = _primaryText(context);
+    final secondaryText = _secondaryText(context);
+    final avatarInitial = user.displayName.trim().isEmpty
+        ? 'C'
+        : user.displayName.trim().characters.first.toUpperCase();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [
+                  Color.fromRGBO(255, 184, 0, 0.20),
+                  Color.fromRGBO(0, 212, 255, 0.12),
+                  Color.fromRGBO(108, 92, 231, 0.18),
+                ]
+              : const [
+                  Color(0xFFFFF7DA),
+                  Color(0xFFEAF8FF),
+                  Color(0xFFF2EEFF),
+                ],
+        ),
+        border: Border.all(color: AppThemeTokens.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.10),
+            blurRadius: 20,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 23,
+                backgroundColor: _surface(context),
+                backgroundImage:
+                    user.avatarUrl.isEmpty ? null : NetworkImage(user.avatarUrl),
+                child: user.avatarUrl.isEmpty
+                    ? Text(
+                        avatarInitial,
+                        style: GoogleFonts.dmSans(
+                          color: primaryText,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bonjour ${user.displayName}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Prêt à tourner une performance qui marque ?',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 23,
+                        fontWeight: FontWeight.w700,
+                        color: primaryText,
+                        height: 1.05,
+                        letterSpacing: -0.55,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _recordHeroStat(value: '60s', label: 'Format'),
+              const SizedBox(width: 18),
+              _recordHeroStat(value: '${user.scenesCount}', label: 'Scènes'),
+              const SizedBox(width: 18),
+              _recordHeroStat(
+                value: _formatCompact(user.likesCount),
+                label: 'Likes',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recordHeroStat({required String value, required String label}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: _primaryText(context),
+            letterSpacing: -0.25,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: _secondaryText(context),
+          ),
+        ),
+      ],
     );
   }
 
