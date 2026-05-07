@@ -6866,19 +6866,46 @@ class _AddScenePageState extends State<AddScenePage> {
     final messageColor = _dialogueSpeechError != null
         ? Colors.red.shade600
         : const Color(0xFF0F766E);
+    final tooltipMessage = _isListeningToDialogue
+        ? 'Arrêter la dictée'
+        : 'Dicter le dialogue';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextFormField(
           controller: dialogueTextCtrl,
-          maxLines: 8,
-          minLines: 8,
+          minLines: 10,
+          maxLines: 20,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          style: const TextStyle(
+            fontSize: 15.5,
+            height: 1.45,
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w500,
+          ),
           decoration: InputDecoration(
             labelText: 'Texte à jouer',
             helperText:
-                'Écrivez le texte à jouer. Exemple: "Tu m’as menti depuis le début…"',
+                'Écrivez le dialogue ligne par ligne. Exemple : "Tu m’as menti depuis le début…"',
+            helperMaxLines: 2,
             alignLabelWithHint: true,
+            contentPadding: const EdgeInsets.fromLTRB(16, 18, 56, 18),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: Color(0xFF0F766E),
+                width: 1.4,
+              ),
+            ),
             suffixIconConstraints: const BoxConstraints(
               minWidth: 52,
               minHeight: 52,
@@ -6888,7 +6915,7 @@ class _AddScenePageState extends State<AddScenePage> {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Tooltip(
-                  message: 'Dicter le texte',
+                  message: tooltipMessage,
                   child: GestureDetector(
                     onTap: _speechInitializing
                         ? null
@@ -6976,6 +7003,27 @@ class _AddScenePageState extends State<AddScenePage> {
             ],
           ),
         ],
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: _isListeningToDialogue ? null : _applyDialogueCorrection,
+            icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+            label: const Text('Corriger / ponctuer'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF0F766E),
+              side: const BorderSide(color: Color(0xFF0F766E), width: 1.2),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -7223,6 +7271,49 @@ class _AddScenePageState extends State<AddScenePage> {
     _setCurrentStep(3, sectionKey: _step16SectionKey);
   }
 
+  void _applyDialogueCorrection() {
+    final original = dialogueTextCtrl.text;
+    final corrected = original
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .map(_normalizeDialogueLine)
+        .join('\n');
+
+    if (corrected.isEmpty) {
+      setState(() {
+        _dialogueSpeechStatus = null;
+        _dialogueSpeechError = 'Ajoute un dialogue avant de le corriger.';
+      });
+      return;
+    }
+
+    dialogueTextCtrl.value = dialogueTextCtrl.value.copyWith(
+      text: corrected,
+      selection: TextSelection.collapsed(offset: corrected.length),
+      composing: TextRange.empty,
+    );
+
+    setState(() {
+      _dialogueSpeechError = null;
+      _dialogueSpeechStatus = 'Dialogue corrigé et ponctué.';
+    });
+  }
+
+  String _normalizeDialogueLine(String line) {
+    final singleSpaced = line.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (singleSpaced.isEmpty) {
+      return singleSpaced;
+    }
+
+    final first = singleSpaced.characters.first.toUpperCase();
+    var normalized = '$first${singleSpaced.characters.skip(1).toString()}';
+    if (!RegExp(r'[.!?…]$').hasMatch(normalized)) {
+      normalized = '$normalized.';
+    }
+    return normalized;
+  }
+
   Future<void> _startDialogueListening() async {
     if (_speechInitializing || _isListeningToDialogue) {
       return;
@@ -7313,13 +7404,26 @@ class _AddScenePageState extends State<AddScenePage> {
       return true;
     }
 
-    final status = await Permission.microphone.status;
-    if (status == PermissionStatus.granted) {
+    var status = await Permission.microphone.status;
+    if (status.isGranted) {
       return true;
     }
 
-    final requested = await Permission.microphone.request();
-    if (requested == PermissionStatus.granted) {
+    if (status.isPermanentlyDenied) {
+      if (!mounted) {
+        return false;
+      }
+      setState(() {
+        _dialogueSpeechStatus = null;
+        _dialogueSpeechError =
+            'Autorisation micro refusée. Ouvrez les réglages pour l’activer puis réessayez.';
+      });
+      await openAppSettings();
+      return false;
+    }
+
+    status = await Permission.microphone.request();
+    if (status.isGranted) {
       return true;
     }
 
@@ -7329,8 +7433,9 @@ class _AddScenePageState extends State<AddScenePage> {
 
     setState(() {
       _dialogueSpeechStatus = null;
-      _dialogueSpeechError =
-          'La dictée n’a pas fonctionné. Vérifiez l’autorisation micro ou réessayez.';
+      _dialogueSpeechError = status.isPermanentlyDenied
+          ? 'Autorisation micro refusée. Ouvrez les réglages pour l’activer puis réessayez.'
+          : 'La dictée n’a pas fonctionné. Vérifiez l’autorisation micro ou réessayez.';
     });
     return false;
   }
