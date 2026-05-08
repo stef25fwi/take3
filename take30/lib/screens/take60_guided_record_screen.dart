@@ -1063,7 +1063,7 @@ class _Take60GuidedRecordScreenState
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
           sliver: SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1073,20 +1073,12 @@ class _Take60GuidedRecordScreenState
                   icon: Icon(Icons.arrow_back, color: _primaryText(context)),
                 ),
                 const SizedBox(height: 6),
-                OverflowBox(
-                  alignment: Alignment.center,
-                  minWidth: 0,
-                  maxWidth: MediaQuery.sizeOf(context).width,
-                  child: SizedBox(
-                    width: MediaQuery.sizeOf(context).width - 24,
-                    child: Take60GreetingHeroCard(
-                      user: currentUser,
-                      scenesValue: '${currentUser.scenesCount}',
-                      likesValue: _formatCompact(currentUser.likesCount),
-                      onPrimaryTap: () => context.go(AppRouter.record),
-                      onSecondaryTap: () => context.go(AppRouter.challenge),
-                    ),
-                  ),
+                Take60GreetingHeroCard(
+                  user: currentUser,
+                  scenesValue: '${currentUser.scenesCount}',
+                  likesValue: _formatCompact(currentUser.likesCount),
+                  onPrimaryTap: () => context.go(AppRouter.record),
+                  onSecondaryTap: () => context.go(AppRouter.challenge),
                 ),
                 const SizedBox(height: 16),
                 Text(
