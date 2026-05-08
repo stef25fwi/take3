@@ -731,22 +731,19 @@ class _LiveTrendingHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('⚔️', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   'Tendances Live',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 24,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 19,
                     fontWeight: FontWeight.w700,
                     color: primaryText,
+                    letterSpacing: -0.35,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const _LiveBadge(),
             ],
           ),
         ),
@@ -1287,8 +1284,9 @@ class _BattleCardState extends State<_BattleCard>
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    final cardHeight = compact ? 206.0 : 186.0;
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 600;
+    final cardHeight = width < 640 ? 292.0 : (width < 1024 ? 316.0 : 340.0);
     const cardRadius = 16.0;
 
     return AnimatedBuilder(
@@ -1369,7 +1367,10 @@ class _BattleCardState extends State<_BattleCard>
                     alignRight: true,
                   ),
                 ),
-                Positioned.fill(
+                Positioned(
+                  left: compact ? 16 : 24,
+                  right: compact ? 16 : 24,
+                  top: compact ? 192 : 228,
                   child: _VsCenter(
                     compact: compact,
                     pulse: pulse,
@@ -1533,16 +1534,11 @@ class _BattlePlayer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          _BattleOutlinedName(
+            name: name,
             textAlign: textAlign,
-            style: GoogleFonts.dmSans(
-              fontSize: compact ? 14 : 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
+            fontSize: compact ? 14 : 18,
+            outlineColor: scoreColor,
           ),
           const SizedBox(height: 4),
           Container(
@@ -1572,7 +1568,7 @@ class _BattlePlayer extends StatelessWidget {
               height: 1,
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: compact ? 34 : 38),
           Text(
             likes,
             textAlign: textAlign,
@@ -1584,6 +1580,58 @@ class _BattlePlayer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BattleOutlinedName extends StatelessWidget {
+  const _BattleOutlinedName({
+    required this.name,
+    required this.textAlign,
+    required this.fontSize,
+    required this.outlineColor,
+  });
+
+  final String name;
+  final TextAlign textAlign;
+  final double fontSize;
+  final Color outlineColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final strokeStyle = GoogleFonts.dmSans(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w700,
+      foreground: Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = outlineColor.withValues(alpha: 0.95),
+    );
+
+    final fillStyle = GoogleFonts.dmSans(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    );
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: textAlign,
+          style: strokeStyle,
+        ),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: textAlign,
+          style: fillStyle,
+        ),
+      ],
     );
   }
 }
@@ -1601,28 +1649,28 @@ class _VsCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(bottom: compact ? 12 : 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Fin dans 02:45:18',
-                style: GoogleFonts.dmSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white.withValues(alpha: 0.74),
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Fin dans 02:45:18',
+            style: GoogleFonts.dmSans(
+              fontSize: compact ? 12 : 13,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.82),
+              shadows: const [
+                Shadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.45),
+                  blurRadius: 6,
                 ),
-              ),
-              const SizedBox(width: 10),
-              _VoteButton(onTap: onVoteNow, compact: compact, pulse: pulse),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 10),
+          _VoteButton(onTap: onVoteNow, compact: compact, pulse: pulse),
+        ],
+      ),
     );
   }
 }
