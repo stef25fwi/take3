@@ -26,3 +26,6 @@ take30/backups/
 
 # Generated audit reports
 take30/audit_*.txt
+
+# Local audit backups
+audit_backups/
