@@ -594,7 +594,7 @@ async function ffmpegConcat(
   return { videoPath, thumbPath, duration: finalDuration, audioMode: "segmented_audio_only" };
 }
 
-export const renderTake60GuidedScene = onCall<RenderRequest>(async (req) => {
+export const renderTake60GuidedScene = onCall<RenderRequest>({ enforceAppCheck: true }, async (req) => {
   const auth = req.auth;
   if (!auth) {
     throw new HttpsError("unauthenticated", "Authentification requise.");

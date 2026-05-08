@@ -124,7 +124,7 @@ async function readCandidate(postId: string): Promise<FeedCandidateDoc | null> {
   return snap.data() as FeedCandidateDoc;
 }
 
-export const recordFeedEvent = onCall(async (req) => {
+export const recordFeedEvent = onCall({ enforceAppCheck: true }, async (req) => {
   const uid = requireUid(req.auth?.uid);
   const postId = typeof req.data?.postId === "string" ? req.data.postId.trim() : "";
   if (!postId) throw new HttpsError("invalid-argument", "postId requis.");
@@ -191,7 +191,7 @@ export const computeFeedProfile = onCall(async (req) => {
   return { preferredStyles: styles };
 });
 
-export const generateFeedCandidates = onCall(async (req) => {
+export const generateFeedCandidates = onCall({ enforceAppCheck: true }, async (req) => {
   requireUid(req.auth?.uid);
   const limit = Math.min(100, Math.max(12, Number(req.data?.limit ?? 48)));
   const db = getFirestore();
@@ -231,7 +231,7 @@ export const generateFeedCandidates = onCall(async (req) => {
   return { generated: scenes.size };
 });
 
-export const getPersonalizedFeed = onCall(async (req) => {
+export const getPersonalizedFeed = onCall({ enforceAppCheck: true }, async (req) => {
   const uid = requireUid(req.auth?.uid);
   const limit = Math.min(50, Math.max(5, Number(req.data?.limit ?? 24)));
   const db = getFirestore();

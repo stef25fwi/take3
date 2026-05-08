@@ -45,7 +45,7 @@ async function dispatchTake60Transcode(videoId: string) {
   }
 }
 
-export const requestTake60VideoTranscode = onCall<{ videoId: string }>(async (req) => {
+export const requestTake60VideoTranscode = onCall<{ videoId: string }>({ enforceAppCheck: true }, async (req) => {
   const uid = req.auth?.uid;
   if (!uid) {
     throw new HttpsError("unauthenticated", "Auth required");
@@ -80,7 +80,7 @@ export const requestTake60VideoTranscode = onCall<{ videoId: string }>(async (re
   return { accepted: true };
 });
 
-export const getTake60PlayableUrl = onCall<{ videoId: string }>(async (req) => {
+export const getTake60PlayableUrl = onCall<{ videoId: string }>({ enforceAppCheck: true }, async (req) => {
   const videoId = (req.data?.videoId ?? "").trim();
   if (!videoId) {
     throw new HttpsError("invalid-argument", "videoId required");

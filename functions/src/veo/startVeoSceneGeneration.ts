@@ -18,6 +18,7 @@ export const startVeoSceneGeneration = onCall({
   secrets: [VEO_API_KEY],
   cors: true,
   region: "europe-west1",
+  enforceAppCheck: true,
 }, async (req) => {
   const uid = req.auth?.uid;
   if (!uid) {

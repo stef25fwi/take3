@@ -98,7 +98,7 @@ async function pickBattleScene(): Promise<QueryDocumentSnapshot<DocumentData>> {
   return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
-export const createBattleChallenge = onCall<{ opponentId: string; sourceTakeId?: string }>(async (req) => {
+export const createBattleChallenge = onCall<{ opponentId: string; sourceTakeId?: string }>({ enforceAppCheck: true }, async (req) => {
   const challengerId = requireUid(req.auth?.uid);
   const opponentId = requireString(req.data?.opponentId, "opponentId");
   if (challengerId === opponentId) {
@@ -334,7 +334,7 @@ export const unfollowCandidate = onCall<{ candidateId: string }>(async (req) => 
   return { following: false };
 });
 
-export const submitBattlePerformance = onCall<{ battleId: string; recordingId: string; videoUrl: string; storagePath: string }>(async (req) => {
+export const submitBattlePerformance = onCall<{ battleId: string; recordingId: string; videoUrl: string; storagePath: string }>({ enforceAppCheck: true }, async (req) => {
   const uid = requireUid(req.auth?.uid);
   const battleId = requireString(req.data?.battleId, "battleId");
   const recordingId = requireString(req.data?.recordingId, "recordingId");
@@ -395,7 +395,7 @@ export const submitBattlePerformance = onCall<{ battleId: string; recordingId: s
   return { published: shouldNotifyPublished };
 });
 
-export const castBattleVote = onCall<{ battleId: string; votedForUserId: string; watchProgressChallenger: number; watchProgressOpponent: number }>(async (req) => {
+export const castBattleVote = onCall<{ battleId: string; votedForUserId: string; watchProgressChallenger: number; watchProgressOpponent: number }>({ enforceAppCheck: true }, async (req) => {
   const uid = requireUid(req.auth?.uid);
   const battleId = requireString(req.data?.battleId, "battleId");
   const votedForUserId = requireString(req.data?.votedForUserId, "votedForUserId");
