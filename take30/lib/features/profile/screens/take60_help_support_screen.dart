@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../models/models.dart';
 import '../../../providers/providers.dart';
 import '../../../theme/app_theme.dart';
 import 'take60_profile_screen_scaffold.dart';
