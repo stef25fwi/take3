@@ -1060,81 +1060,78 @@ class _Take60GuidedRecordScreenState
         .toList()
       ..sort();
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconButton(
-                  onPressed: () => context.go(AppRouter.home),
-                  icon: Icon(Icons.arrow_back, color: _primaryText(context)),
-                ),
-                const SizedBox(height: 6),
-                Take60GreetingHeroCard(
-                  user: currentUser,
-                  scenesValue: '${currentUser.scenesCount}',
-                  likesValue: _formatCompact(currentUser.likesCount),
-                  onPrimaryTap: () => context.go(AppRouter.record),
-                  onSecondaryTap: () => context.go(AppRouter.challenge),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Choisis une scène, regarde les plans IA, puis joue tes séquences.',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: _primaryText(context),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _filtersRow(categories, types, difficulties),
-              ],
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconButton(
+            onPressed: () => context.go(AppRouter.home),
+            icon: Icon(Icons.arrow_back, color: _primaryText(context)),
+          ),
+          const SizedBox(height: 6),
+          Take60GreetingHeroCard(
+            user: currentUser,
+            scenesValue: '${currentUser.scenesCount}',
+            likesValue: _formatCompact(currentUser.likesCount),
+            onPrimaryTap: () => context.go(AppRouter.record),
+            onSecondaryTap: () => context.go(AppRouter.challenge),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Choisis une scène, regarde les plans IA, puis joue tes séquences.',
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: _primaryText(context),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _filtersRow(categories, types, difficulties),
+        ],
+      ),
+    );
+
+    Widget body;
+    if (_loadingLibrary) {
+      body = const Center(
+        child: CircularProgressIndicator(color: _accent),
+      );
+    } else if (_filteredScenes.isEmpty) {
+      body = Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(
+          child: Text(
+            'Aucune scène guidée ne correspond à ces filtres pour le moment.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.dmSans(
+              color: _secondaryText(context),
             ),
           ),
         ),
-        if (_loadingLibrary)
-          const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: CircularProgressIndicator(color: _accent),
+      );
+    } else {
+      body = ListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        itemCount: _filteredScenes.length,
+        itemBuilder: (context, index) {
+          final scene = _filteredScenes[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _SceneCard(
+              scene: scene,
+              onPlay: () => _enterDirectorSheet(scene),
             ),
-          )
-        else if (_filteredScenes.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(
-                child: Text(
-                  'Aucune scène guidée ne correspond à ces filtres pour le moment.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                    color: _secondaryText(context),
-                  ),
-                ),
-              ),
-            ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-            sliver: SliverList.builder(
-              itemCount: _filteredScenes.length,
-              itemBuilder: (context, index) {
-                final scene = _filteredScenes[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _SceneCard(
-                    scene: scene,
-                    onPlay: () => _enterDirectorSheet(scene),
-                  ),
-                );
-              },
-            ),
-          ),
+          );
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        Expanded(child: body),
       ],
     );
   }

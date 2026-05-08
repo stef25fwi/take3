@@ -123,7 +123,7 @@ class UserAvatar extends StatelessWidget {
 
   Widget _buildUrlImage() {
     final cacheDim = (size * 2).round();
-    if (url == null) {
+    if (url == null || url!.trim().isEmpty) {
       return _placeholder();
     }
     if (url!.startsWith('assets/')) {
