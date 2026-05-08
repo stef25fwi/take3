@@ -4429,20 +4429,27 @@ class _AddScenePageState extends State<AddScenePage> {
 
   Widget _promptImporterCard() {
     final summary = _lastPromptImportSummary;
+    const titleColor = Color(0xFF0F172A);
+    const bodyColor = Color(0xFF475569);
+    const accentColor = Color(0xFFF97316);
+    const accentBlue = Color(0xFF2563EB);
+    const warningColor = Color(0xFFB45309);
+    const errorColor = Color(0xFFB91C1C);
+    const successColor = Color(0xFF047857);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF111827), Color(0xFF1E293B)],
+          colors: [Color(0xFFFFF7ED), Color(0xFFFFFBF5), Color(0xFFEFF6FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFFB923C).withValues(alpha: 0.45)),
+        border: Border.all(color: accentColor.withValues(alpha: 0.24)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x22000000),
+            color: Color(0x14000000),
             blurRadius: 22,
             offset: Offset(0, 14),
           ),
@@ -4460,14 +4467,14 @@ class _AddScenePageState extends State<AddScenePage> {
                   height: 46,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: const Color(0xFFFB923C).withValues(alpha: 0.14),
+                    color: accentColor.withValues(alpha: 0.12),
                     border: Border.all(
-                      color: const Color(0xFF60A5FA).withValues(alpha: 0.35),
+                      color: accentBlue.withValues(alpha: 0.18),
                     ),
                   ),
                   child: const Icon(
                     Icons.auto_awesome_rounded,
-                    color: Color(0xFFF8FAFC),
+                    color: accentColor,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -4478,7 +4485,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       Text(
                         'Import rapide de scénario',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: titleColor,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                         ),
@@ -4487,7 +4494,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       Text(
                         'Importe un scénario préparé hors application et pré-remplis automatiquement toutes les étapes de création.',
                         style: TextStyle(
-                          color: Color(0xFFCBD5E1),
+                          color: bodyColor,
                           height: 1.45,
                         ),
                       ),
@@ -4504,7 +4511,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     _isPromptImporterExpanded
                         ? Icons.expand_less_rounded
                         : Icons.expand_more_rounded,
-                    color: Colors.white,
+                    color: titleColor,
                   ),
                   tooltip: 'Coller un prompt complet',
                 ),
@@ -4550,9 +4557,9 @@ class _AddScenePageState extends State<AddScenePage> {
                           icon: const Icon(Icons.description_outlined),
                           label: const Text('Formulaire de création'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
+                            foregroundColor: titleColor,
                             side: BorderSide(
-                              color: const Color(0xFFFBBF24).withValues(alpha: 0.55),
+                              color: const Color(0xFFFBBF24).withValues(alpha: 0.65),
                             ),
                           ),
                         ),
@@ -4563,9 +4570,9 @@ class _AddScenePageState extends State<AddScenePage> {
                           icon: const Icon(Icons.visibility_rounded),
                           label: const Text('Prévisualiser'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
+                            foregroundColor: titleColor,
                             side: BorderSide(
-                              color: const Color(0xFF60A5FA).withValues(alpha: 0.55),
+                              color: accentBlue.withValues(alpha: 0.45),
                             ),
                           ),
                         ),
@@ -4586,7 +4593,7 @@ class _AddScenePageState extends State<AddScenePage> {
                     const Text(
                       'Format conseillé : modèle Take60 officiel. Les scènes importées restent en brouillon jusqu’à validation admin.',
                       style: TextStyle(
-                        color: Color(0xFFFDE68A),
+                        color: warningColor,
                         fontWeight: FontWeight.w700,
                         height: 1.35,
                       ),
@@ -4647,8 +4654,8 @@ class _AddScenePageState extends State<AddScenePage> {
                         style: TextStyle(
                           color: _sceneImportController.hasBlockingErrors ||
                                   _sceneImportController.technicalError != null
-                              ? const Color(0xFFFCA5A5)
-                              : const Color(0xFFA7F3D0),
+                              ? errorColor
+                              : successColor,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -4658,7 +4665,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       ...validation.blockingErrors.take(4).map(
                             (error) => Text(
                               '• $error',
-                              style: const TextStyle(color: Color(0xFFFCA5A5)),
+                              style: const TextStyle(color: errorColor),
                             ),
                           ),
                     ],
@@ -4666,7 +4673,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       const SizedBox(height: 10),
                       Text(
                         'Champs inconnus ignorés : ${validation.unknownFields.take(5).join(', ')}',
-                        style: const TextStyle(color: Color(0xFFCBD5E1)),
+                        style: const TextStyle(color: bodyColor),
                       ),
                     ],
                     if (_sceneImportController.canPreview ||
@@ -4696,9 +4703,9 @@ class _AddScenePageState extends State<AddScenePage> {
                     : 'Coller un prompt complet',
               ),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
+                foregroundColor: titleColor,
                 side: BorderSide(
-                  color: const Color(0xFF60A5FA).withValues(alpha: 0.55),
+                  color: accentBlue.withValues(alpha: 0.4),
                 ),
               ),
             ),
@@ -4720,24 +4727,25 @@ class _AddScenePageState extends State<AddScenePage> {
                       alignLabelWithHint: true,
                       helperText:
                           'Exemple : titre, catégorie, dialogue, prompt VEO et timeline JSON.',
-                      fillColor: Colors.white.withValues(alpha: 0.08),
-                      helperStyle: const TextStyle(color: Color(0xFFCBD5E1)),
-                      labelStyle: const TextStyle(color: Color(0xFFE2E8F0)),
+                      filled: true,
+                      fillColor: const Color(0xFFFFFFFF),
+                      helperStyle: const TextStyle(color: bodyColor),
+                      labelStyle: const TextStyle(color: bodyColor),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(18),
                         borderSide: BorderSide(
-                          color: const Color(0xFF60A5FA).withValues(alpha: 0.35),
+                          color: accentBlue.withValues(alpha: 0.22),
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(18),
                         borderSide: const BorderSide(
-                          color: Color(0xFFFB923C),
+                          color: accentColor,
                           width: 1.4,
                         ),
                       ),
                     ),
-                    style: const TextStyle(color: Colors.white, height: 1.45),
+                    style: const TextStyle(color: titleColor, height: 1.45),
                   ),
                   const SizedBox(height: 14),
                   Wrap(
@@ -4749,8 +4757,8 @@ class _AddScenePageState extends State<AddScenePage> {
                         icon: const Icon(Icons.auto_awesome_rounded),
                         label: const Text('Remplir automatiquement'),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFFB923C),
-                          foregroundColor: const Color(0xFF111827),
+                          backgroundColor: accentColor,
+                          foregroundColor: const Color(0xFFFFFFFF),
                         ),
                       ),
                       OutlinedButton.icon(
@@ -4763,10 +4771,9 @@ class _AddScenePageState extends State<AddScenePage> {
                         icon: const Icon(Icons.delete_sweep_rounded),
                         label: const Text('Effacer le prompt'),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
+                          foregroundColor: titleColor,
                           side: BorderSide(
-                            color:
-                                const Color(0xFF94A3B8).withValues(alpha: 0.45),
+                            color: const Color(0xFF94A3B8).withValues(alpha: 0.45),
                           ),
                         ),
                       ),
@@ -4805,7 +4812,7 @@ class _AddScenePageState extends State<AddScenePage> {
                       const Text(
                         'Prompt vidéo IA ignoré : une vidéo est déjà validée pour cette scène.',
                         style: TextStyle(
-                          color: Color(0xFFFDE68A),
+                          color: warningColor,
                           fontWeight: FontWeight.w700,
                           height: 1.35,
                         ),
