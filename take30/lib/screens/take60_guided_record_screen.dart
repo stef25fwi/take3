@@ -1068,39 +1068,33 @@ class _Take60GuidedRecordScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => context.go(AppRouter.home),
-                      icon: Icon(Icons.arrow_back, color: _primaryText(context)),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Créer ma scène Take60',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: _primaryText(context),
-                        ),
-                      ),
-                    ),
-                  ],
+                IconButton(
+                  onPressed: () => context.go(AppRouter.home),
+                  icon: Icon(Icons.arrow_back, color: _primaryText(context)),
                 ),
-                const SizedBox(height: 14),
-                Take60GreetingHeroCard(
-                  user: currentUser,
-                  scenesValue: '${currentUser.scenesCount}',
-                  likesValue: _formatCompact(currentUser.likesCount),
-                  onPrimaryTap: () => context.go(AppRouter.record),
-                  onSecondaryTap: () => context.go(AppRouter.challenge),
+                const SizedBox(height: 6),
+                OverflowBox(
+                  alignment: Alignment.center,
+                  minWidth: 0,
+                  maxWidth: MediaQuery.sizeOf(context).width,
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(context).width - 24,
+                    child: Take60GreetingHeroCard(
+                      user: currentUser,
+                      scenesValue: '${currentUser.scenesCount}',
+                      likesValue: _formatCompact(currentUser.likesCount),
+                      onPrimaryTap: () => context.go(AppRouter.record),
+                      onSecondaryTap: () => context.go(AppRouter.challenge),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Choisis une scène, regarde les plans IA, puis joue tes séquences.',
                   style: GoogleFonts.dmSans(
                     fontSize: 13,
-                    color: _secondaryText(context),
+                    fontWeight: FontWeight.w700,
+                    color: _primaryText(context),
                   ),
                 ),
                 const SizedBox(height: 16),
