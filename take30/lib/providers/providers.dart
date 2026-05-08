@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart' show PermissionStatus;
@@ -1127,6 +1128,26 @@ class RecordingNotifier extends StateNotifier<RecordingState> {
   final DemoPublishedScenesStore _demoPublishedScenesStore;
 
   Future<CameraInitResult> initCamera(BuildContext context) async {
+    // Sur le Web, permission_handler est un no-op pour camera/microphone.
+    // On délègue directement à CameraService qui appelle availableCameras() /
+    // CameraController.initialize() ; ces appels déclenchent le prompt navigateur
+    // (getUserMedia). Toute erreur (refus, HTTPS manquant, périphérique absent)
+    // est convertie en CameraInitResult.denied pour le snackbar de retry.
+    if (kIsWeb) {
+      final ready = await _camera.initialize();
+      state = state.copyWith(cameraReady: ready);
+      if (ready) {
+        return const CameraInitResult.ready();
+      }
+      return const CameraInitResult.denied(
+        needsSettings: false,
+        missingPermissions: [
+          AppPermission.camera,
+          AppPermission.microphone,
+        ],
+      );
+    }
+
     final permissionsGranted = await _permissions.requestWithExplanation(
       context,
       AppPermission.camera,

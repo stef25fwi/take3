@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,18 +72,29 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      final message = kIsWeb
+          ? 'Caméra ou micro non disponibles — autorise l\'accès dans le navigateur puis réessaie.'
+          : 'Caméra ou micro non disponibles — vérifier les permissions';
+      final actionLabel = kIsWeb ? 'Réessayer' : 'Réglages';
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Caméra ou micro non disponibles — vérifier les permissions',
+            message,
             style: GoogleFonts.dmSans(color: Colors.white),
           ),
           backgroundColor: _K.red,
+          duration: const Duration(seconds: 6),
           action: SnackBarAction(
-            label: 'Réglages',
+            label: actionLabel,
             textColor: Colors.white,
-            onPressed: () {
-              PermissionService().openSettings();
+            onPressed: () async {
+              if (!kIsWeb) {
+                await PermissionService().openSettings();
+              }
+              if (!mounted) return;
+              setState(() => _cameraInitializing = true);
+              await _initCamera();
             },
           ),
         ),
