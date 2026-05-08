@@ -1345,7 +1345,7 @@ class _BattleCardState extends State<_BattleCard>
                     name: 'Luna Scene',
                     badge: 'Actrice',
                     score: '62%',
-                    likes: '❤️ 1.2K',
+                    likes: '1.2K',
                     accent: const Color(0xFF0094FF),
                     scoreColor: const Color(0xFF2F9BFF),
                     compact: compact,
@@ -1360,7 +1360,7 @@ class _BattleCardState extends State<_BattleCard>
                     name: 'Max Shot',
                     badge: 'Acteur',
                     score: '38%',
-                    likes: '983 ❤️',
+                    likes: '983',
                     accent: const Color(0xFFFF7A1A),
                     scoreColor: const Color(0xFFFF5A36),
                     compact: compact,
@@ -1370,7 +1370,7 @@ class _BattleCardState extends State<_BattleCard>
                 Positioned(
                   left: compact ? 16 : 24,
                   right: compact ? 16 : 24,
-                  top: compact ? 192 : 228,
+                  bottom: compact ? 12 : 16,
                   child: _VsCenter(
                     compact: compact,
                     pulse: pulse,

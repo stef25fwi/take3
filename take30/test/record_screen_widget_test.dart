@@ -5,8 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:take30/models/models.dart';
 import 'package:take30/providers/providers.dart';
-import 'package:take30/services/permission_service.dart';
 import 'package:take30/screens/take60_guided_record_screen.dart';
+import 'package:take30/services/auth_service.dart';
+import 'package:take30/services/permission_service.dart';
 
 void main() {
   testWidgets('Record affiche un état permission refusée sans crash', (
@@ -17,6 +18,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+
     SharedPreferences.setMockInitialValues(const {});
     final prefs = await SharedPreferences.getInstance();
 
@@ -24,6 +26,7 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          authServiceProvider.overrideWith((ref) => _FakeAuthService()),
         ],
         child: MaterialApp(
           home: Take60GuidedRecordScreen(
@@ -53,11 +56,77 @@ void main() {
     await tester.tap(find.text('Démarrer la scène'));
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byKey(const Key('take60_permission_denied_state')), findsOneWidget);
+    expect(
+      find.byKey(const Key('take60_permission_denied_state')),
+      findsOneWidget,
+    );
     expect(find.text('Caméra et micro requis'), findsOneWidget);
     expect(find.textContaining('a été refusé'), findsOneWidget);
-    expect(find.byKey(const Key('take60_permission_retry_button')), findsOneWidget);
+    expect(
+      find.byKey(const Key('take60_permission_retry_button')),
+      findsOneWidget,
+    );
   });
+}
+
+class _FakeAuthService extends AuthServiceBase {
+  final UserModel _user = const UserModel(
+    id: 'test_user',
+    username: 'test_user',
+    displayName: 'Créateur test',
+    avatarUrl: '',
+    email: 'test@take60.local',
+  );
+
+  @override
+  UserModel? get currentUser => _user;
+
+  @override
+  bool get isAuthenticated => true;
+
+  @override
+  bool get isLoading => false;
+
+  @override
+  String? get error => null;
+
+  @override
+  Future<void> checkPersistedAuth() async {}
+
+  @override
+  Future<AuthResult> loginWithIdentifier({
+    required String identifier,
+    required String password,
+  }) async {
+    return AuthResult.success(_user);
+  }
+
+  @override
+  Future<AuthResult> loginDemo() async {
+    return AuthResult.success(_user);
+  }
+
+  @override
+  Future<AuthResult> registerWithEmail({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    return AuthResult.success(_user);
+  }
+
+  @override
+  Future<AuthResult> loginWithGoogle() async {
+    return AuthResult.success(_user);
+  }
+
+  @override
+  Future<AuthResult> loginWithApple() async {
+    return AuthResult.success(_user);
+  }
+
+  @override
+  Future<void> logout() async {}
 }
 
 SceneModel _scene() {
