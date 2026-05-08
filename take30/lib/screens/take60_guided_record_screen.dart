@@ -19,7 +19,7 @@ import '../services/permission_service.dart';
 import '../services/take60_guided_scene_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/video_player_controller_factory.dart';
-import '../widgets/take60_greeting_hero_card.dart';
+import '../widgets/take60_record_cinematic_hero.dart';
 
 /// Take60 Guided Recording Flow — full state machine.
 ///
@@ -1070,21 +1070,10 @@ class _Take60GuidedRecordScreenState
             icon: Icon(Icons.arrow_back, color: _primaryText(context)),
           ),
           const SizedBox(height: 6),
-          Take60GreetingHeroCard(
+          Take60RecordCinematicHero(
             user: currentUser,
-            scenesValue: '${currentUser.scenesCount}',
-            likesValue: _formatCompact(currentUser.likesCount),
             onPrimaryTap: () => context.go(AppRouter.record),
             onSecondaryTap: () => context.go(AppRouter.challenge),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Choisis une scène, regarde les plans IA, puis joue tes séquences.',
-            style: GoogleFonts.dmSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: _primaryText(context),
-            ),
           ),
           const SizedBox(height: 16),
           _filtersRow(categories, types, difficulties),
@@ -1209,16 +1198,6 @@ class _Take60GuidedRecordScreenState
         ),
       ),
     );
-  }
-
-  String _formatCompact(int value) {
-    if (value >= 1000000) {
-      return '${(value / 1000000).toStringAsFixed(1)}M';
-    }
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}K';
-    }
-    return value.toString();
   }
 
   // ─── Stage: Director sheet ──────────────────────────────────────────
