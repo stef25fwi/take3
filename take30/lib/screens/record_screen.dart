@@ -66,36 +66,25 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
       return;
     }
 
-    if (result.needsSettings) {
-      await _showPermissionsSettingsDialog(result.missingPermissions);
-      return;
-    }
+    final missing = result.missingPermissions.isEmpty
+        ? const [AppPermission.camera, AppPermission.microphone]
+        : result.missingPermissions;
 
     if (mounted) {
       final messenger = ScaffoldMessenger.of(context);
-      final message = kIsWeb
-          ? 'Caméra ou micro non disponibles — autorise l\'accès dans le navigateur puis réessaie.'
-          : 'Caméra ou micro non disponibles — vérifier les permissions';
-      final actionLabel = kIsWeb ? 'Réessayer' : 'Réglages';
+      messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            message,
+            'Caméra ou micro non disponibles — autorise l\'accès pour enregistrer.',
             style: GoogleFonts.dmSans(color: Colors.white),
           ),
           backgroundColor: _K.red,
-          duration: const Duration(seconds: 6),
+          duration: const Duration(seconds: 8),
           action: SnackBarAction(
-            label: actionLabel,
+            label: 'Autoriser',
             textColor: Colors.white,
-            onPressed: () async {
-              if (!kIsWeb) {
-                await PermissionService().openSettings();
-              }
-              if (!mounted) return;
-              setState(() => _cameraInitializing = true);
-              await _initCamera();
-            },
+            onPressed: () => _showPermissionsSettingsDialog(missing),
           ),
         ),
       );
@@ -115,25 +104,51 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         )
         .join(' et ');
 
+    final isWeb = kIsWeb;
+    final title = isWeb
+        ? 'Autoriser dans ton navigateur'
+        : 'Autoriser dans les réglages';
+    final body = isWeb
+        ? 'Pour utiliser ta $labels :\n\n'
+            '1. Clique sur l\'icône cadenas (🔒) à gauche de l\'URL.\n'
+            '2. Active « Caméra » et « Microphone » pour ce site.\n'
+            '3. Recharge la page ou appuie sur « Réessayer ».\n\n'
+            'Si l\'option n\'apparaît pas, ouvre les paramètres du site '
+            '(Chrome : chrome://settings/content/camera).'
+        : 'L\'accès au $labels a été refusé. Ouvre les réglages système '
+            'pour autoriser Take 60, puis reviens ici et appuie sur '
+            '« Réessayer ».';
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Autorisation requise'),
-          content: Text(
-            'L’accès au $labels a été refusé de façon permanente. Ouvre les réglages système pour autoriser Take 60.',
-          ),
+          title: Text(title),
+          content: SingleChildScrollView(child: Text(body)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Plus tard'),
             ),
+            if (!isWeb)
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  await PermissionService().openSettings();
+                  if (!mounted) return;
+                  setState(() => _cameraInitializing = true);
+                  await _initCamera();
+                },
+                child: const Text('Ouvrir les réglages'),
+              ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
-                PermissionService().openSettings();
+                if (!mounted) return;
+                setState(() => _cameraInitializing = true);
+                await _initCamera();
               },
-              child: const Text('Ouvrir les réglages'),
+              child: const Text('Réessayer'),
             ),
           ],
         );
