@@ -77,20 +77,20 @@ class HomeScreen extends ConsumerWidget {
                       onAdminTap: () => context.push(AppRouter.admin),
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 10),
                     Take60CinematicHero(
                       onNewVideoTap: () => context.go(AppRouter.record),
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _HomeHeroCard(
                       user: currentUser,
                       onPrimaryTap: () => context.go(AppRouter.aiFeed),
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     const _SectionTitle('À la une'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     if (feedState.isLoading)
                       const _LoadingPanel()
                     else if (featuredScenes.isEmpty)
@@ -117,25 +117,25 @@ class HomeScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _BattleSection(
                       onSeeAll: () => context.go(AppRouter.battles),
                       onVoteNow: () => context.go(AppRouter.battles),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _LiveTrendingSection(
                       onSeeAll: () => context.go(AppRouter.battleLeaderboard),
                       onOpenTrend: () => context.go(AppRouter.aiFeed),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     const _SectionTitle('Mes candidats suivis'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     _HomeBattleStrip(
                       battlesState: ref.watch(followedCandidatesBattlesProvider),
                       preferPublishedCard: true,
                     ),
                     if (feedState.error != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _ErrorPanel(message: feedState.error!),
                     ],
                   ],
@@ -881,7 +881,7 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
               padding: const EdgeInsets.all(1.2),
               decoration: BoxDecoration(
                 color: const Color(0x1AFFFFFF),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: _hovered ? 0.34 : 0.22),
                   width: 1,
@@ -900,7 +900,7 @@ class _LiveTrendCardState extends State<_LiveTrendCard> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(18),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -980,48 +980,60 @@ class _LiveTrendRankBadge extends StatelessWidget {
     return ClipPath(
       clipper: _PennantClipper(),
       child: Container(
-        width: compact ? 32 : 38,
-        height: compact ? 42 : 48,
-        padding: EdgeInsets.only(bottom: compact ? 8 : 10),
+        width: compact ? 44 : 52,
+        height: compact ? 54 : 64,
+        padding: EdgeInsets.only(bottom: compact ? 7 : 9),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: data.badgeColor,
-          boxShadow: const [
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.alphaBlend(Colors.white.withValues(alpha: 0.22), data.badgeColor),
+              data.badgeColor,
+              data.borderColor,
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+          boxShadow: [
             BoxShadow(
+              color: data.badgeColor.withValues(alpha: 0.32),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+            const BoxShadow(
               color: Color.fromRGBO(0, 0, 0, 0.18),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),
           ],
         ),
-        child: Text(
-          '${data.rank}',
-          style: TextStyle(
-            fontSize: compact ? 13 : 14,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF000000),
-            shadows: const [
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(-1.2, -1.2),
-              ),
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(1.2, -1.2),
-              ),
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(-1.2, 1.2),
-              ),
-              Shadow(
-                color: Color(0xFFFFFFFF),
-                blurRadius: 0,
-                offset: Offset(1.2, 1.2),
+        child: Container(
+          width: compact ? 22 : 26,
+          height: compact ? 22 : 26,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.72),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.16),
+                blurRadius: 8,
+                offset: Offset(0, 2),
               ),
             ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '${data.rank}',
+            style: TextStyle(
+              fontSize: compact ? 11 : 12,
+              fontWeight: FontWeight.w800,
+              color: data.badgeColor,
+              height: 1,
+            ),
           ),
         ),
       ),
