@@ -24,7 +24,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
-
 const bool _kAppCheckEnabled = bool.fromEnvironment(
   'APP_CHECK_ENABLED',
   defaultValue: kReleaseMode,
@@ -62,8 +61,9 @@ Future<void> _activateAppCheckIfNeeded() async {
   }
 
   await FirebaseAppCheck.instance.activate(
-    webProvider:
-        kIsWeb ? ReCaptchaV3Provider(_requiredRecaptchaSiteKey()) : null,
+    webProvider: kIsWeb
+        ? ReCaptchaEnterpriseProvider(_requiredRecaptchaSiteKey())
+        : null,
     androidProvider:
         kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
     appleProvider: kReleaseMode
