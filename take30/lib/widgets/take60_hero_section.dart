@@ -3,6 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+const String _heroExplorerLightAsset = '../take 30 images IA/heroexplorer.png';
+const String _heroExplorerDarkAsset = '../take 30 images IA/heroexplorerblack.png';
+
 class Take60CinematicHero extends StatefulWidget {
   const Take60CinematicHero({
     super.key,
@@ -104,30 +107,21 @@ class _Take60CinematicHeroState extends State<Take60CinematicHero>
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.05),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.42),
-                    blurRadius: 34,
-                    offset: const Offset(0, 16),
-                  ),
-                ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(metrics.radius),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    const _HeroBackdrop(),
-                    const _HeroAtmosphere(),
                     Positioned.fill(
                       child: _HeroImageLayer(
                         imageProvider: widget.heroImageProvider,
-                        metrics: metrics,
                       ),
                     ),
                     Positioned.fill(
                       child: _HeroGradientMask(metrics: metrics),
                     ),
+                    const Positioned.fill(child: _HeroBottomMask()),
                     Positioned(
                       left: metrics.contentLeft,
                       top: metrics.contentTop,
@@ -177,7 +171,6 @@ class _HeroMetrics {
     required this.statsTop,
     required this.statsRight,
     required this.statsWidth,
-    required this.imageWidthFactor,
   });
 
   factory _HeroMetrics.fromWidth(double width) {
@@ -199,7 +192,6 @@ class _HeroMetrics {
       statsTop: isMobile ? 18 : 24,
       statsRight: isMobile ? 18 : 24,
       statsWidth: isMobile ? 76 : 82,
-      imageWidthFactor: isMobile ? 0.58 : 0.55,
     );
   }
 
@@ -218,214 +210,53 @@ class _HeroMetrics {
   final double statsTop;
   final double statsRight;
   final double statsWidth;
-  final double imageWidthFactor;
-}
-
-class _HeroBackdrop extends StatelessWidget {
-  const _HeroBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0A0F1B),
-            Color(0xFF070B14),
-            Color(0xFF020304),
-          ],
-          stops: [0, 0.45, 1],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroAtmosphere extends StatelessWidget {
-  const _HeroAtmosphere();
-
-  @override
-  Widget build(BuildContext context) {
-    return const IgnorePointer(
-      child: Stack(
-        children: [
-          Positioned(
-            top: -30,
-            right: 150,
-            child: _GlowOrb(
-              size: 124,
-              color: Color(0x2EFFE0A8),
-              blur: 50,
-            ),
-          ),
-          Positioned(
-            top: 32,
-            right: 104,
-            child: _GlowOrb(
-              size: 94,
-              color: Color(0x40FFB347),
-              blur: 42,
-            ),
-          ),
-          Positioned(
-            top: 88,
-            right: 48,
-            child: _GlowOrb(
-              size: 150,
-              color: Color(0x2CFF7A18),
-              blur: 74,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({
-    required this.size,
-    required this.color,
-    required this.blur,
-  });
-
-  final double size;
-  final Color color;
-  final double blur;
-
-  @override
-  Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _HeroImageLayer extends StatelessWidget {
   const _HeroImageLayer({
     required this.imageProvider,
-    required this.metrics,
   });
 
   final ImageProvider? imageProvider;
-  final _HeroMetrics metrics;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: FractionallySizedBox(
-        widthFactor: metrics.imageWidthFactor,
-        alignment: Alignment.centerRight,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (imageProvider != null)
-              Image(
-                image: imageProvider!,
-                fit: BoxFit.cover,
-                alignment: const Alignment(0.22, 0),
-              )
-            else
-              const _HeroFallbackArtwork(),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    Color(0x0D000000),
-                    Color(0x40000000),
-                    Color(0x7A000000),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+    final brightness = Theme.of(context).brightness;
+    final image = imageProvider ??
+        AssetImage(
+          brightness == Brightness.dark
+              ? _heroExplorerDarkAsset
+              : _heroExplorerLightAsset,
+        );
 
-class _HeroFallbackArtwork extends StatelessWidget {
-  const _HeroFallbackArtwork();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF1A120C),
-            Color(0xFF26170F),
-            Color(0xFF0C0A0D),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          const Positioned(
-            top: 0,
-            bottom: 0,
-            left: 16,
-            width: 2,
-            child: ColoredBox(color: Color(0x14FFFFFF)),
-          ),
-          const Positioned(
-            top: 0,
-            bottom: 0,
-            left: 30,
-            width: 2,
-            child: ColoredBox(color: Color(0x0DFFFFFF)),
-          ),
-          Positioned(
-            right: 38,
-            bottom: -24,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(140),
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFFF2B15B),
-                    Color(0xFF4D2813),
-                    Color(0xFF09080B),
-                  ],
-                  stops: [0.0, 0.38, 1.0],
-                ),
-              ),
-              child: const SizedBox(width: 240, height: 280),
+    return Image(
+      image: image,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      alignment: Alignment.center,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (context, error, stackTrace) {
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: brightness == Brightness.dark
+                  ? const [
+                      Color(0xFF080A12),
+                      Color(0xFF111827),
+                      Color(0xFF020308),
+                    ]
+                  : const [
+                      Color(0xFFFFF7ED),
+                      Color(0xFFFFE4B5),
+                      Color(0xFF1F2937),
+                    ],
             ),
           ),
-          Positioned(
-            right: 86,
-            bottom: 14,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(84),
-                color: const Color(0x57000000),
-              ),
-              child: const SizedBox(width: 132, height: 168),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -437,20 +268,50 @@ class _HeroGradientMask extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return IgnorePointer(
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: const <Color>[
-              Color(0xFF060912),
-              Color(0xF3060912),
-              Color(0xBA060912),
-              Color(0x5A060912),
+            colors: isDark
+                ? const <Color>[
+                    Color(0xD9000000),
+                    Color(0xAA000000),
+                    Color(0x5C000000),
+                    Colors.transparent,
+                  ]
+                : const <Color>[
+                    Color(0x9A000000),
+                    Color(0x66000000),
+                    Color(0x22000000),
+                    Colors.transparent,
+                  ],
+            stops: [0.0, metrics.isMobile ? 0.42 : 0.48, 0.72, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroBottomMask extends StatelessWidget {
+  const _HeroBottomMask();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
               Colors.transparent,
+              Color(0x5C000000),
             ],
-            stops: [0.0, metrics.isMobile ? 0.34 : 0.38, 0.54, 0.72, 1.0],
+            stops: [0.52, 1.0],
           ),
         ),
       ),
@@ -502,17 +363,28 @@ class _HeroContent extends StatelessWidget {
                 text: TextSpan(
                   children: [
                     TextSpan(
-                      text: 'l’',
+                      text: 'l’acteur',
                       style: GoogleFonts.dmSans(
-                        color: const Color(0xFFFFB11A),
                         fontSize: titleSize,
                         fontWeight: FontWeight.w800,
                         height: 0.95,
                         letterSpacing: -1.5,
+                        foreground: Paint()
+                          ..shader = const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFFFFD24A),
+                              Color(0xFFFFA81F),
+                              Color(0xFFFF7A18),
+                            ],
+                          ).createShader(
+                            Rect.fromLTWH(0, 0, titleSize * 4.2, titleSize),
+                          ),
                       ),
                     ),
                     TextSpan(
-                      text: 'acteur principal',
+                      text: ' principal',
                       style: GoogleFonts.dmSans(
                         color: Colors.white,
                         fontSize: titleSize,

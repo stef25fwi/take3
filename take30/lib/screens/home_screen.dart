@@ -16,9 +16,6 @@ import '../widgets/shared_widgets.dart';
 import '../widgets/take30_logo.dart';
 import '../widgets/take60_hero_section.dart';
 
-const _take60HeroExplorerLightAsset = '../take 30 images IA/heroexplorer.png';
-const _take60HeroExplorerDarkAsset = '../take 30 images IA/heroexplorerblack.png';
-
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -34,9 +31,6 @@ class HomeScreen extends ConsumerWidget {
           displayName: 'Créateur',
           avatarUrl: '',
         );
-    final take60HeroImage = Theme.of(context).brightness == Brightness.dark
-      ? const AssetImage(_take60HeroExplorerDarkAsset)
-      : const AssetImage(_take60HeroExplorerLightAsset);
     final scenes = feedState.scenes;
     final featuredScenes = scenes.take(3).toList();
 
@@ -85,7 +79,6 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
                     Take60CinematicHero(
-                      heroImageProvider: take60HeroImage,
                       onNewVideoTap: () => context.go(AppRouter.record),
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),

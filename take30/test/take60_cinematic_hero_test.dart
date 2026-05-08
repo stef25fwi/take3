@@ -25,6 +25,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Deviens'), findsOneWidget);
+    expect(find.text('l’acteur principal', findRichText: true), findsOneWidget);
     expect(find.text('Joue. Publie. Affronte. Deviens une légende.'), findsOneWidget);
     expect(find.text('Nouvelle vidéo'), findsOneWidget);
     expect(find.text('Voir le défi'), findsOneWidget);
@@ -34,6 +35,18 @@ void main() {
     expect(find.text('60s'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
     expect(find.text('340'), findsOneWidget);
+
+    final titleRichText = tester.widget<RichText>(
+      find.text('l’acteur principal', findRichText: true),
+    );
+    final rootSpan = titleRichText.text as TextSpan;
+    final actorSpan = rootSpan.children![0] as TextSpan;
+    final principalSpan = rootSpan.children![1] as TextSpan;
+
+    expect(actorSpan.text, 'l’acteur');
+    expect(actorSpan.style!.foreground, isNotNull);
+    expect(principalSpan.text, ' principal');
+    expect(principalSpan.style!.color, Colors.white);
   });
 
   testWidgets('Take60CinematicHero relaye les actions des CTA', (
