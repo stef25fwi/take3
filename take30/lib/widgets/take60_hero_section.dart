@@ -256,9 +256,8 @@ class _HeroContent extends StatelessWidget {
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            const Spacer(),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -266,7 +265,7 @@ class _HeroContent extends StatelessWidget {
                 'Prêt à tourner\nune performance ?',
                 maxLines: 2,
                 style: GoogleFonts.dmSans(
-                  color: Colors.white,
+                  color: Colors.black,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   height: 1.05,
@@ -274,14 +273,14 @@ class _HeroContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: metrics.isMobile ? 225 : 360),
               child: Text(
                 'Joue. Publie. Affronte. Deviens une légende.',
                 maxLines: 2,
                 style: GoogleFonts.dmSans(
-                  color: Colors.white.withValues(alpha: 0.92),
+                  color: Colors.black.withValues(alpha: 0.78),
                   fontSize: metrics.subtitleSize,
                   fontWeight: FontWeight.w500,
                   height: 1.28,
@@ -289,7 +288,7 @@ class _HeroContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 22),
+            const Spacer(),
             Wrap(
               spacing: 12,
               runSpacing: 10,
@@ -386,7 +385,7 @@ class _HeroButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(999);
+    final borderRadius = BorderRadius.circular(14);
     return SizedBox(
       width: width,
       height: height,

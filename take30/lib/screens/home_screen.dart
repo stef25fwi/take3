@@ -1658,11 +1658,22 @@ class _VsCenter extends StatelessWidget {
             style: GoogleFonts.dmSans(
               fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withValues(alpha: 0.82),
+              color: Colors.white,
               shadows: const [
                 Shadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.45),
-                  blurRadius: 6,
+                  color: Color.fromRGBO(0, 0, 0, 0.95),
+                  blurRadius: 12,
+                  offset: Offset(0, 2),
+                ),
+                Shadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.85),
+                  blurRadius: 18,
+                  offset: Offset(0, 0),
+                ),
+                Shadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.6),
+                  blurRadius: 4,
+                  offset: Offset(0, 1),
                 ),
               ],
             ),
@@ -1711,8 +1722,8 @@ class _VoteButtonState extends State<_VoteButton>
 
   @override
   Widget build(BuildContext context) {
-    const height = 28.0;
-    final width = widget.compact ? 102.0 : 128.0;
+    const height = 40.0;
+    final width = widget.compact ? 138.0 : 168.0;
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -1725,15 +1736,26 @@ class _VoteButtonState extends State<_VoteButton>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
               gradient: const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [Color(0xFFFFD84A), Color(0xFFFFB300)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFFFE066),
+                  Color(0xFFFFC940),
+                  Color(0xFFFFA31A),
+                ],
+                stops: [0.0, 0.55, 1.0],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFFFD84A).withValues(alpha: 0.28 + (widget.pulse * 0.16)),
-                  blurRadius: 16,
-                  spreadRadius: 1,
+                  color: const Color(0xFFFFC940)
+                      .withValues(alpha: 0.45 + (widget.pulse * 0.18)),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                ),
+                BoxShadow(
+                  color: const Color(0xFFFFA31A).withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -1772,9 +1794,10 @@ class _VoteButtonState extends State<_VoteButton>
                     child: Text(
                       'Voter maintenant',
                       style: GoogleFonts.dmSans(
-                        fontSize: widget.compact ? 10.5 : 11.5,
+                        fontSize: widget.compact ? 13 : 14.5,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF111111),
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
