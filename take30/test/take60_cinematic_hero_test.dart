@@ -67,4 +67,34 @@ void main() {
 
     expect(newVideoTapped, 1);
   });
+
+  testWidgets('Take60CinematicHero passe le texte en blanc en thème sombre', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.dark,
+        home: const Scaffold(
+          body: SizedBox(
+            width: 430,
+            child: Take60CinematicHero(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final titleText = tester.widget<Text>(
+      find.text('Prêt à tourner\nune performance ?'),
+    );
+    final subtitleText = tester.widget<Text>(
+      find.text('Joue. Publie. Affronte. Deviens une légende.'),
+    );
+
+    expect(titleText.style?.color, Colors.white);
+    expect(subtitleText.style?.color, Colors.white.withValues(alpha: 0.9));
+  });
 }

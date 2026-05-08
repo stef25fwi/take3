@@ -250,6 +250,7 @@ class _HeroContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final titleSize = constraints.maxWidth < 240
             ? metrics.titleSize.clamp(24.0, metrics.titleSize).toDouble()
             : metrics.titleSize;
@@ -265,7 +266,7 @@ class _HeroContent extends StatelessWidget {
                 'Prêt à tourner\nune performance ?',
                 maxLines: 2,
                 style: GoogleFonts.dmSans(
-                  color: Colors.black,
+                  color: isDark ? Colors.white : Colors.black,
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   height: 1.05,
@@ -280,7 +281,9 @@ class _HeroContent extends StatelessWidget {
                 'Joue. Publie. Affronte. Deviens une légende.',
                 maxLines: 2,
                 style: GoogleFonts.dmSans(
-                  color: Colors.black.withValues(alpha: 0.78),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : Colors.black.withValues(alpha: 0.78),
                   fontSize: metrics.subtitleSize,
                   fontWeight: FontWeight.w500,
                   height: 1.28,
