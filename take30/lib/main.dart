@@ -39,12 +39,16 @@ const bool _kUseFirebaseEmulators = bool.fromEnvironment(
   defaultValue: false,
 );
 
-String _requiredRecaptchaSiteKey() {
+String? _recaptchaSiteKeyOrNull() {
   final key = _kAppCheckRecaptchaSiteKey.trim();
   if (key.isEmpty) {
-    throw StateError(
-      'APP_CHECK_RECAPTCHA_SITE_KEY est obligatoire sur Web quand App Check est activé.',
+    debugPrint(
+      '⚠️ App Check Web désactivé : APP_CHECK_RECAPTCHA_SITE_KEY est vide.',
     );
+    debugPrint(
+      'Ajoutez --dart-define=APP_CHECK_RECAPTCHA_SITE_KEY=<site-key> au build prod.',
+    );
+    return null;
   }
   return key;
 }
@@ -60,18 +64,26 @@ Future<void> _activateAppCheckIfNeeded() async {
     return;
   }
 
-  await FirebaseAppCheck.instance.activate(
-    webProvider: kIsWeb
-        ? ReCaptchaEnterpriseProvider(_requiredRecaptchaSiteKey())
-        : null,
-    androidProvider:
-        kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
-    appleProvider: kReleaseMode
-        ? AppleProvider.appAttestWithDeviceCheckFallback
-        : AppleProvider.debug,
-  );
+  final webSiteKey = kIsWeb ? _recaptchaSiteKeyOrNull() : null;
+  if (kIsWeb && webSiteKey == null) {
+    return;
+  }
 
-  debugPrint('✅ Firebase App Check activé');
+  try {
+    await FirebaseAppCheck.instance.activate(
+      webProvider: kIsWeb ? ReCaptchaEnterpriseProvider(webSiteKey!) : null,
+      androidProvider:
+          kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+      appleProvider: kReleaseMode
+          ? AppleProvider.appAttestWithDeviceCheckFallback
+          : AppleProvider.debug,
+    );
+
+    debugPrint('✅ Firebase App Check activé');
+  } catch (error, stackTrace) {
+    debugPrint('⚠️ Firebase App Check non activé au démarrage : $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 String _emulatorHost() {

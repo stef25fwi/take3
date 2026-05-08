@@ -11,6 +11,11 @@ COMMIT_MSG="${1:-feat: update Take30}"
 FLUTTER_BIN="${FLUTTER_BIN:-}"
 BUILD_ARGS=(--release --base-href /take3/)
 
+BUILD_ARGS+=(--dart-define "APP_CHECK_ENABLED=${APP_CHECK_ENABLED:-true}")
+if [[ -n "${APP_CHECK_RECAPTCHA_SITE_KEY:-}" ]]; then
+  BUILD_ARGS+=(--dart-define "APP_CHECK_RECAPTCHA_SITE_KEY=$APP_CHECK_RECAPTCHA_SITE_KEY")
+fi
+
 if [[ -n "${TAKE30_ADMIN_ID:-}" ]]; then
   BUILD_ARGS+=(--dart-define "TAKE30_ADMIN_ID=$TAKE30_ADMIN_ID")
 fi

@@ -10,6 +10,11 @@ FLUTTER_DIR="$ROOT/take30"
 FLUTTER_BIN="${FLUTTER_BIN:-}"
 BUILD_ARGS=(--release --base-href /)
 
+BUILD_ARGS+=(--dart-define "APP_CHECK_ENABLED=${APP_CHECK_ENABLED:-true}")
+if [[ -n "${APP_CHECK_RECAPTCHA_SITE_KEY:-}" ]]; then
+  BUILD_ARGS+=(--dart-define "APP_CHECK_RECAPTCHA_SITE_KEY=$APP_CHECK_RECAPTCHA_SITE_KEY")
+fi
+
 if [[ -n "${TAKE30_ADMIN_ID:-}" ]]; then
   BUILD_ARGS+=(--dart-define "TAKE30_ADMIN_ID=$TAKE30_ADMIN_ID")
 fi
