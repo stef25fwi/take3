@@ -14,8 +14,6 @@ void main() {
             width: 430,
             child: Take60CinematicHero(
               formatValue: '60s',
-              scenesValue: '12',
-              likesValue: '340',
             ),
           ),
         ),
@@ -24,36 +22,30 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Deviens'), findsOneWidget);
-    expect(find.text('l’acteur principal', findRichText: true), findsOneWidget);
-    expect(find.text('Joue. Publie. Affronte. Deviens une légende.'), findsOneWidget);
-    expect(find.text('Nouvelle vidéo'), findsOneWidget);
-    expect(find.text('Voir le défi'), findsOneWidget);
-    expect(find.text('Format'), findsOneWidget);
-    expect(find.text('Scènes'), findsOneWidget);
-    expect(find.text('Likes'), findsOneWidget);
-    expect(find.text('60s'), findsOneWidget);
-    expect(find.text('12'), findsOneWidget);
-    expect(find.text('340'), findsOneWidget);
-
-    final titleRichText = tester.widget<RichText>(
-      find.text('l’acteur principal', findRichText: true),
+    expect(find.text('Prêt à tourner\nune performance ?'), findsOneWidget);
+    expect(
+      find.text('Joue. Publie. Affronte. Deviens une légende.'),
+      findsOneWidget,
     );
-    final rootSpan = titleRichText.text as TextSpan;
-    final actorSpan = rootSpan.children![0] as TextSpan;
-    final principalSpan = rootSpan.children![1] as TextSpan;
+    expect(find.text('Nouvelle vidéo'), findsOneWidget);
+    expect(find.text('Format'), findsOneWidget);
+    expect(find.text('60s'), findsOneWidget);
 
-    expect(actorSpan.text, 'l’acteur');
-    expect(actorSpan.style!.foreground, isNotNull);
-    expect(principalSpan.text, ' principal');
-    expect(principalSpan.style!.color, Colors.white);
+    // Le bouton « Voir le défi » et les cartes Scènes / Likes ont été retirés.
+    expect(find.text('Voir le défi'), findsNothing);
+    expect(find.text('Scènes'), findsNothing);
+    expect(find.text('Likes'), findsNothing);
+    expect(find.text('Deviens'), findsNothing);
+    expect(
+      find.text('l’acteur principal', findRichText: true),
+      findsNothing,
+    );
   });
 
-  testWidgets('Take60CinematicHero relaye les actions des CTA', (
+  testWidgets("Take60CinematicHero relaye l'action Nouvelle vidéo", (
     WidgetTester tester,
   ) async {
     var newVideoTapped = 0;
-    var challengeTapped = 0;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -62,7 +54,6 @@ void main() {
             width: 430,
             child: Take60CinematicHero(
               onNewVideoTap: () => newVideoTapped++,
-              onChallengeTap: () => challengeTapped++,
             ),
           ),
         ),
@@ -73,10 +64,7 @@ void main() {
 
     await tester.tap(find.text('Nouvelle vidéo'));
     await tester.pump();
-    await tester.tap(find.text('Voir le défi'));
-    await tester.pump();
 
     expect(newVideoTapped, 1);
-    expect(challengeTapped, 1);
   });
 }

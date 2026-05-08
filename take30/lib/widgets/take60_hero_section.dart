@@ -118,10 +118,6 @@ class _Take60CinematicHeroState extends State<Take60CinematicHero>
                         imageProvider: widget.heroImageProvider,
                       ),
                     ),
-                    Positioned.fill(
-                      child: _HeroGradientMask(metrics: metrics),
-                    ),
-                    const Positioned.fill(child: _HeroBottomMask()),
                     Positioned(
                       left: metrics.contentLeft,
                       top: metrics.contentTop,
@@ -130,17 +126,7 @@ class _Take60CinematicHeroState extends State<Take60CinematicHero>
                       child: _HeroContent(
                         metrics: metrics,
                         onNewVideoTap: widget.onNewVideoTap,
-                        onChallengeTap: widget.onChallengeTap,
-                      ),
-                    ),
-                    Positioned(
-                      top: metrics.statsTop,
-                      right: metrics.statsRight,
-                      child: _HeroStatsColumn(
-                        metrics: metrics,
                         formatValue: widget.formatValue,
-                        scenesValue: widget.scenesValue,
-                        likesValue: widget.likesValue,
                       ),
                     ),
                   ],
@@ -167,10 +153,6 @@ class _HeroMetrics {
     required this.subtitleSize,
     required this.buttonHeight,
     required this.primaryButtonWidth,
-    required this.secondaryButtonWidth,
-    required this.statsTop,
-    required this.statsRight,
-    required this.statsWidth,
   });
 
   factory _HeroMetrics.fromWidth(double width) {
@@ -183,15 +165,11 @@ class _HeroMetrics {
       contentLeft: isMobile ? 24 : 32,
       contentTop: isMobile ? 28 : 34,
       contentBottom: isMobile ? 24 : 28,
-      contentRight: isMobile ? 126 : (isTablet ? 268 : 360),
-      titleSize: isMobile ? 30 : (isTablet ? 36 : 40),
+      contentRight: isMobile ? 24 : 32,
+      titleSize: isMobile ? 28 : (isTablet ? 32 : 36),
       subtitleSize: isMobile ? 15 : 16,
       buttonHeight: isMobile ? 48 : 52,
       primaryButtonWidth: isMobile ? 188 : 208,
-      secondaryButtonWidth: isMobile ? 146 : 158,
-      statsTop: isMobile ? 18 : 24,
-      statsRight: isMobile ? 18 : 24,
-      statsWidth: isMobile ? 76 : 82,
     );
   }
 
@@ -206,10 +184,6 @@ class _HeroMetrics {
   final double subtitleSize;
   final double buttonHeight;
   final double primaryButtonWidth;
-  final double secondaryButtonWidth;
-  final double statsTop;
-  final double statsRight;
-  final double statsWidth;
 }
 
 class _HeroImageLayer extends StatelessWidget {
@@ -261,81 +235,23 @@ class _HeroImageLayer extends StatelessWidget {
   }
 }
 
-class _HeroGradientMask extends StatelessWidget {
-  const _HeroGradientMask({required this.metrics});
-
-  final _HeroMetrics metrics;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: isDark
-                ? const <Color>[
-                    Color(0xD9000000),
-                    Color(0xAA000000),
-                    Color(0x5C000000),
-                    Colors.transparent,
-                  ]
-                : const <Color>[
-                    Color(0x9A000000),
-                    Color(0x66000000),
-                    Color(0x22000000),
-                    Colors.transparent,
-                  ],
-            stops: [0.0, metrics.isMobile ? 0.42 : 0.48, 0.72, 1.0],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroBottomMask extends StatelessWidget {
-  const _HeroBottomMask();
-
-  @override
-  Widget build(BuildContext context) {
-    return const IgnorePointer(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Color(0x5C000000),
-            ],
-            stops: [0.52, 1.0],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _HeroContent extends StatelessWidget {
   const _HeroContent({
     required this.metrics,
     required this.onNewVideoTap,
-    required this.onChallengeTap,
+    required this.formatValue,
   });
 
   final _HeroMetrics metrics;
   final VoidCallback? onNewVideoTap;
-  final VoidCallback? onChallengeTap;
+  final String formatValue;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final titleSize = constraints.maxWidth < 210
-            ? metrics.titleSize.clamp(27.0, metrics.titleSize).toDouble()
+        final titleSize = constraints.maxWidth < 240
+            ? metrics.titleSize.clamp(24.0, metrics.titleSize).toDouble()
             : metrics.titleSize;
 
         return Column(
@@ -343,57 +259,18 @@ class _HeroContent extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             const Spacer(),
-            Text(
-              'Deviens',
-              maxLines: 1,
-              style: GoogleFonts.dmSans(
-                color: Colors.white,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w800,
-                height: 0.95,
-                letterSpacing: -1.5,
-              ),
-            ),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: RichText(
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'l’acteur',
-                      style: GoogleFonts.dmSans(
-                        fontSize: titleSize,
-                        fontWeight: FontWeight.w800,
-                        height: 0.95,
-                        letterSpacing: -1.5,
-                        foreground: Paint()
-                          ..shader = const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFFFFD24A),
-                              Color(0xFFFFA81F),
-                              Color(0xFFFF7A18),
-                            ],
-                          ).createShader(
-                            Rect.fromLTWH(0, 0, titleSize * 4.2, titleSize),
-                          ),
-                      ),
-                    ),
-                    TextSpan(
-                      text: ' principal',
-                      style: GoogleFonts.dmSans(
-                        color: Colors.white,
-                        fontSize: titleSize,
-                        fontWeight: FontWeight.w800,
-                        height: 0.95,
-                        letterSpacing: -1.5,
-                      ),
-                    ),
-                  ],
+              child: Text(
+                'Prêt à tourner\nune performance ?',
+                maxLines: 2,
+                style: GoogleFonts.dmSans(
+                  color: Colors.white,
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w800,
+                  height: 1.05,
+                  letterSpacing: -1.2,
                 ),
               ),
             ),
@@ -416,6 +293,7 @@ class _HeroContent extends StatelessWidget {
             Wrap(
               spacing: 12,
               runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 _HeroButton.primary(
                   label: 'Nouvelle vidéo',
@@ -423,17 +301,69 @@ class _HeroContent extends StatelessWidget {
                   height: metrics.buttonHeight,
                   onTap: onNewVideoTap,
                 ),
-                _HeroButton.secondary(
-                  label: 'Voir le défi',
-                  width: metrics.secondaryButtonWidth,
+                _HeroFormatChip(
                   height: metrics.buttonHeight,
-                  onTap: onChallengeTap,
+                  value: formatValue,
                 ),
               ],
             ),
           ],
         );
       },
+    );
+  }
+}
+
+class _HeroFormatChip extends StatelessWidget {
+  const _HeroFormatChip({required this.height, required this.value});
+
+  final double height;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(16);
+    return ClipRRect(
+      borderRadius: radius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          height: height,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: const Color(0xAA111111),
+            borderRadius: radius,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Format',
+                style: GoogleFonts.dmSans(
+                  color: Colors.white.withValues(alpha: 0.62),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: GoogleFonts.dmSans(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  letterSpacing: -0.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -446,14 +376,6 @@ class _HeroButton extends StatelessWidget {
     required this.onTap,
   })  : isPrimary = true,
         icon = Icons.videocam_rounded;
-
-  const _HeroButton.secondary({
-    required this.label,
-    required this.width,
-    required this.height,
-    required this.onTap,
-  })  : isPrimary = false,
-        icon = Icons.bolt_rounded;
 
   final String label;
   final double width;
@@ -540,90 +462,3 @@ class _HeroButton extends StatelessWidget {
   }
 }
 
-class _HeroStatsColumn extends StatelessWidget {
-  const _HeroStatsColumn({
-    required this.metrics,
-    required this.formatValue,
-    required this.scenesValue,
-    required this.likesValue,
-  });
-
-  final _HeroMetrics metrics;
-  final String formatValue;
-  final String scenesValue;
-  final String likesValue;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _HeroStatCard(metrics: metrics, label: 'Format', value: formatValue),
-        const SizedBox(height: 10),
-        _HeroStatCard(metrics: metrics, label: 'Scènes', value: scenesValue),
-        const SizedBox(height: 10),
-        _HeroStatCard(metrics: metrics, label: 'Likes', value: likesValue),
-      ],
-    );
-  }
-}
-
-class _HeroStatCard extends StatelessWidget {
-  const _HeroStatCard({
-    required this.metrics,
-    required this.label,
-    required this.value,
-  });
-
-  final _HeroMetrics metrics;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          width: metrics.statsWidth,
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-          decoration: BoxDecoration(
-            color: const Color(0xAA111111),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
-                  color: Colors.white.withValues(alpha: 0.62),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
-                  color: Colors.white,
-                  fontSize: metrics.isMobile ? 23 : 25,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
-                  letterSpacing: -0.6,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
