@@ -5,9 +5,16 @@ import 'package:go_router/go_router.dart';
 import '../admin/take30_admin_scene_flow.dart';
 import '../features/profile/models/take60_user_profile.dart';
 import '../features/profile/providers/take60_profile_providers.dart';
+import '../features/profile/screens/edit_profile_screen.dart';
+import '../features/profile/screens/take60_bookmarks_screen.dart';
+import '../features/profile/screens/take60_comments_screen.dart';
+import '../features/profile/screens/take60_earnings_screen.dart';
+import '../features/profile/screens/take60_help_support_screen.dart';
 import '../features/profile/screens/take60_permissions_screen.dart';
-import '../features/profile/screens/take60_placeholder_screen.dart';
+import '../features/profile/screens/take60_security_screen.dart';
 import '../features/profile/screens/take60_simple_settings_screen.dart';
+import '../features/profile/screens/take60_subscription_screen.dart';
+import '../features/profile/screens/take60_user_projects_screen.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../screens/ai_vertical_feed_screen.dart';
@@ -218,57 +225,27 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRouter.profileEdit,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Modifier mon profil',
-              description:
-                  'La version premium de l\'edition de profil arrive. Les informations actuelles restent intactes.',
-              icon: Icons.edit_rounded,
-            ),
+            builder: (_, __) => const EditProfileScreen(),
           ),
           GoRoute(
             path: AppRouter.profileProjects,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Mes projets Take60',
-              description:
-                  'Retrouvez bientot vos brouillons, enregistrements et projets en cours depuis cet espace dedie.',
-              icon: Icons.folder_copy_rounded,
-            ),
+            builder: (_, __) => const Take60UserProjectsScreen(),
           ),
           GoRoute(
             path: AppRouter.profileBookmarks,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Mes favoris',
-              description:
-                  'Cette zone premium centralisera scenes, talents et castings sauvegardes.',
-              icon: Icons.bookmark_rounded,
-            ),
+            builder: (_, __) => const Take60BookmarksScreen(),
           ),
           GoRoute(
             path: AppRouter.profileComments,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Commentaires',
-              description:
-                  'Le centre de moderation des commentaires sera branche ici sans casser le profil existant.',
-              icon: Icons.mode_comment_rounded,
-            ),
+            builder: (_, __) => const Take60CommentsScreen(),
           ),
           GoRoute(
             path: AppRouter.profileEarnings,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Monetisation',
-              description:
-                  'Le suivi des revenus, abonnements et primes Take60 sera ajoute dans cette vue premium.',
-              icon: Icons.payments_rounded,
-            ),
+            builder: (_, __) => const Take60EarningsScreen(),
           ),
           GoRoute(
             path: AppRouter.profileSubscription,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Mon abonnement',
-              description:
-                  'La gestion de l\'offre premium, du renouvellement et des avantages sera disponible ici.',
-              icon: Icons.workspace_premium_rounded,
-            ),
+            builder: (_, __) => const Take60SubscriptionScreen(),
           ),
           GoRoute(
             path: AppRouter.profileVisibility,
@@ -359,21 +336,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRouter.profileSecurity,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Confidentialite et securite',
-              description:
-                  'Les options de securite avancees et le journal de connexion seront ajoutes ici.',
-              icon: Icons.lock_rounded,
-            ),
+            builder: (_, __) => const Take60SecurityScreen(),
           ),
           GoRoute(
             path: AppRouter.profileHelp,
-            builder: (_, __) => const Take60PlaceholderScreen(
-              title: 'Aide et support',
-              description:
-                  'Cette page centralisera FAQ, contact support et diagnostic rapide de votre compte.',
-              icon: Icons.support_agent_rounded,
-            ),
+            builder: (_, __) => const Take60HelpSupportScreen(),
           ),
           GoRoute(
             path: '${AppRouter.profile}/:userId',
