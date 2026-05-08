@@ -13,6 +13,7 @@ import '../theme/app_theme.dart';
 import '../widgets/battle/battle_preparing_card.dart';
 import '../widgets/battle/battle_published_card.dart';
 import '../widgets/shared_widgets.dart';
+import '../widgets/take60_greeting_hero_card.dart';
 import '../widgets/take30_logo.dart';
 import '../widgets/take60_hero_section.dart';
 
@@ -83,10 +84,12 @@ class HomeScreen extends ConsumerWidget {
                       onChallengeTap: () => context.go(AppRouter.challenge),
                     ),
                     const SizedBox(height: 12),
-                    _HomeHeroCard(
+                    Take60GreetingHeroCard(
                       user: currentUser,
+                      scenesValue: '${currentUser.scenesCount}',
+                      likesValue: _formatCompact(currentUser.likesCount),
                       onPrimaryTap: () => context.go(AppRouter.aiFeed),
-                      onChallengeTap: () => context.go(AppRouter.challenge),
+                      onSecondaryTap: () => context.go(AppRouter.challenge),
                     ),
                     const SizedBox(height: 12),
                     const _SectionTitle('À la une'),
@@ -306,250 +309,6 @@ class _HomeHeader extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _HomeHeroCard extends StatelessWidget {
-  const _HomeHeroCard({
-    required this.user,
-    required this.onPrimaryTap,
-    required this.onChallengeTap,
-  });
-
-  final UserModel user;
-  final VoidCallback onPrimaryTap;
-  final VoidCallback onChallengeTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = AppThemeTokens.isDark(context);
-    final primaryText = AppThemeTokens.primaryText(context);
-    final secondaryText = AppThemeTokens.secondaryText(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [
-                  Color.fromRGBO(255, 184, 0, 0.20),
-                  Color.fromRGBO(0, 212, 255, 0.12),
-                  Color.fromRGBO(108, 92, 231, 0.18),
-                ]
-              : const [
-                  Color(0xFFFFF7DA),
-                  Color(0xFFEAF8FF),
-                  Color(0xFFF2EEFF),
-                ],
-        ),
-        border: Border.all(color: AppThemeTokens.border(context)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 0, 0, 0.20),
-            blurRadius: 20,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              UserAvatar(
-                url: user.avatarUrl,
-                userId: user.id,
-                size: 46,
-                showBorder: true,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bonjour ${user.displayName}',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: secondaryText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Prêt à tourner une performance qui marque ?',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 23,
-                        fontWeight: FontWeight.w700,
-                        color: primaryText,
-                        height: 1.05,
-                        letterSpacing: -0.55,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const _HeroStat(value: '60s', label: 'Format'),
-              const SizedBox(width: 18),
-              _HeroStat(value: '${user.scenesCount}', label: 'Scènes'),
-              const SizedBox(width: 18),
-              _HeroStat(
-                value: _formatCompact(user.likesCount),
-                label: 'Likes',
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: _HomePrimaryButton(
-                  label: 'Nouvelle vidéo',
-                  onTap: onPrimaryTap,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _HomeGhostButton(
-                  label: 'Voir le défi',
-                  onTap: onChallengeTap,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroStat extends StatelessWidget {
-  const _HeroStat({required this.value, required this.label});
-
-  final String value;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.dmSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppThemeTokens.primaryText(context),
-            letterSpacing: -0.25,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w500,
-            color: AppThemeTokens.secondaryText(context),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HomePrimaryButton extends StatelessWidget {
-  const _HomePrimaryButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 46,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFFFD96A), Color(0xFFFFB800), Color(0xFFF2A600)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(255, 184, 0, 0.20),
-                  blurRadius: 18,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF111827),
-                  letterSpacing: -0.15,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeGhostButton extends StatelessWidget {
-  const _HomeGhostButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 46,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
-            decoration: BoxDecoration(
-              color: AppThemeTokens.softAction(context),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppThemeTokens.softBorder(context)),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: GoogleFonts.dmSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppThemeTokens.primaryText(context),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
