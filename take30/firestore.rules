@@ -221,6 +221,62 @@ service cloud.firestore {
       allow create, update, delete: if take60IsAdmin();
     }
 
+    // ======================================================
+    // Take60 — Messagerie privee (conversations + messages)
+    // ======================================================
+
+    function take60IsConversationParticipant(convoId) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/conversations/$(convoId)) &&
+        request.auth.uid in
+          get(/databases/$(database)/documents/conversations/$(convoId)).data.participantIds;
+    }
+
+    match /conversations/{conversationId} {
+      // Lecture : reservee aux participants.
+      allow read: if request.auth != null &&
+        request.auth.uid in resource.data.participantIds;
+
+      // Creation : l'auteur doit etre lui-meme dans participantIds.
+      allow create: if request.auth != null &&
+        request.auth.uid in request.resource.data.participantIds &&
+        request.resource.data.participantIds is list &&
+        request.resource.data.participantIds.size() >= 2;
+
+      // Mise a jour : reservee aux participants. La liste participantIds
+      // ne peut pas etre modifiee par un client.
+      allow update: if request.auth != null &&
+        request.auth.uid in resource.data.participantIds &&
+        request.resource.data.participantIds == resource.data.participantIds;
+
+      // Suppression : interdite cote client.
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        // Lecture : seulement les participants de la conversation parente.
+        allow read: if take60IsConversationParticipant(conversationId);
+
+        // Creation : sender doit etre l'auteur authentifie ET participant.
+        allow create: if request.auth != null &&
+          request.resource.data.senderId == request.auth.uid &&
+          take60IsConversationParticipant(conversationId) &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0;
+
+        // Mise a jour : uniquement marquage `readAt` par le destinataire.
+        // Le sender ne peut pas modifier le contenu.
+        allow update: if request.auth != null &&
+          take60IsConversationParticipant(conversationId) &&
+          request.resource.data.senderId == resource.data.senderId &&
+          request.resource.data.receiverId == resource.data.receiverId &&
+          request.resource.data.text == resource.data.text &&
+          request.resource.data.type == resource.data.type &&
+          request.resource.data.createdAt == resource.data.createdAt;
+
+        // Suppression : interdite cote client.
+        allow delete: if false;
+      }
+    }
 
     match /{document=**} {
       allow read, write: if false;

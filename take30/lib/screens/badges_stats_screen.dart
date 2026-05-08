@@ -14,42 +14,64 @@ class BadgesStatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
 
-    const badges = [
+    final badges = [
       _BadgeMedalData(
         label: 'Révélation du jour',
         emoji: '✦',
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFE07A), Color(0xFFFFB800), Color(0xFFFF9C1A)],
         ),
+        description:
+            'Recompense la performance la plus remarquee de la journee Take60.',
+        unlockCondition:
+            'Atteins 1 000 vues cumulees sur une scene publiee aujourd\'hui.',
+        progress: user?.totalViews ?? 0,
+        target: 1000,
       ),
       _BadgeMedalData(
         label: 'Top 10 Semaine',
         emoji: '★',
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFBE73), Color(0xFFCB7B34), Color(0xFF9E5928)],
         ),
+        description:
+            'Decroche une place dans le top 10 du classement hebdomadaire.',
+        unlockCondition: 'Cumule 5 000 likes sur la semaine en cours.',
+        progress: user?.likesCount ?? 0,
+        target: 5000,
       ),
       _BadgeMedalData(
         label: 'Meilleure Emotion',
         emoji: '◈',
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFF8D6DFF), Color(0xFF6C5CE7), Color(0xFF4E39BF)],
         ),
+        description:
+            'Souligne les performances avec un taux d\'approbation eleve.',
+        unlockCondition:
+            'Conserve un taux d\'approbation superieur a 85 % sur tes 10 dernieres scenes.',
+        progress: ((user?.approvalRate ?? 0) * 100).round(),
+        target: 85,
       ),
       _BadgeMedalData(
         label: 'Scène la plus jouée',
         emoji: '⬢',
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFD46B), Color(0xFFE9A11F), Color(0xFFB16A10)],
         ),
+        description:
+            'Distingue la scene Take60 la plus interpretee de la communaute.',
+        unlockCondition: 'Atteins 50 enregistrements valides sur cette scene.',
+        progress: user?.scenesCount ?? 0,
+        target: 50,
       ),
     ];
 
@@ -57,26 +79,38 @@ class BadgesStatsScreen extends ConsumerWidget {
       _StatTileData(
         title: 'Vues totales',
         value: _formatCompact(user?.totalViews ?? 0),
+        rawValue: user?.totalViews ?? 0,
         icon: Icons.play_circle_fill_rounded,
         iconColor: const Color(0xFFD5D8E3),
+        description:
+            'Nombre cumule de vues sur l\'ensemble de tes performances Take60. Mis a jour en temps reel apres chaque session.',
       ),
       _StatTileData(
         title: 'Taux d\'approbation',
         value: '${(user?.approvalRate ?? 0).toInt()}%',
+        rawValue: ((user?.approvalRate ?? 0) * 100).round(),
         icon: Icons.verified_rounded,
         iconColor: const Color(0xFFFFB800),
+        description:
+            'Pourcentage de votes positifs recus sur tes scenes. Au-dela de 80 %, tu accedes au statut Talent valide.',
       ),
       _StatTileData(
         title: 'Partages',
         value: _formatCompact(user?.sharesCount ?? 0),
+        rawValue: user?.sharesCount ?? 0,
         icon: Icons.sync_rounded,
         iconColor: const Color(0xFF00D4FF),
+        description:
+            'Total de partages effectues sur tes performances depuis Take60 ou en lien direct.',
       ),
       _StatTileData(
         title: 'Scènes jouées',
         value: '${user?.scenesCount ?? 0}',
+        rawValue: user?.scenesCount ?? 0,
         icon: Icons.movie_creation_outlined,
         iconColor: const Color(0xFF7C67F8),
+        description:
+            'Nombre de scenes guidees Take60 publiees ou en cours de rendu sur ton profil.',
       ),
     ];
 
@@ -420,25 +454,46 @@ class _BadgeMedalData {
     required this.label,
     required this.emoji,
     required this.gradient,
+    required this.description,
+    required this.unlockCondition,
+    required this.progress,
+    required this.target,
   });
 
   final String label;
   final String emoji;
   final Gradient gradient;
+  final String description;
+  final String unlockCondition;
+  final int progress;
+  final int target;
+
+  bool get unlocked => target <= 0 ? false : progress >= target;
+
+  double get progressRatio {
+    if (target <= 0) return 0;
+    final ratio = progress / target;
+    if (ratio.isNaN || ratio.isNegative) return 0;
+    return ratio > 1 ? 1 : ratio;
+  }
 }
 
 class _StatTileData {
   const _StatTileData({
     required this.title,
     required this.value,
+    required this.rawValue,
     required this.icon,
     required this.iconColor,
+    required this.description,
   });
 
   final String title;
   final String value;
+  final int rawValue;
   final IconData icon;
   final Color iconColor;
+  final String description;
 }
 
 String _formatCompact(int value) {
@@ -455,51 +510,154 @@ void _showBadgeSheet(BuildContext context, _BadgeMedalData data) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: const Color(0xFF111827),
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (_) => SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(4),
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
             const SizedBox(height: 18),
-            Container(
-              width: 96, height: 96,
-              decoration: BoxDecoration(shape: BoxShape.circle, gradient: data.gradient),
-              child: Center(
-                child: Text(
-                  data.emoji,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 36, fontWeight: FontWeight.w800, color: Colors.white,
+            Center(
+              child: Container(
+                width: 96, height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: data.gradient,
+                ),
+                child: Center(
+                  child: Text(
+                    data.emoji,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
+            Center(
+              child: Text(
+                data.label,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: data.unlocked
+                      ? const Color(0xFF1F8B4C).withValues(alpha: 0.32)
+                      : Colors.white.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  data.unlocked ? 'Debloque' : 'Verrouille',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: data.unlocked
+                        ? const Color(0xFFA9F0C5)
+                        : Colors.white,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
             Text(
-              data.label,
-              textAlign: TextAlign.center,
+              'Description',
               style: GoogleFonts.dmSans(
-                fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.55),
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              data.description,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Condition de deblocage',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.55),
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              data.unlockCondition,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Progression',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.55),
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: data.progressRatio,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: 0.08),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  data.unlocked ? const Color(0xFF77E1A0) : Colors.white,
+                ),
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Badge debloque grace a tes performances recentes.',
-              textAlign: TextAlign.center,
+              '${data.progress} / ${data.target}',
               style: GoogleFonts.dmSans(
-                fontSize: 13,
-                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
           ],
@@ -592,52 +750,97 @@ void _showStatSheet(BuildContext context, _StatTileData stat) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: const Color(0xFF111827),
+    isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (_) => SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(4),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            Container(
-              width: 56, height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: stat.iconColor.withValues(alpha: 0.18),
+            const SizedBox(height: 18),
+            Center(
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: stat.iconColor.withValues(alpha: 0.18),
+                ),
+                child: Icon(stat.icon, color: stat.iconColor, size: 32),
               ),
-              child: Icon(stat.icon, color: stat.iconColor, size: 28),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            Center(
+              child: Text(
+                stat.value,
+                style: GoogleFonts.dmSans(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                stat.title,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
-              stat.value,
+              'Que represente cette statistique ?',
               style: GoogleFonts.dmSans(
-                fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.55),
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              stat.description,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Valeur exacte : ${stat.rawValue}',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              stat.title,
+              'Mise a jour automatique apres chaque session Take60.',
               style: GoogleFonts.dmSans(
-                fontSize: 14, color: Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Detail bientot disponible.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
-                fontSize: 12, color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.55),
               ),
             ),
           ],

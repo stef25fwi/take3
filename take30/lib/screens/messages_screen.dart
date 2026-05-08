@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
 import '../router/router.dart';
+import '../services/conversation_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -19,11 +20,16 @@ class MessagesScreen extends ConsumerStatefulWidget {
 
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   late final TextEditingController _composerController;
+  String? _conversationId;
+  bool _isPreparing = false;
+  String? _setupError;
+  bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
     _composerController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prepareConversation());
   }
 
   @override
@@ -32,25 +38,80 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     super.dispose();
   }
 
-  bool _isDemoUser() {
-    final user = ref.read(authProvider).user;
-    if (user == null) {
-      return false;
+  Future<void> _prepareConversation() async {
+    if (_isPreparing || _conversationId != null) {
+      return;
     }
-
-    return user.username == 'demo_take30' ||
-        user.displayName == 'Mode Demo' ||
-        user.email == 'demo@take30.app';
-  }
-
-  void _sendDemoMessage() {
-    final text = _composerController.text;
-    if (text.trim().isEmpty) {
+    final authUser = ref.read(authProvider).user;
+    if (authUser == null || authUser.id == widget.userId) {
+      setState(() {
+        _setupError = authUser == null
+            ? 'Connecte-toi pour acceder a tes messages.'
+            : 'Impossible de t\'envoyer un message a toi-meme.';
+      });
       return;
     }
 
-    ref.read(demoMessagesProvider(widget.userId).notifier).send(text);
-    _composerController.clear();
+    setState(() {
+      _isPreparing = true;
+      _setupError = null;
+    });
+
+    try {
+      final peer =
+          ref.read(profileProvider(widget.userId)).user;
+      final conversation = await ref
+          .read(conversationServiceProvider)
+          .getOrCreateConversation(
+            currentUserId: authUser.id,
+            peerId: widget.userId,
+            currentUser: authUser,
+            peerUser: peer,
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _conversationId = conversation.id;
+        _isPreparing = false;
+      });
+      await ref.read(conversationServiceProvider).markConversationRead(
+            conversationId: conversation.id,
+            uid: authUser.id,
+          );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _setupError = error.toString();
+        _isPreparing = false;
+      });
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _composerController.text.trim();
+    final convoId = _conversationId;
+    final authUser = ref.read(authProvider).user;
+    if (text.isEmpty || convoId == null || authUser == null || _isSending) {
+      return;
+    }
+
+    setState(() => _isSending = true);
+    try {
+      await ref.read(conversationServiceProvider).sendMessage(
+            conversationId: convoId,
+            senderId: authUser.id,
+            receiverId: widget.userId,
+            text: text,
+          );
+      _composerController.clear();
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
   }
 
   @override
@@ -59,10 +120,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final authUser = ref.watch(authProvider).user;
     final user = profileState.user ??
         (authUser?.id == widget.userId ? authUser : null);
-    final isDemoMode = _isDemoUser();
-    final demoMessages = isDemoMode
-        ? ref.watch(demoMessagesProvider(widget.userId))
-        : const <DemoChatMessage>[];
+
     final List<Widget> contentWidgets;
 
     if (user == null && profileState.isLoading) {
@@ -110,156 +168,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           ],
         ),
         const SizedBox(height: 24),
-        if (isDemoMode && user != null)
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
-              decoration: BoxDecoration(
-                color: AppThemeTokens.surface(context),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: AppThemeTokens.border(context),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Conversation démo instantanée',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppThemeTokens.primaryText(context),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Cette discussion est locale. Tu peux envoyer des messages sans réseau pour tester le flux complet.',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      height: 1.45,
-                      color: AppThemeTokens.secondaryText(context),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.separated(
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: demoMessages.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final message = demoMessages[index];
-                        return _MessageBubble(message: message);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _composerController,
-                          minLines: 1,
-                          maxLines: 3,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _sendDemoMessage(),
-                          style: GoogleFonts.dmSans(
-                            fontSize: 14,
-                            color: AppThemeTokens.primaryText(context),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Écrire un message démo...',
-                            hintStyle: GoogleFonts.dmSans(
-                              fontSize: 14,
-                              color: AppThemeTokens.tertiaryText(context),
-                            ),
-                            filled: true,
-                            fillColor: AppThemeTokens.surfaceMuted(context),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(
-                                color: AppThemeTokens.border(context),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
-                              borderSide: BorderSide(
-                                color: AppThemeTokens.border(context),
-                              ),
-                            ),
-                            focusedBorder: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(18),
-                              ),
-                              borderSide: BorderSide(
-                                color: AppColors.yellow,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      SizedBox(
-                        width: 52,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: _sendDemoMessage,
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            backgroundColor: AppColors.yellow,
-                            foregroundColor: AppColors.navy,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Icon(Icons.send_rounded),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          )
-        else
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppThemeTokens.surface(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppThemeTokens.border(context),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Canal prêt pour le prochain câblage',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppThemeTokens.primaryText(context),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'La navigation est maintenant branchée. Cette surface servira à la messagerie privée dès que le modèle de conversation sera ajouté.',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    height: 1.5,
-                    color: AppThemeTokens.secondaryText(context),
-                  ),
-                ),
-              ],
-            ),
+        Expanded(
+          child: _ConversationView(
+            conversationId: _conversationId,
+            isPreparing: _isPreparing,
+            setupError: _setupError,
+            currentUserId: authUser?.id ?? '',
+            composerController: _composerController,
+            isSending: _isSending,
+            onSend: _sendMessage,
           ),
+        ),
         const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
@@ -308,7 +227,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       if (context.canPop()) {
                         context.pop();
                       } else {
-                        context.go(AppRouter.profilePath(widget.userId));
+                        context.go(AppRouter.messages);
                       }
                     },
                     icon: Icon(
@@ -339,23 +258,240 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message});
+class _ConversationView extends ConsumerWidget {
+  const _ConversationView({
+    required this.conversationId,
+    required this.isPreparing,
+    required this.setupError,
+    required this.currentUserId,
+    required this.composerController,
+    required this.isSending,
+    required this.onSend,
+  });
 
-  final DemoChatMessage message;
+  final String? conversationId;
+  final bool isPreparing;
+  final String? setupError;
+  final String currentUserId;
+  final TextEditingController composerController;
+  final bool isSending;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final surface = AppThemeTokens.surface(context);
+    final border = AppThemeTokens.border(context);
+
+    if (setupError != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: border),
+        ),
+        child: Text(
+          setupError!,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: secondaryText,
+          ),
+        ),
+      );
+    }
+
+    if (isPreparing || conversationId == null) {
+      return Container(
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: border),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: AppColors.yellow),
+        ),
+      );
+    }
+
+    final messagesAsync =
+        ref.watch(conversationMessagesProvider(conversationId!));
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Conversation Take60',
+            style: GoogleFonts.dmSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: primaryText,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Messages chiffres en transit, stockes dans Firestore et synchronises en temps reel.',
+            style: GoogleFonts.dmSans(
+              fontSize: 13,
+              height: 1.45,
+              color: secondaryText,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: messagesAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.yellow),
+              ),
+              error: (error, _) => Center(
+                child: Text(
+                  'Erreur de synchronisation : $error',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    color: secondaryText,
+                  ),
+                ),
+              ),
+              data: (messages) {
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Aucun message pour le moment. Lance la conversation.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        color: secondaryText,
+                      ),
+                    ),
+                  );
+                }
+                return ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: messages.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    return _MessageBubble(
+                      message: message,
+                      isFromCurrentUser:
+                          message.senderId == currentUserId,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: composerController,
+                  minLines: 1,
+                  maxLines: 3,
+                  enabled: !isSending,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => onSend(),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    color: primaryText,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Ecrire un message...',
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: AppThemeTokens.tertiaryText(context),
+                    ),
+                    filled: true,
+                    fillColor: AppThemeTokens.surfaceMuted(context),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide(color: border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide(color: border),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(18),
+                      ),
+                      borderSide: BorderSide(color: AppColors.yellow),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 52,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: isSending ? null : onSend,
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    backgroundColor: AppColors.yellow,
+                    foregroundColor: AppColors.navy,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: isSending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.navy,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  const _MessageBubble({
+    required this.message,
+    required this.isFromCurrentUser,
+  });
+
+  final ConversationMessage message;
+  final bool isFromCurrentUser;
 
   @override
   Widget build(BuildContext context) {
-    final bubbleColor = message.isFromCurrentUser
+    final bubbleColor = isFromCurrentUser
         ? AppColors.yellow
       : AppThemeTokens.surfaceMuted(context);
-    final textColor = message.isFromCurrentUser
+    final textColor = isFromCurrentUser
         ? AppColors.navy
       : AppThemeTokens.primaryText(context);
 
     return Align(
       alignment:
-          message.isFromCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+          isFromCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 260),
         child: Container(
@@ -363,7 +499,7 @@ class _MessageBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: bubbleColor,
             borderRadius: BorderRadius.circular(18),
-            border: message.isFromCurrentUser
+            border: isFromCurrentUser
                 ? null
                 : Border.all(color: AppThemeTokens.border(context)),
           ),
@@ -381,7 +517,7 @@ class _MessageBubble extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                _formatTime(message.sentAt),
+                _formatTime(message.createdAt),
                 style: GoogleFonts.dmSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -396,7 +532,10 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-String _formatTime(DateTime dateTime) {
+String _formatTime(DateTime? dateTime) {
+  if (dateTime == null) {
+    return '...';
+  }
   final hour = dateTime.hour.toString().padLeft(2, '0');
   final minute = dateTime.minute.toString().padLeft(2, '0');
   return '$hour:$minute';

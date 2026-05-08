@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/providers.dart';
 import '../router/router.dart';
+import '../services/conversation_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -14,12 +15,79 @@ class MessagesInboxScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authUser = ref.watch(authProvider).user;
-    final viewerId = authUser?.id ?? 'demo_local';
-    final conversations = ref.watch(demoConversationsProvider(viewerId));
+    final viewerId = authUser?.id ?? '';
     final primaryText = AppThemeTokens.primaryText(context);
     final secondaryText = AppThemeTokens.secondaryText(context);
     final surface = AppThemeTokens.surface(context);
     final border = AppThemeTokens.border(context);
+
+    Widget buildBody() {
+      if (viewerId.isEmpty) {
+        return _EmptyInbox(
+          message:
+              'Connecte-toi pour acceder a tes conversations privees Take60.',
+        );
+      }
+
+      final conversationsAsync =
+          ref.watch(conversationsProvider(viewerId));
+
+      return conversationsAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.yellow),
+        ),
+        error: (error, _) => _ErrorInbox(message: error.toString()),
+        data: (conversations) {
+          if (conversations.isEmpty) {
+            return _EmptyInbox(
+              message:
+                  'Aucune conversation pour le moment. Ouvre un profil et ecris un premier message pour demarrer.',
+            );
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: border),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 6,
+            ),
+            child: ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              itemCount: conversations.length,
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                thickness: 1,
+                color: border,
+                indent: 14,
+                endIndent: 14,
+              ),
+              itemBuilder: (_, index) {
+                final summary = conversations[index];
+                return _ConversationTile(
+                  summary: summary,
+                  viewerId: viewerId,
+                  onTap: () => context.go(
+                    AppRouter.messagesPath(summary.peerIdFor(viewerId)),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
+    }
+
+    final conversationCountAsync = viewerId.isEmpty
+        ? const AsyncValue<List<ConversationModel>>.data([])
+        : ref.watch(conversationsProvider(viewerId));
+    final count = conversationCountAsync.maybeWhen(
+      data: (list) => list.length,
+      orElse: () => 0,
+    );
 
     return Scaffold(
       backgroundColor: AppThemeTokens.pageBackground(context),
@@ -45,7 +113,7 @@ class MessagesInboxScreen extends ConsumerWidget {
                         if (context.canPop()) {
                           context.pop();
                         } else {
-                          context.go(AppRouter.profilePath(viewerId));
+                          context.go(AppRouter.home);
                         }
                       },
                       icon: Icon(
@@ -66,7 +134,7 @@ class MessagesInboxScreen extends ConsumerWidget {
                     ),
                     const Spacer(),
                     Text(
-                      '${conversations.length}',
+                      '$count',
                       style: GoogleFonts.dmSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -76,53 +144,7 @@ class MessagesInboxScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Expanded(
-                  child: conversations.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(
-                              'Aucune conversation pour le moment.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14,
-                                color: secondaryText,
-                              ),
-                            ),
-                          ),
-                        )
-                      : Container(
-                          decoration: BoxDecoration(
-                            color: surface,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: border),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 6,
-                          ),
-                          child: ListView.separated(
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: conversations.length,
-                            separatorBuilder: (_, __) => Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: border,
-                              indent: 14,
-                              endIndent: 14,
-                            ),
-                            itemBuilder: (_, index) {
-                              final summary = conversations[index];
-                              return _ConversationTile(
-                                summary: summary,
-                                onTap: () => context.go(
-                                  AppRouter.messagesPath(summary.peer.id),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                ),
+                Expanded(child: buildBody()),
               ],
             ),
           ),
@@ -132,18 +154,89 @@ class MessagesInboxScreen extends ConsumerWidget {
   }
 }
 
-class _ConversationTile extends StatelessWidget {
-  const _ConversationTile({required this.summary, required this.onTap});
+class _EmptyInbox extends StatelessWidget {
+  const _EmptyInbox({required this.message});
 
-  final DemoConversationSummary summary;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.forum_rounded,
+              size: 36,
+              color: secondaryText,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: secondaryText,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorInbox extends StatelessWidget {
+  const _ErrorInbox({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'Impossible de charger les conversations.\n$message',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.dmSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppThemeTokens.secondaryText(context),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationTile extends StatelessWidget {
+  const _ConversationTile({
+    required this.summary,
+    required this.viewerId,
+    required this.onTap,
+  });
+
+  final ConversationModel summary;
+  final String viewerId;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final primaryText = AppThemeTokens.primaryText(context);
     final secondaryText = AppThemeTokens.secondaryText(context);
-    final preview =
-        summary.lastMessage?.text ?? 'Démarrer la conversation';
+    final unread = summary.unreadFor(viewerId);
+    final preview = summary.lastMessage.isEmpty
+        ? 'Demarrer la conversation'
+        : summary.lastMessage;
+    final peerId = summary.peerIdFor(viewerId);
+    final peerName = summary.peerName(viewerId);
+    final peerAvatar = summary.peerAvatar(viewerId);
 
     return InkWell(
       onTap: onTap,
@@ -153,8 +246,8 @@ class _ConversationTile extends StatelessWidget {
         child: Row(
           children: [
             UserAvatar(
-              url: summary.peer.avatarUrl,
-              userId: summary.peer.id,
+              url: peerAvatar.isEmpty ? null : peerAvatar,
+              userId: peerId,
               size: 48,
               showBorder: false,
             ),
@@ -164,7 +257,7 @@ class _ConversationTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    summary.peer.displayName,
+                    peerName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
@@ -180,14 +273,35 @@ class _ConversationTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.dmSans(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: secondaryText,
+                      fontWeight:
+                          unread > 0 ? FontWeight.w700 : FontWeight.w500,
+                      color: unread > 0 ? primaryText : secondaryText,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
+            if (unread > 0)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.yellow,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$unread',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ),
             Icon(
               Icons.chevron_right_rounded,
               color: secondaryText,

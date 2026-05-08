@@ -12,6 +12,7 @@ import '../services/auth_service.dart';
 import '../services/ai_feed_service.dart';
 import '../services/camera_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/conversation_service.dart';
 import '../services/haptics_service.dart';
 import '../services/notification_service.dart';
 import '../services/permission_service.dart';
@@ -2437,108 +2438,28 @@ final profileProvider = StateNotifierProvider.family<ProfileNotifier, ProfileSta
   },
 );
 
-class DemoChatMessage {
-  const DemoChatMessage({
-    required this.id,
-    required this.text,
-    required this.sentAt,
-    required this.isFromCurrentUser,
-  });
+final conversationServiceProvider = Provider<ConversationService>(
+  (ref) => ConversationService(),
+);
 
-  final String id;
-  final String text;
-  final DateTime sentAt;
-  final bool isFromCurrentUser;
-}
-
-List<DemoChatMessage> _buildDemoMessages({
-  required UserModel currentUser,
-  required UserModel peerUser,
-}) {
-  final now = DateTime.now();
-  return [
-    DemoChatMessage(
-      id: 'msg_demo_1_${peerUser.id}',
-      text: 'Ton dernier take a vraiment une bonne intensité.',
-      sentAt: now.subtract(const Duration(minutes: 14)),
-      isFromCurrentUser: false,
-    ),
-    DemoChatMessage(
-      id: 'msg_demo_2_${peerUser.id}',
-      text: 'Merci. Je teste le mode démo pour voir le rendu complet.',
-      sentAt: now.subtract(const Duration(minutes: 11)),
-      isFromCurrentUser: true,
-    ),
-    DemoChatMessage(
-      id: 'msg_demo_3_${peerUser.id}',
-      text: 'Continue, ton prochain passage peut clairement monter au classement.',
-      sentAt: now.subtract(const Duration(minutes: 7)),
-      isFromCurrentUser: false,
-    ),
-  ];
-}
-
-class DemoMessagesNotifier extends StateNotifier<List<DemoChatMessage>> {
-  DemoMessagesNotifier({required UserModel currentUser, required UserModel peerUser})
-      : super(_buildDemoMessages(currentUser: currentUser, peerUser: peerUser));
-
-  void send(String text) {
-    final trimmed = text.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
-
-    state = [
-      ...state,
-      DemoChatMessage(
-        id: 'msg_demo_local_${DateTime.now().microsecondsSinceEpoch}',
-        text: trimmed,
-        sentAt: DateTime.now(),
-        isFromCurrentUser: true,
-      ),
-    ];
+final conversationsProvider =
+    StreamProvider.family<List<ConversationModel>, String>((ref, uid) {
+  if (uid.isEmpty) {
+    return const Stream<List<ConversationModel>>.empty();
   }
-}
-
-final demoMessagesProvider = StateNotifierProvider.family<
-    DemoMessagesNotifier,
-    List<DemoChatMessage>,
-    String>((ref, userId) {
-  final authUser = ref.watch(authProvider.select((state) => state.user));
-  final currentUser = _buildDemoProfileUser(authUser?.id ?? 'demo_local', authUser);
-  final peerUser = _buildDemoProfileUser(userId, authUser);
-  return DemoMessagesNotifier(currentUser: currentUser, peerUser: peerUser);
+  return ref.read(conversationServiceProvider).streamConversations(uid);
 });
 
-class DemoConversationSummary {
-  const DemoConversationSummary({
-    required this.peer,
-    required this.lastMessage,
-  });
-
-  final UserModel peer;
-  final DemoChatMessage? lastMessage;
-}
-
-const List<String> _demoConversationPeerIds = <String>[
-  'u_demo_feed_a',
-  'u_demo_feed_b',
-  'u_rank_week_1',
-  'u_rank_month_1',
-  'u_rank_global_1',
-];
-
-final demoConversationsProvider =
-    Provider.family<List<DemoConversationSummary>, String>((ref, viewerId) {
-  final authUser = ref.watch(authProvider.select((state) => state.user));
-  final peerIds =
-      _demoConversationPeerIds.where((id) => id != viewerId).toList();
-  return peerIds.map((peerId) {
-    final peer = _buildDemoProfileUser(peerId, authUser);
-    final messages = ref.watch(demoMessagesProvider(peerId));
-    final last = messages.isEmpty ? null : messages.last;
-    return DemoConversationSummary(peer: peer, lastMessage: last);
-  }).toList();
-});
+final conversationMessagesProvider =
+    StreamProvider.family<List<ConversationMessage>, String>(
+  (ref, conversationId) {
+    if (conversationId.isEmpty) {
+      return const Stream<List<ConversationMessage>>.empty();
+    }
+    return ref
+        .read(conversationServiceProvider)
+        .streamMessages(conversationId);
+  },
+);
 
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
