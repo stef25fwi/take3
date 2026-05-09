@@ -102,7 +102,7 @@ class Take60HeroTitle extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 1),
                 Text('qui marque ?', style: lineStyle),
               ],
             ),

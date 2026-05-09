@@ -13,7 +13,6 @@ import '../theme/app_theme.dart';
 import '../widgets/battle/battle_preparing_card.dart';
 import '../widgets/battle/battle_published_card.dart';
 import '../widgets/shared_widgets.dart';
-import '../widgets/take60_greeting_hero_card.dart';
 import '../widgets/take30_logo.dart';
 import '../widgets/take60_hero_section.dart';
 
@@ -83,14 +82,6 @@ class HomeScreen extends ConsumerWidget {
                     Take60CinematicHero(
                       onNewVideoTap: () => context.go(AppRouter.record),
                       onChallengeTap: () => context.go(AppRouter.challenge),
-                    ),
-                    const SizedBox(height: 12),
-                    Take60GreetingHeroCard(
-                      user: currentUser,
-                      scenesValue: '${currentUser.scenesCount}',
-                      likesValue: _formatCompact(currentUser.likesCount),
-                      onPrimaryTap: () => context.go(AppRouter.aiFeed),
-                      onSecondaryTap: () => context.go(AppRouter.challenge),
                     ),
                     const SizedBox(height: 12),
                     const _SectionTitle('À la une'),
