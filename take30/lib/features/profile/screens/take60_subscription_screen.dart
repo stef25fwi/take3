@@ -150,28 +150,32 @@ class Take60SubscriptionScreen extends ConsumerWidget {
   }
 
   Future<void> _openSubscriptionFlow(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final uri = Uri.parse('https://take60.app/premium');
     final ok = await canLaunchUrl(uri);
     if (!ok) {
-      _showSnack(context, 'Impossible d\'ouvrir la page d\'abonnement.');
+      _showSnack(messenger, 'Impossible d\'ouvrir la page d\'abonnement.');
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _openManageSubscription(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final uri = Uri.parse('https://take60.app/account/subscription');
     final ok = await canLaunchUrl(uri);
     if (!ok) {
-      _showSnack(context, 'Impossible d\'ouvrir la gestion d\'abonnement.');
+      _showSnack(
+        messenger,
+        'Impossible d\'ouvrir la gestion d\'abonnement.',
+      );
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  void _showSnack(BuildContext context, String message) {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+  void _showSnack(ScaffoldMessengerState messenger, String message) {
+    messenger.showSnackBar(
       SnackBar(content: Text(message)),
     );
   }

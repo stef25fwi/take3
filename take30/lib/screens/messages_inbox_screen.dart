@@ -23,7 +23,7 @@ class MessagesInboxScreen extends ConsumerWidget {
 
     Widget buildBody() {
       if (viewerId.isEmpty) {
-        return _EmptyInbox(
+        return const _EmptyInbox(
           message:
               'Connecte-toi pour acceder a tes conversations privees Take60.',
         );
@@ -39,7 +39,7 @@ class MessagesInboxScreen extends ConsumerWidget {
         error: (error, _) => _ErrorInbox(message: error.toString()),
         data: (conversations) {
           if (conversations.isEmpty) {
-            return _EmptyInbox(
+            return const _EmptyInbox(
               message:
                   'Aucune conversation pour le moment. Ouvre un profil et ecris un premier message pour demarrer.',
             );

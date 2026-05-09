@@ -65,11 +65,11 @@ class Take60CommentsScreen extends ConsumerWidget {
     final uid = user?.id ?? '';
 
     if (uid.isEmpty) {
-      return Take60ProfileScreenScaffold(
+      return const Take60ProfileScreenScaffold(
         title: 'Mes commentaires',
         subtitle:
             'Connecte-toi pour retrouver et moderer tes commentaires Take60.',
-        children: const [],
+        children: [],
       );
     }
 

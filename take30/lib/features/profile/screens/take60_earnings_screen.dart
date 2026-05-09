@@ -61,10 +61,10 @@ class Take60EarningsScreen extends ConsumerWidget {
     final isPremium = user?.plan == UserPlan.premium;
 
     if (uid.isEmpty) {
-      return Take60ProfileScreenScaffold(
+      return const Take60ProfileScreenScaffold(
         title: 'Monetisation',
         subtitle: 'Connecte-toi pour suivre tes revenus Take60.',
-        children: const [],
+        children: [],
       );
     }
 
@@ -100,7 +100,7 @@ class Take60EarningsScreen extends ConsumerWidget {
           ),
           data: (balance) {
             if (balance == null) {
-              return Take60EmptyState(
+              return const Take60EmptyState(
                 icon: Icons.payments_outlined,
                 title: 'Aucun revenu enregistre',
                 message:

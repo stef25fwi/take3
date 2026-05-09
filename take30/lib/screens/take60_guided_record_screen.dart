@@ -1048,12 +1048,6 @@ class _Take60GuidedRecordScreenState
           avatarUrl: '',
         );
     final categories = _scenes.map((s) => s.category).toSet().toList()..sort();
-    final types = _scenes
-        .map((s) => s.sceneType)
-        .where((value) => value.trim().isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
     final difficulties = _scenes
         .map((s) => s.difficulty)
         .where((value) => value.trim().isNotEmpty)
@@ -2613,6 +2607,7 @@ class _RecordSceneCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _SceneCard extends StatelessWidget {
   const _SceneCard({required this.scene, required this.onPlay});
 

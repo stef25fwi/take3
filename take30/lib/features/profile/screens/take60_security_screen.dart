@@ -168,14 +168,14 @@ class _Take60SecurityScreenState extends ConsumerState<Take60SecurityScreen> {
           ),
         ],
         const SizedBox(height: 22),
-        Take60InfoCard(
+        const Take60InfoCard(
           icon: Icons.shield_rounded,
           title: 'Authentification renforcee',
           description:
               'Active l\'authentification a deux facteurs depuis Firebase Console pour les comptes admins.',
         ),
         const SizedBox(height: 10),
-        Take60InfoCard(
+        const Take60InfoCard(
           icon: Icons.history_rounded,
           title: 'Connexions recentes',
           description:

@@ -65,10 +65,10 @@ class Take60UserProjectsScreen extends ConsumerWidget {
     final uid = user?.id ?? '';
 
     if (uid.isEmpty) {
-      return Take60ProfileScreenScaffold(
+      return const Take60ProfileScreenScaffold(
         title: 'Mes projets Take60',
         subtitle: 'Connecte-toi pour suivre tes projets en cours.',
-        children: const [],
+        children: [],
       );
     }
 

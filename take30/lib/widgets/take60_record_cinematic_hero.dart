@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/models.dart';
-import 'shared_widgets.dart';
 
 class Take60RecordCinematicHero extends StatefulWidget {
   const Take60RecordCinematicHero({
@@ -61,17 +60,17 @@ class _Take60RecordCinematicHeroState extends State<Take60RecordCinematicHero>
           width: double.infinity,
           height: heroHeight,
           clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.vertical(
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.vertical(
               top: Radius.circular(28),
               bottom: Radius.zero,
             ),
-            gradient: const LinearGradient(
+            gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [Color(0xFF070A12), Color(0xFF0A0D16), Color(0xFF05070D)],
             ),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
                 color: Color.fromRGBO(0, 0, 0, 0.45),
                 blurRadius: 34,
@@ -117,7 +116,7 @@ class _Take60RecordCinematicHeroState extends State<Take60RecordCinematicHero>
               Positioned(
                 top: heroHeight * 0.17,
                 left: (media.width / 2) - 100,
-                child: _GlowOrb(
+                child: const _GlowOrb(
                   color: Colors.white,
                   size: 200,
                   opacity: 0.11,
@@ -430,7 +429,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatItem(
             icon: Icons.timer_outlined,
-            iconColor: Color(0xFFFF9A2F),
+            iconColor: const Color(0xFFFF9A2F),
             value: '60s',
             label: 'Duree max',
             isCompact: isCompact,
@@ -440,7 +439,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatItem(
             icon: Icons.chat_bubble_outline,
-            iconColor: Color(0xFF39B5FF),
+            iconColor: const Color(0xFF39B5FF),
             value: 'Intro IA',
             label: 'incluse',
             isCompact: isCompact,
@@ -450,7 +449,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatItem(
             icon: Icons.menu_book_rounded,
-            iconColor: Color(0xFFB07CFF),
+            iconColor: const Color(0xFFB07CFF),
             value: '3 plans',
             label: 'a jouer',
             isCompact: isCompact,
@@ -684,8 +683,8 @@ class _CinemaCameraProp extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Stack(
-                  children: const [
+                child: const Stack(
+                  children: [
                     Positioned(
                       left: 16,
                       top: 16,

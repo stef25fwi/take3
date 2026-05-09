@@ -64,10 +64,10 @@ class Take60BookmarksScreen extends ConsumerWidget {
     final uid = user?.id ?? '';
 
     if (uid.isEmpty) {
-      return Take60ProfileScreenScaffold(
+      return const Take60ProfileScreenScaffold(
         title: 'Mes favoris',
         subtitle: 'Connecte-toi pour retrouver tes scenes favorites.',
-        children: const [],
+        children: [],
       );
     }
 
