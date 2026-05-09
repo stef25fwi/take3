@@ -1039,6 +1039,7 @@ class _Take60GuidedRecordScreenState
 
   // ─── Stage: Library ──────────────────────────────────────────────────
   Widget _buildLibrary() {
+    const pageBackground = Color(0xFF07101B);
     final currentUser = ref.watch(authProvider).user ??
         const UserModel(
           id: 'anonymous',
@@ -1059,145 +1060,231 @@ class _Take60GuidedRecordScreenState
         .toSet()
         .toList()
       ..sort();
+    final chips = _buildCategoryChips(categories, difficulties);
+    final hasRealScenes = _scenes.isNotEmpty;
+    final hasFilteredScenes = _filteredScenes.isNotEmpty;
+    final sceneTiles = hasFilteredScenes
+        ? _filteredScenes
+            .asMap()
+            .entries
+            .map(
+              (entry) => _RecordSceneTileData.fromScene(
+                scene: entry.value,
+                isFeatured: entry.key == 0,
+              ),
+            )
+            .toList()
+        : (!hasRealScenes ? _fallbackSceneTiles() : <_RecordSceneTileData>[]);
 
-    final header = Padding(
-      padding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          IconButton(
-            onPressed: () => context.go(AppRouter.home),
-            icon: Icon(Icons.arrow_back, color: _primaryText(context)),
-          ),
-          const SizedBox(height: 6),
-          Take60RecordCinematicHero(
-            user: currentUser,
-            onPrimaryTap: () => context.go(AppRouter.record),
-            onSecondaryTap: () => context.go(AppRouter.challenge),
-          ),
-          const SizedBox(height: 16),
-          _filtersRow(categories, types, difficulties),
-        ],
-      ),
-    );
-
-    Widget body;
-    if (_loadingLibrary) {
-      body = const Center(
-        child: CircularProgressIndicator(color: _accent),
-      );
-    } else if (_filteredScenes.isEmpty) {
-      body = Padding(
-        padding: const EdgeInsets.all(32),
-        child: Center(
-          child: Text(
-            'Aucune scène guidée ne correspond à ces filtres pour le moment.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(
-              color: _secondaryText(context),
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: pageBackground),
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    onPressed: () => context.go(AppRouter.home),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  ),
+                ),
+                Take60RecordCinematicHero(
+                  user: currentUser,
+                  onPrimaryTap: _handlePrimaryRecordTap,
+                  onSecondaryTap: () => context.go(AppRouter.challenge),
+                ),
+                const SizedBox(height: 14),
+                _RecordMotivationCard(user: currentUser),
+                const SizedBox(height: 22),
+                _RecordCategoryChips(
+                  chips: chips,
+                  onChipTap: (chip) => _applyCategoryChip(
+                    chip: chip,
+                    categories: categories,
+                    difficulties: difficulties,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                if (_loadingLibrary)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(color: _accent),
+                    ),
+                  )
+                else if (sceneTiles.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 30),
+                    child: Text(
+                      'Aucune scène guidée ne correspond à ces filtres pour le moment.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFFB7C0D4),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else
+                  ...sceneTiles.map(
+                    (tile) => Padding(
+                      padding: EdgeInsets.only(bottom: tile.isFeatured ? 12 : 12),
+                      child: _RecordSceneCard(
+                        tile: tile,
+                        onPlay: tile.scene != null
+                            ? () => _enterDirectorSheet(tile.scene!)
+                            : _handlePrimaryRecordTap,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
-      );
-    } else {
-      body = ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        itemCount: _filteredScenes.length,
-        itemBuilder: (context, index) {
-          final scene = _filteredScenes[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _SceneCard(
-              scene: scene,
-              onPlay: () => _enterDirectorSheet(scene),
-            ),
-          );
-        },
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        header,
-        Expanded(child: body),
-      ],
+      ),
     );
   }
 
-  Widget _filtersRow(
+  void _handlePrimaryRecordTap() {
+    if (_filteredScenes.isNotEmpty) {
+      _enterDirectorSheet(_filteredScenes.first);
+      return;
+    }
+    if (_scenes.isNotEmpty) {
+      _enterDirectorSheet(_scenes.first);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Les scenes arrivent bientot.')),
+    );
+  }
+
+  List<_RecordCategoryChipData> _buildCategoryChips(
     List<String> categories,
-    List<String> types,
     List<String> difficulties,
   ) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        _filterDropdown(
-          label: 'Catégorie',
-          value: _filterCategory,
-          values: categories,
-          onChanged: (v) => setState(() => _filterCategory = v),
-        ),
-        _filterDropdown(
-          label: 'Type',
-          value: _filterType,
-          values: types,
-          onChanged: (v) => setState(() => _filterType = v),
-        ),
-        _filterDropdown(
-          label: 'Difficulté',
-          value: _filterDifficulty,
-          values: difficulties,
-          onChanged: (v) => setState(() => _filterDifficulty = v),
-        ),
-      ],
-    );
+    final hasDebutant =
+        difficulties.any((value) => value.toLowerCase().contains('debut'));
+    final hasIntense =
+        difficulties.any((value) => value.toLowerCase().contains('intense'));
+    return [
+      const _RecordCategoryChipData(
+        label: '🔥 Tendances',
+        color: Color(0xFFFF8A00),
+        key: 'trending',
+      ),
+      const _RecordCategoryChipData(
+        label: '🎭 Drame',
+        color: Color(0xFFA855F7),
+        key: 'drame',
+      ),
+      const _RecordCategoryChipData(
+        label: '😂 Comedie',
+        color: Color(0xFFFFC400),
+        key: 'comedie',
+      ),
+      const _RecordCategoryChipData(
+        label: '⚔️ Battle',
+        color: Color(0xFF009DFF),
+        key: 'battle',
+      ),
+      _RecordCategoryChipData(
+        label: '🎬 Debutant',
+        color: const Color(0xFF39FF88),
+        key: hasDebutant ? 'debutant' : 'all',
+      ),
+      _RecordCategoryChipData(
+        label: '🧨 Intense',
+        color: const Color(0xFFFF2D2D),
+        key: hasIntense ? 'intense' : 'all',
+      ),
+    ];
   }
 
-  Widget _filterDropdown({
-    required String label,
-    required String? value,
-    required List<String> values,
-    required ValueChanged<String?> onChanged,
+  void _applyCategoryChip({
+    required _RecordCategoryChipData chip,
+    required List<String> categories,
+    required List<String> difficulties,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: _surface(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _softBorder(context)),
+    String? category;
+    String? difficulty;
+    final key = chip.key;
+    if (key == 'trending' || key == 'all') {
+      category = null;
+      difficulty = null;
+    } else if (key == 'drame') {
+      category = categories.firstWhere(
+        (value) => value.toLowerCase().contains('drame'),
+        orElse: () => '',
+      );
+    } else if (key == 'comedie') {
+      category = categories.firstWhere(
+        (value) => value.toLowerCase().contains('comed'),
+        orElse: () => '',
+      );
+    } else if (key == 'battle') {
+      category = categories.firstWhere(
+        (value) => value.toLowerCase().contains('battle'),
+        orElse: () => '',
+      );
+    } else if (key == 'debutant') {
+      difficulty = difficulties.firstWhere(
+        (value) => value.toLowerCase().contains('debut'),
+        orElse: () => '',
+      );
+    } else if (key == 'intense') {
+      difficulty = difficulties.firstWhere(
+        (value) => value.toLowerCase().contains('intense'),
+        orElse: () => '',
+      );
+    }
+    setState(() {
+      _filterCategory = (category != null && category.isNotEmpty) ? category : null;
+      _filterDifficulty = (difficulty != null && difficulty.isNotEmpty)
+          ? difficulty
+          : null;
+      _filterType = null;
+    });
+  }
+
+  List<_RecordSceneTileData> _fallbackSceneTiles() {
+    return const [
+      _RecordSceneTileData(
+        title: 'Interrogatoire\nsous tension',
+        subtitle: 'Drame / Thriller · Policier',
+        durationLabel: '60s',
+        difficultyLabel: 'Intermediaire',
+        plansLabel: '3 plans',
+        statusLabel: '✨ Intro IA prete',
+        ctaLabel: '🎬  Tourner maintenant',
+        isFeatured: true,
+        showFeaturedBadge: true,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          isDense: true,
-          value: value,
-          dropdownColor: _surface(context),
-          hint: Text(
-            label,
-            style: GoogleFonts.dmSans(
-              color: _secondaryText(context),
-              fontSize: 12,
-            ),
-          ),
-          icon: Icon(Icons.expand_more, color: _secondaryText(context), size: 18),
-          style: GoogleFonts.dmSans(color: _primaryText(context), fontSize: 13),
-          items: [
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text(
-                'Tous · $label',
-                style: GoogleFonts.dmSans(color: _secondaryText(context), fontSize: 12),
-              ),
-            ),
-            for (final v in values)
-              DropdownMenuItem<String?>(value: v, child: Text(v)),
-          ],
-          onChanged: onChanged,
-        ),
+      _RecordSceneTileData(
+        title: 'Course contre la montre',
+        subtitle: 'Action / Suspense · Urbain',
+        durationLabel: '60s',
+        difficultyLabel: 'Debutant',
+        plansLabel: '3 plans',
+        statusLabel: '✨ Intro IA prete',
+        ctaLabel: '🎬  Tourner maintenant',
       ),
-    );
+      _RecordSceneTileData(
+        title: 'Premier rendez-vous',
+        subtitle: 'Romance / Comedie · Contemporain',
+        durationLabel: '60s',
+        difficultyLabel: 'Debutant',
+        plansLabel: '3 plans',
+        statusLabel: '✨ Intro IA prete',
+        ctaLabel: '🎬  Tourner maintenant',
+      ),
+    ];
   }
 
   // ─── Stage: Director sheet ──────────────────────────────────────────
@@ -2273,6 +2360,258 @@ class _Take60GuidedRecordScreenState
 }
 
 // ── Internal widgets ─────────────────────────────────────────────────────
+
+class _RecordCategoryChipData {
+  const _RecordCategoryChipData({
+    required this.label,
+    required this.color,
+    required this.key,
+  });
+
+  final String label;
+  final Color color;
+  final String key;
+}
+
+class _RecordSceneTileData {
+  const _RecordSceneTileData({
+    required this.title,
+    required this.subtitle,
+    required this.durationLabel,
+    required this.difficultyLabel,
+    required this.plansLabel,
+    required this.statusLabel,
+    required this.ctaLabel,
+    this.thumbnailUrl,
+    this.scene,
+    this.isFeatured = false,
+    this.showFeaturedBadge = false,
+  });
+
+  factory _RecordSceneTileData.fromScene({
+    required SceneModel scene,
+    required bool isFeatured,
+  }) {
+    final plans = scene.userPlanCount > 0 ? scene.userPlanCount : 3;
+    return _RecordSceneTileData(
+      title: scene.title,
+      subtitle: [
+        scene.category,
+        if (scene.sceneType.trim().isNotEmpty) scene.sceneType,
+      ].join(' · '),
+      durationLabel: '${scene.durationSeconds}s',
+      difficultyLabel: scene.difficulty.trim().isEmpty
+          ? 'Libre'
+          : scene.difficulty,
+      plansLabel: '$plans plans',
+      statusLabel: 'Intro IA prete',
+      ctaLabel: 'Tourner maintenant',
+      thumbnailUrl: scene.thumbnailUrl,
+      scene: scene,
+      isFeatured: isFeatured,
+      showFeaturedBadge: isFeatured,
+    );
+  }
+
+  final String title;
+  final String subtitle;
+  final String durationLabel;
+  final String difficultyLabel;
+  final String plansLabel;
+  final String statusLabel;
+  final String ctaLabel;
+  final String? thumbnailUrl;
+  final SceneModel? scene;
+  final bool isFeatured;
+  final bool showFeaturedBadge;
+}
+
+class _RecordMotivationCard extends StatelessWidget {
+  const _RecordMotivationCard({required this.user});
+
+  final UserModel user;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF101A2A), Color(0xFF0C1422)],
+        ),
+        border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.12)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_fire_department, color: Color(0xFFFFB84D)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Pret ${user.displayName} ? Choisis une scene, joue ton role et publie en 60 secondes.',
+              style: GoogleFonts.dmSans(
+                color: const Color(0xFFE5EBF8),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordCategoryChips extends StatelessWidget {
+  const _RecordCategoryChips({
+    required this.chips,
+    required this.onChipTap,
+  });
+
+  final List<_RecordCategoryChipData> chips;
+  final ValueChanged<_RecordCategoryChipData> onChipTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: chips
+          .map(
+            (chip) => InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => onChipTap(chip),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: chip.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: chip.color.withValues(alpha: 0.65)),
+                ),
+                child: Text(
+                  chip.label,
+                  style: GoogleFonts.dmSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _RecordSceneCard extends StatelessWidget {
+  const _RecordSceneCard({
+    required this.tile,
+    required this.onPlay,
+  });
+
+  final _RecordSceneTileData tile;
+  final VoidCallback onPlay;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleStyle = GoogleFonts.dmSans(
+      color: Colors.white,
+      fontWeight: FontWeight.w800,
+      fontSize: tile.isFeatured ? 18 : 16,
+    );
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E192B),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: tile.isFeatured
+              ? const Color.fromRGBO(255, 184, 77, 0.7)
+              : const Color.fromRGBO(255, 255, 255, 0.15),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 92,
+              height: 92,
+              child: (tile.thumbnailUrl != null && tile.thumbnailUrl!.isNotEmpty)
+                  ? _Thumbnail(thumbnailUrl: tile.thumbnailUrl!)
+                  : Container(
+                      color: const Color(0xFF1D2A40),
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.movie, color: Colors.white70),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (tile.showFeaturedBadge)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(255, 184, 77, 0.2),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFFFB84D)),
+                    ),
+                    child: Text(
+                      'Featured',
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFFFFD18A),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                Text(tile.title, style: titleStyle),
+                const SizedBox(height: 4),
+                Text(
+                  tile.subtitle,
+                  style: GoogleFonts.dmSans(
+                    color: const Color(0xFFAFC0DD),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _Pill(label: tile.durationLabel),
+                    _Pill(label: tile.difficultyLabel),
+                    _Pill(label: tile.plansLabel),
+                    _Pill(label: tile.statusLabel),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton(
+                    onPressed: onPlay,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFB800),
+                      foregroundColor: Colors.black,
+                    ),
+                    child: Text(tile.ctaLabel),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _SceneCard extends StatelessWidget {
   const _SceneCard({required this.scene, required this.onPlay});

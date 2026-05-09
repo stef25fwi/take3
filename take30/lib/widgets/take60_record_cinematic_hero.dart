@@ -45,13 +45,10 @@ class _Take60RecordCinematicHeroState extends State<Take60RecordCinematicHero>
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.sizeOf(context);
-    final titleSize = media.width >= 430
-        ? 64.0
-        : media.width >= 390
-            ? 62.0
-            : 58.0;
-    final subtitleSize = media.width >= 390 ? 24.0 : 22.0;
-    final heroHeight = (media.height * 0.72).clamp(660.0, 760.0).toDouble();
+    final isCompact = media.height < 850;
+    final titleSize = media.width >= 412 ? 44.0 : 40.0;
+    final subtitleSize = media.width >= 400 ? 17.0 : 16.0;
+    final heroHeight = isCompact ? 392.0 : 430.0;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -162,13 +159,13 @@ class _Take60RecordCinematicHeroState extends State<Take60RecordCinematicHero>
                   child: Column(
                     children: [
                       const _ModeTournageBadge(),
-                      const Spacer(flex: 2),
+                      const SizedBox(height: 26),
                       ConstrainedBox(
                         constraints: BoxConstraints(
                           maxWidth: media.width * 0.72,
                         ),
                         child: Text(
-                          'Deviens l\'acteur principal.',
+                          'Deviens\nl\'acteur principal.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.interTight(
                             fontSize: titleSize,
@@ -192,11 +189,11 @@ class _Take60RecordCinematicHeroState extends State<Take60RecordCinematicHero>
                           maxWidth: media.width * 0.70,
                         ),
                         child: Text(
-                          'Choisis une scene, regarde l\'intro IA, puis tourne ta performance en 60 secondes.',
+                          'Choisis une scene, regarde l\'intro IA,\npuis tourne ta performance en\n60 secondes.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.interTight(
                             fontSize: subtitleSize,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             height: 1.32,
                             color: Colors.white.withValues(alpha: 0.80),
                           ),
@@ -207,28 +204,25 @@ class _Take60RecordCinematicHeroState extends State<Take60RecordCinematicHero>
                         scale: pulse,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
-                            maxWidth: 520,
-                            minHeight: 76,
+                            maxWidth: 300,
+                            minHeight: 58,
                           ),
                           child: _PrimaryCtaButton(
-                            label: '🎬 Tourner ma video',
+                            label: '🎬  Tourner ma video',
                             onTap: widget.onPrimaryTap,
                           ),
                         ),
                       ),
                       const SizedBox(height: 12),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 520),
+                        constraints: const BoxConstraints(maxWidth: 300),
                         child: _SecondaryCtaButton(
                           label: 'Voir les defis',
                           onTap: widget.onSecondaryTap,
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 20),
                       const _StatsRow(),
-                      const SizedBox(height: 18),
-                      _MotivationBar(user: widget.user),
-                      const Spacer(),
                     ],
                   ),
                 ),
@@ -318,19 +312,27 @@ class _PrimaryCtaButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
           child: Ink(
-            height: 76,
+            height: 58,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(18),
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [Color(0xFFFF8A00), Color(0xFFFF5E00)],
               ),
+              border: Border.all(
+                color: const Color.fromRGBO(255, 255, 255, 0.28),
+              ),
               boxShadow: const [
                 BoxShadow(
                   color: Color.fromRGBO(255, 120, 0, 0.45),
-                  blurRadius: 40,
-                  offset: Offset(0, 16),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Color.fromRGBO(255, 196, 0, 0.30),
+                  blurRadius: 36,
+                  offset: Offset(0, 0),
                 ),
               ],
             ),
@@ -356,13 +358,17 @@ class _PrimaryCtaButton extends StatelessWidget {
                   ),
                 ),
                 Center(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.interTight(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
+                  child: Semantics(
+                    button: true,
+                    label: 'Tourner ma video',
+                    child: Text(
+                      label,
+                      style: GoogleFonts.interTight(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
                 ),
@@ -387,20 +393,24 @@ class _SecondaryCtaButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(56),
+          minimumSize: const Size.fromHeight(48),
           backgroundColor: const Color.fromRGBO(255, 255, 255, 0.06),
-          side: const BorderSide(color: Color.fromRGBO(255, 255, 255, 0.18)),
+          side: const BorderSide(color: Color.fromRGBO(255, 255, 255, 0.45)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(15),
           ),
         ),
         onPressed: onTap,
-        child: Text(
-          label,
-          style: GoogleFonts.interTight(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+        child: Semantics(
+          button: true,
+          label: 'Voir les defis',
+          child: Text(
+            label,
+            style: GoogleFonts.interTight(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ),
@@ -413,33 +423,55 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 370;
     return Row(
-      children: const [
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
         Expanded(
           child: _StatItem(
             icon: Icons.timer_outlined,
             iconColor: Color(0xFFFF9A2F),
             value: '60s',
             label: 'Duree max',
+            isCompact: isCompact,
           ),
         ),
+        _VerticalDividerStat(isCompact: isCompact),
         Expanded(
           child: _StatItem(
-            icon: Icons.auto_awesome,
+            icon: Icons.chat_bubble_outline,
             iconColor: Color(0xFF39B5FF),
             value: 'Intro IA',
             label: 'incluse',
+            isCompact: isCompact,
           ),
         ),
+        _VerticalDividerStat(isCompact: isCompact),
         Expanded(
           child: _StatItem(
             icon: Icons.menu_book_rounded,
             iconColor: Color(0xFFB07CFF),
             value: '3 plans',
             label: 'a jouer',
+            isCompact: isCompact,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _VerticalDividerStat extends StatelessWidget {
+  const _VerticalDividerStat({required this.isCompact});
+
+  final bool isCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: isCompact ? 28 : 34,
+      color: Colors.white.withValues(alpha: 0.22),
     );
   }
 }
@@ -450,139 +482,48 @@ class _StatItem extends StatelessWidget {
     required this.iconColor,
     required this.value,
     required this.label,
+    required this.isCompact,
   });
 
   final IconData icon;
   final Color iconColor;
   final String value;
   final String label;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: iconColor, size: 24),
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color.fromRGBO(0, 0, 0, 0.42),
+            border: Border.all(color: iconColor.withValues(alpha: 0.72)),
+          ),
+          child: Icon(icon, color: iconColor, size: 19),
+        ),
         const SizedBox(height: 6),
         Text(
           value,
           style: GoogleFonts.interTight(
             color: Colors.white,
-            fontSize: 21,
-            fontWeight: FontWeight.w700,
+            fontSize: isCompact ? 13 : 15,
+            fontWeight: FontWeight.w900,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
           style: GoogleFonts.interTight(
-            color: Colors.white.withValues(alpha: 0.82),
-            fontSize: 13,
+            color: const Color(0xFFD7DCE8),
+            fontSize: isCompact ? 9.5 : 10.5,
             fontWeight: FontWeight.w500,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _MotivationBar extends StatelessWidget {
-  const _MotivationBar({required this.user});
-
-  final UserModel user;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xCC111722), Color(0xB30A0D14)],
-        ),
-        border: Border.all(color: const Color.fromRGBO(255, 140, 0, 0.35)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(255, 140, 0, 0.20),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.emoji_events, color: Color(0xFFFFC84D), size: 26),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Chaque prise peut te faire remarquer.',
-                  style: GoogleFonts.interTight(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Joue, publie, entre dans le classement.',
-                  style: GoogleFonts.interTight(
-                    color: Colors.white.withValues(alpha: 0.78),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 66,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                UserAvatar(url: user.avatarUrl, userId: user.id, size: 24),
-                const Positioned(
-                  left: 16,
-                  child: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: Color(0xFF2C3342),
-                    child: Icon(Icons.person, size: 13, color: Colors.white70),
-                  ),
-                ),
-                const Positioned(
-                  left: 32,
-                  child: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: Color(0xFF3C4B66),
-                    child: Icon(Icons.person, size: 13, color: Colors.white70),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFF101623),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: const Color(0xFFFFB84D)),
-            ),
-            child: Text(
-              '🔥 12,5K',
-              style: GoogleFonts.interTight(
-                color: const Color(0xFFFFCA5C),
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
