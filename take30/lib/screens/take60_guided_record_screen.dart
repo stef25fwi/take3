@@ -19,7 +19,7 @@ import '../services/permission_service.dart';
 import '../services/take60_guided_scene_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/video_player_controller_factory.dart';
-import '../widgets/take60_record_cinematic_hero.dart';
+import '../widgets/take60_greeting_hero_card.dart';
 
 /// Take60 Guided Recording Flow — full state machine.
 ///
@@ -1039,7 +1039,6 @@ class _Take60GuidedRecordScreenState
 
   // ─── Stage: Library ──────────────────────────────────────────────────
   Widget _buildLibrary() {
-    const pageBackground = Color(0xFF07101B);
     final currentUser = ref.watch(authProvider).user ??
         const UserModel(
           id: 'anonymous',
@@ -1071,7 +1070,9 @@ class _Take60GuidedRecordScreenState
         : (!hasRealScenes ? _fallbackSceneTiles() : <_RecordSceneTileData>[]);
 
     return DecoratedBox(
-      decoration: const BoxDecoration(color: pageBackground),
+      decoration: BoxDecoration(
+        color: AppThemeTokens.pageBackground(context),
+      ),
       child: SafeArea(
         top: true,
         bottom: false,
@@ -1086,13 +1087,20 @@ class _Take60GuidedRecordScreenState
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => context.go(AppRouter.home),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: AppThemeTokens.primaryText(context),
+                    ),
                   ),
                 ),
-                Take60RecordCinematicHero(
+                Take60GreetingHeroCard(
                   user: currentUser,
+                  scenesValue: '${currentUser.scenesCount}',
+                  likesValue: _formatCompactValue(currentUser.likesCount),
                   onPrimaryTap: _handlePrimaryRecordTap,
                   onSecondaryTap: () => context.go(AppRouter.challenge),
+                  primaryLabel: 'Nouvelle video',
+                  secondaryLabel: 'Voir le defi',
                 ),
                 const SizedBox(height: 14),
                 _RecordMotivationCard(user: currentUser),
@@ -1120,7 +1128,7 @@ class _Take60GuidedRecordScreenState
                       'Aucune scène guidée ne correspond à ces filtres pour le moment.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.dmSans(
-                        color: const Color(0xFFB7C0D4),
+                        color: AppThemeTokens.secondaryText(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1157,6 +1165,12 @@ class _Take60GuidedRecordScreenState
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Les scenes arrivent bientot.')),
     );
+  }
+
+  String _formatCompactValue(int value) {
+    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(1)}K';
+    return value.toString();
   }
 
   List<_RecordCategoryChipData> _buildCategoryChips(
@@ -2427,14 +2441,15 @@ class _RecordMotivationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surface = AppThemeTokens.chromeSurface(context);
+    final border = AppThemeTokens.softBorder(context);
+    final primaryText = AppThemeTokens.primaryText(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF101A2A), Color(0xFF0C1422)],
-        ),
-        border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.12)),
+        color: surface,
+        border: Border.all(color: border),
       ),
       child: Row(
         children: [
@@ -2444,7 +2459,7 @@ class _RecordMotivationCard extends StatelessWidget {
             child: Text(
               'Pret ${user.displayName} ? Choisis une scene, joue ton role et publie en 60 secondes.',
               style: GoogleFonts.dmSans(
-                color: const Color(0xFFE5EBF8),
+                color: primaryText,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -2467,6 +2482,7 @@ class _RecordCategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryText = AppThemeTokens.primaryText(context);
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -2485,7 +2501,7 @@ class _RecordCategoryChips extends StatelessWidget {
                 child: Text(
                   chip.label,
                   style: GoogleFonts.dmSans(
-                    color: Colors.white,
+                    color: primaryText,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -2509,20 +2525,25 @@ class _RecordSceneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final surface = AppThemeTokens.chromeSurface(context);
+    final primaryText = AppThemeTokens.primaryText(context);
+    final secondaryText = AppThemeTokens.secondaryText(context);
+    final border = AppThemeTokens.softBorder(context);
+    final muted = AppThemeTokens.surfaceMuted(context);
     final titleStyle = GoogleFonts.dmSans(
-      color: Colors.white,
+      color: primaryText,
       fontWeight: FontWeight.w800,
       fontSize: tile.isFeatured ? 18 : 16,
     );
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0E192B),
+        color: surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: tile.isFeatured
               ? const Color.fromRGBO(255, 184, 77, 0.7)
-              : const Color.fromRGBO(255, 255, 255, 0.15),
+              : border,
         ),
       ),
       child: Row(
@@ -2536,9 +2557,9 @@ class _RecordSceneCard extends StatelessWidget {
               child: (tile.thumbnailUrl != null && tile.thumbnailUrl!.isNotEmpty)
                   ? _Thumbnail(thumbnailUrl: tile.thumbnailUrl!)
                   : Container(
-                      color: const Color(0xFF1D2A40),
+                      color: muted,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.movie, color: Colors.white70),
+                      child: Icon(Icons.movie, color: secondaryText),
                     ),
             ),
           ),
@@ -2559,7 +2580,7 @@ class _RecordSceneCard extends StatelessWidget {
                     child: Text(
                       'Featured',
                       style: GoogleFonts.dmSans(
-                        color: const Color(0xFFFFD18A),
+                        color: const Color(0xFF9A5B00),
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                       ),
@@ -2570,7 +2591,7 @@ class _RecordSceneCard extends StatelessWidget {
                 Text(
                   tile.subtitle,
                   style: GoogleFonts.dmSans(
-                    color: const Color(0xFFAFC0DD),
+                    color: secondaryText,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
