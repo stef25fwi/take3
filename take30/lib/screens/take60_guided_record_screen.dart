@@ -1310,7 +1310,7 @@ class _Take60GuidedRecordScreenState
       if (scene.difficulty.trim().isNotEmpty) scene.difficulty,
     ].join(' · ');
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      padding: const EdgeInsets.fromLTRB(14, 20, 14, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1334,7 +1334,7 @@ class _Take60GuidedRecordScreenState
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 52),
+            padding: const EdgeInsets.only(left: 44),
             child: Text(
               'Visualise toute la scène, puis enregistre tes séquences une par une.',
               style: GoogleFonts.dmSans(
@@ -1425,21 +1425,34 @@ class _Take60GuidedRecordScreenState
             ),
           ),
           const SizedBox(height: 10),
-          ..._timeline.map(
-            (marker) => _ShootingPlanCard(
-              marker: marker,
-              statusLabel: _statusLabelForMarker(marker),
-              statusColor: _statusColorForMarker(marker),
-              hasPlayableVideo: _hasPlayableAiVideo(marker),
-              onPrimary: marker.requiresUserRecording
-                  ? () => _startMarkerFromPlan(marker)
-                  : () => _startMarkerFromPlan(marker),
-              onReplay: marker.requiresUserRecording &&
-                      _recordingForMarker(marker) != null
-                  ? () => _replayPlan(marker)
+          for (var index = 0; index < _timeline.length; index++) ...[
+            _ShootingPlanCard(
+              marker: _timeline[index],
+              stepNumber: index + 1,
+              statusLabel: _statusLabelForMarker(_timeline[index]),
+              statusColor: _statusColorForMarker(_timeline[index]),
+              hasPlayableVideo: _hasPlayableAiVideo(_timeline[index]),
+              onPrimary: () => _startMarkerFromPlan(_timeline[index]),
+              onReplay: _timeline[index].requiresUserRecording &&
+                      _recordingForMarker(_timeline[index]) != null
+                  ? () => _replayPlan(_timeline[index])
                   : null,
             ),
-          ),
+            if (index != _timeline.length - 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 39, bottom: 8),
+                child: Container(
+                  width: 3,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: _statusColorForMarker(_timeline[index]).withValues(
+                      alpha: 0.42,
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+          ],
           const SizedBox(height: 24),
           if (_publicationStatus.isNotEmpty) ...[
             Text(
@@ -2793,6 +2806,7 @@ class _CameraStatusChip extends StatelessWidget {
 class _ShootingPlanCard extends StatelessWidget {
   const _ShootingPlanCard({
     required this.marker,
+    required this.stepNumber,
     required this.statusLabel,
     required this.statusColor,
     required this.hasPlayableVideo,
@@ -2801,6 +2815,7 @@ class _ShootingPlanCard extends StatelessWidget {
   });
 
   final Take60SceneMarker marker;
+  final int stepNumber;
   final String statusLabel;
   final Color statusColor;
   final bool hasPlayableVideo;
@@ -2822,9 +2837,13 @@ class _ShootingPlanCard extends StatelessWidget {
     final borderColor = isUser
         ? const Color(0xFF7C3AED).withValues(alpha: 0.36)
         : const Color(0xFF06B6D4).withValues(alpha: 0.34);
+    final iconBackground = isUser ? const Color(0xFFD92D20) : Colors.white;
+    final iconColor = isUser ? Colors.white : const Color(0xFF111111);
+    final iconData = isUser
+      ? Icons.videocam_rounded
+      : Icons.movie_creation_outlined;
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.82),
@@ -2837,24 +2856,57 @@ class _ShootingPlanCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: (isUser
-                          ? const Color(0xFF7C3AED)
-                          : const Color(0xFF06B6D4))
-                      .withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  isUser ? Icons.videocam_rounded : Icons.movie_filter_outlined,
-                  color: isUser
-                      ? const Color(0xFFA78BFA)
-                      : const Color(0xFF22D3EE),
+              SizedBox(
+                width: 74,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      stepNumber.toString().padLeft(2, '0'),
+                      style: GoogleFonts.dmSans(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.46),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: iconBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isUser
+                              ? const Color(0xFFB42318)
+                              : const Color(0x1F111111),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isUser
+                                    ? const Color(0xFFD92D20)
+                                    : Colors.black)
+                                .withValues(alpha: 0.10),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Icon(iconData, color: iconColor),
+                    ),
+                    const SizedBox(height: 8),
+                    _PlanStatusChip(
+                      label: statusLabel,
+                      color: statusColor,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2879,23 +2931,6 @@ class _ShootingPlanCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.38)),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: GoogleFonts.dmSans(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
                 ),
               ),
             ],
@@ -2927,6 +2962,34 @@ class _ShootingPlanCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PlanStatusChip extends StatelessWidget {
+  const _PlanStatusChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.38)),
+      ),
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.dmSans(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -3105,7 +3168,7 @@ class _DirectorBlock extends StatelessWidget {
     final primaryText = AppThemeTokens.primaryText(context);
     final secondaryText = AppThemeTokens.secondaryText(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: softAction,
