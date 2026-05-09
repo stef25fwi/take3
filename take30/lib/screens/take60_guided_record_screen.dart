@@ -1079,20 +1079,15 @@ class _Take60GuidedRecordScreenState
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+            padding: const EdgeInsets.fromLTRB(
+              AppThemeTokens.pageHorizontalPadding,
+              8,
+              AppThemeTokens.pageHorizontalPadding,
+              120,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: () => context.go(AppRouter.home),
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: AppThemeTokens.primaryText(context),
-                    ),
-                  ),
-                ),
                 Take60GreetingHeroCard(
                   user: currentUser,
                   scenesValue: '${currentUser.scenesCount}',
@@ -1102,9 +1097,9 @@ class _Take60GuidedRecordScreenState
                   primaryLabel: 'Nouvelle video',
                   secondaryLabel: 'Voir le defi',
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
                 _RecordMotivationCard(user: currentUser),
-                const SizedBox(height: 22),
+                const SizedBox(height: 14),
                 _RecordCategoryChips(
                   chips: chips,
                   onChipTap: (chip) => _applyCategoryChip(
@@ -1113,7 +1108,7 @@ class _Take60GuidedRecordScreenState
                     difficulties: difficulties,
                   ),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 14),
                 if (_loadingLibrary)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
@@ -1136,7 +1131,7 @@ class _Take60GuidedRecordScreenState
                 else
                   ...sceneTiles.map(
                     (tile) => Padding(
-                      padding: EdgeInsets.only(bottom: tile.isFeatured ? 12 : 12),
+                      padding: const EdgeInsets.only(bottom: 10),
                       child: _RecordSceneCard(
                         tile: tile,
                         onPlay: tile.scene != null
@@ -2445,7 +2440,7 @@ class _RecordMotivationCard extends StatelessWidget {
     final border = AppThemeTokens.softBorder(context);
     final primaryText = AppThemeTokens.primaryText(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: surface,
@@ -2492,7 +2487,7 @@ class _RecordCategoryChips extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
               onTap: () => onChipTap(chip),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
                   color: chip.color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(999),
@@ -2530,13 +2525,14 @@ class _RecordSceneCard extends StatelessWidget {
     final secondaryText = AppThemeTokens.secondaryText(context);
     final border = AppThemeTokens.softBorder(context);
     final muted = AppThemeTokens.surfaceMuted(context);
+    final thumbSize = tile.isFeatured ? 82.0 : 72.0;
     final titleStyle = GoogleFonts.dmSans(
       color: primaryText,
       fontWeight: FontWeight.w800,
       fontSize: tile.isFeatured ? 18 : 16,
     );
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(18),
@@ -2550,10 +2546,10 @@ class _RecordSceneCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 92,
-              height: 92,
+              width: thumbSize,
+              height: thumbSize,
               child: (tile.thumbnailUrl != null && tile.thumbnailUrl!.isNotEmpty)
                   ? _Thumbnail(thumbnailUrl: tile.thumbnailUrl!)
                   : Container(
@@ -2563,15 +2559,15 @@ class _RecordSceneCard extends StatelessWidget {
                     ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (tile.showFeaturedBadge)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color.fromRGBO(255, 184, 77, 0.2),
                       borderRadius: BorderRadius.circular(999),
@@ -2587,7 +2583,7 @@ class _RecordSceneCard extends StatelessWidget {
                     ),
                   ),
                 Text(tile.title, style: titleStyle),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   tile.subtitle,
                   style: GoogleFonts.dmSans(
@@ -2596,10 +2592,10 @@ class _RecordSceneCard extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
-                  runSpacing: 6,
+                  runSpacing: 4,
                   children: [
                     _Pill(label: tile.durationLabel),
                     _Pill(label: tile.difficultyLabel),
@@ -2607,16 +2603,22 @@ class _RecordSceneCard extends StatelessWidget {
                     _Pill(label: tile.statusLabel),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: FilledButton(
+                  child: FilledButton.icon(
                     onPressed: onPlay,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFFFB800),
                       foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      visualDensity: VisualDensity.compact,
                     ),
-                    child: Text(tile.ctaLabel),
+                    icon: const Icon(Icons.videocam_rounded, size: 18),
+                    label: Text(tile.ctaLabel),
                   ),
                 ),
               ],
