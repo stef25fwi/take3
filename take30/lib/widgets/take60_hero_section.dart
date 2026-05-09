@@ -263,7 +263,7 @@ class _HeroContent extends StatelessWidget {
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: metrics.isMobile ? 225 : 360),
               child: Padding(
-                padding: const EdgeInsets.only(left: 28, right: 24),
+                padding: const EdgeInsets.only(left: 20, right: 22),
                 child: Text(
                   'Joue. Publie. Affronte. Deviens une légende.',
                   maxLines: 2,
@@ -281,7 +281,7 @@ class _HeroContent extends StatelessWidget {
             ),
             const Spacer(),
             Padding(
-              padding: EdgeInsets.fromLTRB(28, 0, 24, metrics.contentBottom),
+              padding: EdgeInsets.fromLTRB(20, 0, 24, metrics.contentBottom),
               child: Wrap(
                 spacing: 12,
                 runSpacing: 10,

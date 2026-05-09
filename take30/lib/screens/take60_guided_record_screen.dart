@@ -1083,16 +1083,6 @@ class _Take60GuidedRecordScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    onPressed: () => context.go(AppRouter.home),
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: AppThemeTokens.primaryText(context),
-                    ),
-                  ),
-                ),
                 Take60GreetingHeroCard(
                   user: currentUser,
                   scenesValue: '${currentUser.scenesCount}',

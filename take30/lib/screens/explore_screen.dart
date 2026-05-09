@@ -112,6 +112,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         palette: palette,
                         onPlay: _openExplorerScene,
                       ),
+                      const SizedBox(height: 18),
+                      _Take60TeamSelectionSection(
+                        palette: palette,
+                        onTap: () => context.go(AppRouter.aiFeed),
+                      ),
                     ],
                     const SizedBox(height: 22),
                     _SectionTitle(label: 'Catégories', palette: palette),
@@ -471,6 +476,231 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 15,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.18,
+      ),
+    );
+  }
+}
+
+class _Take60TeamSelectionSection extends StatelessWidget {
+  const _Take60TeamSelectionSection({
+    required this.palette,
+    required this.onTap,
+  });
+
+  final _ExplorerPalette palette;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardGradient = palette.isDark
+        ? const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.fromRGBO(255, 184, 0, 0.18),
+              Color.fromRGBO(0, 212, 255, 0.12),
+              Color.fromRGBO(255, 255, 255, 0.04),
+            ],
+          )
+        : const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFF8E1),
+              Color(0xFFEFF7FF),
+              Color(0xFFFFFFFF),
+            ],
+          );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionTitle(label: 'Sélection Team Take60', palette: palette),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: cardGradient,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: palette.emptyBorder),
+            boxShadow: [
+              BoxShadow(
+                color: palette.cardShadow.withValues(alpha: 0.28),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 360;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB800),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Color(0xFF0B1020),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: palette.emptyBackground,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: palette.emptyBorder),
+                        ),
+                        child: Text(
+                          'TEAM PICK',
+                          style: GoogleFonts.dmSans(
+                            color: palette.primaryText,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Hot new scenes',
+                    style: GoogleFonts.dmSans(
+                      color: palette.primaryText,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Une sélection éditoriale des scènes à surveiller maintenant côté Take60.',
+                    style: GoogleFonts.dmSans(
+                      color: palette.secondaryText,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: const [
+                      _TeamSelectionPill(label: 'Nouveautés brûlantes'),
+                      _TeamSelectionPill(label: 'Scènes IA'),
+                      _TeamSelectionPill(label: 'Repérées par la team'),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Flex(
+                    direction: compact ? Axis.vertical : Axis.horizontal,
+                    crossAxisAlignment: compact
+                        ? CrossAxisAlignment.stretch
+                        : CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: palette.emptyBackground,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: palette.emptyBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.auto_awesome_rounded,
+                                color: palette.primaryAccent,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Ouvre AI Feed pour voir la sélection active.',
+                                  style: GoogleFonts.dmSans(
+                                    color: palette.primaryText,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: compact ? 0 : 12, height: compact ? 12 : 0),
+                      FilledButton(
+                        onPressed: onTap,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFFFB800),
+                          foregroundColor: const Color(0xFF0B1020),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Hot new scenes',
+                          style: GoogleFonts.dmSans(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TeamSelectionPill extends StatelessWidget {
+  const _TeamSelectionPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = _ExplorerPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: palette.emptyBackground,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: palette.emptyBorder),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.dmSans(
+          color: palette.primaryText,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

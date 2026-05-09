@@ -76,6 +76,7 @@ class HomeScreen extends ConsumerWidget {
                       unreadCount: unreadCount,
                       canOpenAdmin: authState.user?.isAdmin ?? false,
                       onAdminTap: () => context.push(AppRouter.admin),
+                      onLeaderboardTap: () => context.go(AppRouter.leaderboard),
                       onNotificationsTap: () => context.go(AppRouter.notifications),
                     ),
                     const SizedBox(height: 10),
@@ -214,12 +215,14 @@ class _HomeHeader extends StatelessWidget {
     required this.unreadCount,
     required this.canOpenAdmin,
     required this.onAdminTap,
+    required this.onLeaderboardTap,
     required this.onNotificationsTap,
   });
 
   final int unreadCount;
   final bool canOpenAdmin;
   final VoidCallback onAdminTap;
+  final VoidCallback onLeaderboardTap;
   final VoidCallback onNotificationsTap;
 
   @override
@@ -258,6 +261,26 @@ class _HomeHeader extends StatelessWidget {
               ),
               const SizedBox(width: 10),
             ],
+            GestureDetector(
+              onTap: onLeaderboardTap,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AppThemeTokens.softAction(context),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppThemeTokens.softBorder(context),
+                  ),
+                ),
+                child: Icon(
+                  Icons.leaderboard_outlined,
+                  color: AppThemeTokens.primaryText(context),
+                  size: 21,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
             Stack(
               clipBehavior: Clip.none,
               children: [

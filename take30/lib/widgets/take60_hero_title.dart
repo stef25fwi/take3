@@ -11,9 +11,9 @@ class Take60HeroTitle extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 390;
-        final lineSize = compact ? 42.0 : 46.0;
-        final performanceSize = compact ? 40.0 : 45.0;
-        final brushHeight = compact ? 58.0 : 62.0;
+        final lineSize = compact ? 39.0 : 43.0;
+        final performanceSize = compact ? 37.0 : 42.0;
+        final brushHeight = compact ? 50.0 : 56.0;
 
         final lineStyle = GoogleFonts.inter(
           fontSize: lineSize,
@@ -58,30 +58,30 @@ class Take60HeroTitle extends StatelessWidget {
           child: Container(
             width: double.infinity,
             color: Colors.transparent,
-            padding: const EdgeInsets.only(left: 28, top: 34),
+            padding: const EdgeInsets.only(left: 20, top: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Prêt à tourner', style: lineStyle),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 SizedBox(
                   height: brushHeight + 4,
                   width: math.min(
-                    constraints.maxWidth - 28,
-                    brushWidth + 12,
+                    constraints.maxWidth - 20,
+                    brushWidth + 8,
                   ),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
                       Positioned(
-                        left: -8,
+                        left: -4,
                         top: 2,
                         child: SizedBox(
                           width: brushWidth,
                           height: brushHeight,
                           child: Transform.rotate(
-                            angle: -0.022,
+                            angle: -0.01,
                             child: CustomPaint(
                               painter: OrangeBrushPainter(),
                             ),
@@ -89,10 +89,10 @@ class Take60HeroTitle extends StatelessWidget {
                         ),
                       ),
                       Positioned(
-                        left: 10,
-                        top: 6,
+                        left: 12,
+                        top: 4,
                         child: Transform.translate(
-                          offset: const Offset(0, -2),
+                          offset: const Offset(0, -1),
                           child: Text(
                             'une performance',
                             style: performanceStyle,
@@ -102,7 +102,7 @@ class Take60HeroTitle extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 3),
                 Text('qui marque ?', style: lineStyle),
               ],
             ),
@@ -117,35 +117,32 @@ class OrangeBrushPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final path = Path()
-      ..moveTo(2, size.height * 0.36)
-      ..lineTo(16, size.height * 0.12)
-      ..quadraticBezierTo(size.width * 0.08, -6, size.width * 0.18, 10)
-      ..lineTo(size.width * 0.24, 4)
-      ..lineTo(size.width * 0.31, 12)
-      ..quadraticBezierTo(size.width * 0.41, -4, size.width * 0.54, 7)
-      ..lineTo(size.width * 0.61, 3)
-      ..lineTo(size.width * 0.7, 12)
-      ..quadraticBezierTo(size.width * 0.79, 17, size.width * 0.86, 8)
-      ..lineTo(size.width - 26, 12)
-      ..lineTo(size.width - 10, size.height * 0.16)
-      ..lineTo(size.width + 6, size.height * 0.24)
-      ..lineTo(size.width - 2, size.height * 0.35)
-      ..lineTo(size.width + 12, size.height * 0.44)
-      ..lineTo(size.width - 3, size.height * 0.54)
-      ..lineTo(size.width + 10, size.height * 0.63)
-      ..lineTo(size.width - 7, size.height * 0.72)
-      ..lineTo(size.width - 18, size.height * 0.86)
-      ..quadraticBezierTo(size.width * 0.8, size.height + 10,
-          size.width * 0.64, size.height - 1)
-      ..lineTo(size.width * 0.58, size.height + 4)
-      ..quadraticBezierTo(size.width * 0.45, size.height + 10,
-          size.width * 0.29, size.height - 1)
-      ..lineTo(size.width * 0.2, size.height + 4)
-      ..quadraticBezierTo(size.width * 0.1, size.height + 2, 16,
-          size.height - 10)
-      ..lineTo(6, size.height * 0.76)
-      ..lineTo(14, size.height * 0.62)
-      ..lineTo(0, size.height * 0.48)
+      ..moveTo(0, size.height * 0.34)
+      ..quadraticBezierTo(
+        size.width * 0.18,
+        size.height * 0.08,
+        size.width * 0.42,
+        size.height * 0.16,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.68,
+        size.height * 0.22,
+        size.width,
+        size.height * 0.18,
+      )
+      ..lineTo(size.width, size.height * 0.74)
+      ..quadraticBezierTo(
+        size.width * 0.72,
+        size.height * 0.88,
+        size.width * 0.44,
+        size.height * 0.82,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.18,
+        size.height * 0.78,
+        0,
+        size.height * 0.64,
+      )
       ..close();
 
     canvas.drawShadow(path, const Color(0x88FF8A00), 34, false);
@@ -182,71 +179,31 @@ class OrangeBrushPainter extends CustomPainter {
 
     final relief = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..color = Colors.white.withValues(alpha: 0.3);
+      ..strokeWidth = 1.2
+      ..color = Colors.white.withValues(alpha: 0.24);
     final reliefPath = Path()
-      ..moveTo(size.width * 0.07, size.height * 0.23)
+      ..moveTo(size.width * 0.08, size.height * 0.28)
       ..quadraticBezierTo(
-        size.width * 0.3,
-        size.height * -0.02,
-        size.width * 0.66,
-        size.height * 0.16,
-      )
-      ..quadraticBezierTo(
-        size.width * 0.83,
-        size.height * 0.22,
-        size.width * 0.96,
-        size.height * 0.14,
+        size.width * 0.42,
+        size.height * 0.12,
+        size.width * 0.94,
+        size.height * 0.24,
       );
     canvas.drawPath(reliefPath, relief);
 
     final lowRelief = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.1
-      ..color = const Color(0x55B54800);
+      ..color = const Color(0x44B54800);
     final lowReliefPath = Path()
-      ..moveTo(size.width * 0.12, size.height * 0.78)
+      ..moveTo(size.width * 0.08, size.height * 0.66)
       ..quadraticBezierTo(
-        size.width * 0.46,
-        size.height * 0.94,
-        size.width * 0.88,
-        size.height * 0.72,
+        size.width * 0.48,
+        size.height * 0.86,
+        size.width * 0.94,
+        size.height * 0.68,
       );
     canvas.drawPath(lowReliefPath, lowRelief);
-
-    final dryPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    final random = math.Random(60);
-    for (var i = 0; i < 8; i++) {
-      final y = size.height * (0.18 + (i * 0.085));
-      final startX = size.width * (0.06 + random.nextDouble() * 0.16);
-      final endX = size.width * (0.76 + random.nextDouble() * 0.16);
-      dryPaint
-        ..strokeWidth = 1 + random.nextDouble() * 1.8
-        ..color = Colors.white.withValues(
-          alpha: 0.08 + random.nextDouble() * 0.1,
-        );
-      canvas.drawLine(
-        Offset(startX, y),
-        Offset(endX, y + random.nextDouble() * 3 - 1.5),
-        dryPaint,
-      );
-    }
-
-    final tearPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..color = const Color(0x26B54800);
-    for (var i = 0; i < 3; i++) {
-      final x = size.width * (0.74 + (i * 0.08));
-      canvas.drawLine(
-        Offset(x, size.height * 0.18),
-        Offset(x + 10, size.height * (0.7 - i * 0.08)),
-        tearPaint,
-      );
-    }
   }
 
   @override
