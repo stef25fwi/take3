@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'take60_hero_title.dart';
+
 const String _heroExplorerLightAsset = '../take 30 images IA/heroexplorer.png';
 const String _heroExplorerDarkAsset = '../take 30 images IA/heroexplorerblack.png';
 
@@ -119,10 +121,10 @@ class _Take60CinematicHeroState extends State<Take60CinematicHero>
                       ),
                     ),
                     Positioned(
-                      left: metrics.contentLeft,
-                      top: metrics.contentTop,
-                      bottom: metrics.contentBottom,
-                      right: metrics.contentRight,
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
                       child: _HeroContent(
                         metrics: metrics,
                         onNewVideoTap: widget.onNewVideoTap,
@@ -251,63 +253,52 @@ class _HeroContent extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final titleSize = constraints.maxWidth < 240
-            ? metrics.titleSize.clamp(24.0, metrics.titleSize).toDouble()
-            : metrics.titleSize;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Prêt à tourner\nune performance ?',
-                maxLines: 2,
-                style: GoogleFonts.dmSans(
-                  color: isDark ? Colors.white : Colors.black,
-                  fontSize: titleSize,
-                  fontWeight: FontWeight.w800,
-                  height: 1.05,
-                  letterSpacing: -1.2,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
+            const Take60HeroTitle(),
+            const SizedBox(height: 8),
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: metrics.isMobile ? 225 : 360),
-              child: Text(
-                'Joue. Publie. Affronte. Deviens une légende.',
-                maxLines: 2,
-                style: GoogleFonts.dmSans(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.9)
-                      : Colors.black.withValues(alpha: 0.78),
-                  fontSize: metrics.subtitleSize,
-                  fontWeight: FontWeight.w500,
-                  height: 1.28,
-                  letterSpacing: -0.1,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 28, right: 24),
+                child: Text(
+                  'Joue. Publie. Affronte. Deviens une légende.',
+                  maxLines: 2,
+                  style: GoogleFonts.dmSans(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : Colors.black.withValues(alpha: 0.78),
+                    fontSize: metrics.subtitleSize,
+                    fontWeight: FontWeight.w500,
+                    height: 1.28,
+                    letterSpacing: -0.1,
+                  ),
                 ),
               ),
             ),
             const Spacer(),
-            Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                _HeroButton.primary(
-                  label: 'Nouvelle vidéo',
-                  width: metrics.primaryButtonWidth,
-                  height: metrics.buttonHeight,
-                  onTap: onNewVideoTap,
-                ),
-                _HeroFormatChip(
-                  height: metrics.buttonHeight,
-                  value: formatValue,
-                ),
-              ],
+            Padding(
+              padding: EdgeInsets.fromLTRB(28, 0, 24, metrics.contentBottom),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _HeroButton.primary(
+                    label: 'Nouvelle vidéo',
+                    width: metrics.primaryButtonWidth,
+                    height: metrics.buttonHeight,
+                    onTap: onNewVideoTap,
+                  ),
+                  _HeroFormatChip(
+                    height: metrics.buttonHeight,
+                    value: formatValue,
+                  ),
+                ],
+              ),
             ),
           ],
         );
