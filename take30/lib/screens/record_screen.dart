@@ -104,7 +104,11 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
         )
         .join(' et ');
 
-    final body = kIsWeb
+    final isWeb = kIsWeb;
+    final title = isWeb
+        ? 'Autoriser dans ton navigateur'
+        : 'Autoriser dans les réglages';
+    final body = isWeb
         ? 'Pour utiliser ta $labels :\n\n'
             '1. Clique sur l\'icône cadenas (🔒) à gauche de l\'URL.\n'
             '2. Active « Caméra » et « Microphone » pour ce site.\n'
@@ -119,18 +123,14 @@ class _RecordScreenState extends ConsumerState<RecordScreen>
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text(
-            kIsWeb
-                ? 'Autoriser dans ton navigateur'
-                : 'Autoriser dans les réglages',
-          ),
+          title: Text(title),
           content: SingleChildScrollView(child: Text(body)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Plus tard'),
             ),
-            if (!kIsWeb)
+            if (!isWeb)
               TextButton(
                 onPressed: () async {
                   Navigator.pop(dialogContext);
